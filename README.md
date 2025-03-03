@@ -1,12 +1,11 @@
-# React + Vite
+# AI-Driven-Student-Participation-Tracker
+## By: Tan Jun Lin 
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+### Briefly Introduction:
+- This project specific designed for educators to track student attention and interest in virtual classrooms in real-time. By utilising combination of pre-trained AI models, this system will analyse the key elements such as facial expression, body language, and eye focus to categorise student participation level as interested, bored, or unfocused.  The major purpose of this system is to provide educators with actionable insights so that they can dynamically modify their teaching strategies in real time based on student participation. This solution will assist educators in identifying disengagement early, allowing for timely interventions to boost student motivation and learning outcomes.
 
-Currently, two official plugins are available:
-
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend using TypeScript and enable type-aware lint rules. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+### Instruction before use this application
+1. Install requirement.txt in server folder
+2. Uninstall keras and reinstall keras==2.12.0
+3. In the keras_vggface/models.py 
+- change **from keras.engine.topology import get_source_inputs** to **from keras.utils.layer_utils import get_source_inputs**
