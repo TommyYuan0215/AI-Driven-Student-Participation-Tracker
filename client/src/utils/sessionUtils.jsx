@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import axios from '../utils/axios_configure';  // Update this import
+import axios from './axios_configure';  // Update this import
 import { toast } from 'react-toastify';
 
 const useSession = (navigate) => {

@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Accordion, Table, Form, Button, Row, Col } from "react-bootstrap";
 import { useNavigate } from "react-router-dom";
-import useSession from "../../hooks/useSession";
+import useSession from "../../utils/sessionUtils";
 
 function AccountSettings() {
     const navigate = useNavigate();
@@ -32,13 +32,13 @@ function AccountSettings() {
             <div className="row">
                 <div className="col-md-12">
                     <div className="card">
-                        <div class="card-header">
+                        <div className="card-header">
                             <img src="/profile.jpg" alt="User" 
-                            class="rounded-circle mx-auto d-block img-thumbnail" width="120" height="120"/>
+                            className="rounded-circle mx-auto d-block img-thumbnail" width="120" height="120"/>
                             <br />
                             <h5 className="card-title text-center">Hello,  {userData.userName} &#128075;</h5>
                         </div>
-                        <div class="card-body">
+                        <div className="card-body">
                             <Table hover responsive>
                                 <tbody>
                                     <tr>

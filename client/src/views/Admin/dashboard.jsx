@@ -1,6 +1,6 @@
 import React from 'react';
 import { Container } from 'react-bootstrap';
-import useSession from '../../hooks/useSession'; 
+import useSession from '../../utils/sessionUtils'; 
 import { useNavigate } from 'react-router-dom';
 
 function AdminDashboard() {

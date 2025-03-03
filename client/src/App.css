@@ -5,7 +5,7 @@
 /* ------------------------------------------------------------------ */
 /* Header.js CSS */
 [data-bs-theme="light"] .header-gradient-background {
-  background: radial-gradient(circle, rgba(238,174,202,1) 0%, rgba(148,187,233,1) 100%);
+  /* background: radial-gradient(circle, rgba(238,174,202,1) 0%, rgba(148,187,233,1) 100%); */
 }
 
 [data-bs-theme="light"] .header-gradient-background .custom-navbar-brand{
@@ -158,3 +158,51 @@ input:checked + .slider:before {
   color: inherit;
 }
 /* ------------------------------------------------------------------ */
+/* Features Card properties */
+.feature-card {
+  background: white;
+  border-radius: 10px;
+  transition: all 0.3s ease-in-out;
+  border: 1px solid rgba(0,0,0,0.1);
+  overflow: hidden;
+}
+
+.feature-card:hover {
+  transform: translateY(-25px);
+  box-shadow: 0 20px 30px rgba(0,0,0,0.1);
+}
+
+.card-icon {
+  font-size: 3rem;
+  transition: all 0.3s ease;
+}
+
+.feature-card:hover .card-icon {
+  transform: scale(1.2);
+}
+
+.feature-card .card-body {
+  padding: 2rem;
+}
+
+.feature-card .card-title {
+  font-weight: 600;
+  margin-bottom: 1rem;
+  color: #333;
+  transition: all 0.3s ease;
+}
+
+.feature-card:hover .card-title {
+  color: #007bff;
+}
+
+.feature-card .card-text {
+  color: #666;
+  line-height: 1.6;
+}
+
+@media (max-width: 768px) {
+  .feature-card:hover {
+    transform: translateY(-5px);
+  }
+}

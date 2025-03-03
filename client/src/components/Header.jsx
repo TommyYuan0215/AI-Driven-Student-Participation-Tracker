@@ -4,7 +4,7 @@ import "../App.css";
 import ModelComponent from "./XLargeModelComponent";
 import LoginForm from "../views/Credentials/LoginForm";
 import SignUpForm from "../views/Credentials/SignUpForm";
-import useSession from "../hooks/useSession";
+import useSession from "../utils/sessionUtils";
 import { useNavigate } from "react-router-dom";
 import { ToastContainer } from 'react-toastify';
 

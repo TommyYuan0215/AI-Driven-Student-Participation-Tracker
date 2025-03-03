@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Accordion } from "react-bootstrap";
 import Cookies from "js-cookie";
 import { useNavigate } from "react-router-dom";
-import useSession from "../../hooks/useSession";
+import useSession from "../../utils/sessionUtils";
 
 function GeneralSettings() {
     const [darkMode, setDarkMode] = useState(false);
