@@ -1,0 +1,160 @@
+.App {
+  flex: 1;
+}
+
+/* ------------------------------------------------------------------ */
+/* Header.js CSS */
+[data-bs-theme="light"] .header-gradient-background {
+  background: radial-gradient(circle, rgba(238,174,202,1) 0%, rgba(148,187,233,1) 100%);
+}
+
+[data-bs-theme="light"] .header-gradient-background .custom-navbar-brand{
+  background: linear-gradient(to right, #3B2EE2, #DE1E82);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+[data-bs-theme="dark"] .header-gradient-background {
+  background: none;
+}
+
+.nav-link .active {
+  background-color: #DE1E82; /* Pink background color */
+  color: #ffffff !important; /* White text color */
+  border-radius: 8px; /* Rounded corners */
+  padding: 5px 20px; /* Add padding for better spacing */
+  font-weight: bold; /* Make the text bold */
+  /* text-align: center; */
+}
+
+.nav-link .active:hover {
+  background-color: #DE1E82; /* Slightly darker pink on hover */
+  color: #ffffff !important;
+}
+
+/* iOS style radio button properties */
+.theme-toggle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.toggle-switch {
+  position: relative;
+  display: inline-block;
+  width: 50px;
+  height: 25px;
+}
+
+.toggle-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #ccc;
+  transition: 0.4s;
+  border-radius: 25px;
+}
+
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 18px;
+  width: 18px;
+  left: 4px;
+  bottom: 3.5px;
+  background-color: white;
+  transition: 0.4s;
+  border-radius: 50%;
+}
+
+input:checked + .slider {
+  background-color: #2196F3;
+}
+
+input:checked + .slider:before {
+  transform: translateX(25px);
+}
+
+/* ------------------------------------------------------------------ */
+/* Footer.js CSS */
+.footer {
+  background-image: linear-gradient(to right, #3B2EE2,#DE1E82);
+  color: white;
+  /* font-size: 14px;
+  position: fixed;
+  width: 100%;
+  bottom: 0; */
+}
+
+.footer .card_parent {
+  margin: 0 3px;
+}
+
+.footer .card {
+  margin: 5px 10px;
+  padding: 5px 20px;
+  background-color: rgba(206, 206, 206, 0.3);
+}
+
+.footer p {
+  /* letter-spacing: 0.5px;  */
+  font-weight: bold; 
+  margin-bottom: 1rem; 
+}
+
+.footer ul {
+  list-style-type: none; 
+  /* padding-left: 30px;   */
+}
+
+.footer li {
+  margin-bottom: 8px; 
+}
+
+.footer .social-media {
+  font-size: 25px;
+  margin: 0 10px;
+
+}
+
+.footer a {
+  text-decoration: none; 
+  color: white;
+  transform: scale(1); 
+  transition: transform 0.3s ease-in, color 0.3s ease-in; 
+}
+
+.footer a:hover {
+  color: #ffd700; 
+  transform: scale(1.5); 
+}
+
+.footer .copyright {
+  text-align: center; 
+  font-size: 0.9rem; 
+}
+
+/* ------------------------------------------------------------------ */
+/* SidebarComponent properties */
+.accordion-item .accordion-button {
+  background-color: transparent;
+  border: none;
+  font-weight: bold;
+  color: inherit;
+}
+
+.accordion-item .accordion-button:not(.collapsed) {
+  background: transparent;
+  box-shadow: none; 
+  color: inherit;
+}
+/* ------------------------------------------------------------------ */
