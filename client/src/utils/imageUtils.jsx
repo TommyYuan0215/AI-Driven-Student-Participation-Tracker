@@ -1,23 +1,33 @@
-const carouselImages = [];
-
-// Function to get all image URLs from the public folder
+// Function to get all image URLs dynamically from the assets folder
 function getCarouselImages() {
-  const imageContext = import.meta.glob('../assets/slideshow_img/*.{jpg,jpeg,png,svg}', {
-    eager: true,
-    query: '?url', 
-    import: 'default'
-  });
+  try {
+    const imageContext = import.meta.glob(
+      '../assets/slideshow_img/*.{jpg,jpeg,png,svg}',
+      {
+        eager: true,
+        import: 'default'
+      }
+    );
 
-  Object.entries(imageContext).forEach(([path, imageUrl]) => {
-    // Extract filename without extension to use as title
-    const title = path.split('/').pop().split('.')[0];
-    carouselImages.push({
-      url: imageUrl, // Use the URL directly from the import
-      title: title.charAt(0).toUpperCase() + title.slice(1).replace(/-/g, ' '),
+    const images = Object.entries(imageContext).map(([path, module]) => {
+      // Extract filename without extension to use as title
+      const fileName = path.split('/').pop();
+      const title = fileName.split('.')[0];
+      
+      return {
+        url: module, // Module itself contains the processed image URL
+        title: title.charAt(0).toUpperCase() + title.slice(1).replace(/-/g, ' '),
+        fileName: fileName
+      };
     });
-  });
 
-  return carouselImages;
+    return images;
+  } catch (error) {
+    console.error('Error loading carousel images:', error);
+    return [];
+  }
 }
 
-export default getCarouselImages;
+// Execute and export the result
+const carouselImages = getCarouselImages();
+export default carouselImages;

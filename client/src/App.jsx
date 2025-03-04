@@ -25,7 +25,7 @@ function App() {
   }, []);
 
   return (
-    <Router className="App">
+    <Router classhName="App">
       <Header />
       <Routes>
         <Route path="/" element={<Home />} ></Route>
@@ -34,7 +34,6 @@ function App() {
             <Route path="dashboard" element={<AdminDashboard />} />
             <Route path="usermanagement" element={<UserManagement />} />
             <Route path="datamanagement" element={<DataManagement />} />
-
             {/* Sibling Settings Element */}
             <Route path="settings/*" >
                 <Route path="general" element={<GeneralSettings />} />
