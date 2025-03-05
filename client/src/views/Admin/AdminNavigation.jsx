@@ -3,18 +3,20 @@ import SidebarComponent from "../../components/SidebarComponent";
 
 // Define sidebar items for Admin navigation
 const sidebarItems = [
-    { id: "dashboard", label: "Dashboard", path: "/views/admin/dashboard" },
-    { id: "usermanagement", label: "User Account Management", path: "/views/admin/usermanagement" },
-    { id: "datamanagement", label: "View Data", 
+    { id: "dashboard", label: "Dashboard", path: "/views/admin/dashboard", icon: "bi bi-motherboard" },
+    { id: "usermanagement", label: "User Account Management", path: "/views/admin/usermanagement", icon: "bi bi-people"},
+    { id: "contentmanagement", label: "Content Management", path: "/views/admin/contentmanagement", icon: "bi bi-images" },
+    { id: "datamanagement", label: "View Data", icon: "bi bi-database",
         subItems: [
-            { label: "Overall Statistics Data", path: "/views/admin/statistic/1" },
-            { label: "Trend Analysis", path: "/views/admin/statistic/2" }
+            { label: "Overall Statistics Data", path: "/views/admin/statistic/1", icon: "bi bi-bar-chart-line" },
+            { label: "Trend Analysis", path: "/views/admin/statistic/2", icon: "bi bi-graph-up-arrow" },
         ] 
     },
-    { id: "settings", label: "Settings",
+    
+    { id: "settings", label: "Settings", icon: "bi bi-gear",
         subItems: [
-            { label: "General Settings", path: "/views/admin/settings/general" },
-            { label: "Account Settings", path: "/views/admin/settings/account" }
+            { label: "General Settings", path: "/views/admin/settings/general", icon: "bi bi-sliders"},
+            { label: "Account Settings", path: "/views/admin/settings/account", icon: "bi bi-person" }
         ]
     },
 ];

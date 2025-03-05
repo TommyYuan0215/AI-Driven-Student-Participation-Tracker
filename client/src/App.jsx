@@ -11,6 +11,7 @@ import AdminPage from './views/Admin/AdminPage';
 import AdminDashboard from './views/Admin/dashboard';
 import UserManagement from './views/Admin/usermanagement';
 import DataManagement from './views/Admin/datamanagement';
+import ContentManagement from './views/Admin/contentmanagement';
 
 import EducatorPage from './views/Educator/EducatorPage'
 import EducatorDashboard from './views/Educator/dashboard';
@@ -27,32 +28,33 @@ function App() {
   return (
     <Router classhName="App">
       <Header />
-      <Routes>
-        <Route path="/" element={<Home />} ></Route>
-        {/* Admin Role Element */}
-        <Route path="/views/admin/*" element={<AdminPage />}>
-            <Route path="dashboard" element={<AdminDashboard />} />
-            <Route path="usermanagement" element={<UserManagement />} />
-            <Route path="datamanagement" element={<DataManagement />} />
+        <Routes>
+          <Route path="/" element={<Home />} ></Route>
+          {/* Admin Role Element */}
+          <Route path="/views/admin/*" element={<AdminPage />}>
+              <Route path="dashboard" element={<AdminDashboard />} />
+              <Route path="usermanagement" element={<UserManagement />} />
+              <Route path="datamanagement" element={<DataManagement />} />
+              <Route path="contentmanagement" element={<ContentManagement />} />
+              {/* Sibling Settings Element */}
+              <Route path="settings/*" >
+                  <Route path="general" element={<GeneralSettings />} />
+                  <Route path="account" element={<AccountSettings />} />
+              </Route>
+          </Route>
+
+          {/* Educator Role Element */}
+          <Route path="/views/educator/*" element={<EducatorPage />}>
+            <Route path="dashboard" element={<EducatorDashboard />}/>
+            <Route path="history" element={<EducatorHistory />}/>
             {/* Sibling Settings Element */}
             <Route path="settings/*" >
                 <Route path="general" element={<GeneralSettings />} />
                 <Route path="account" element={<AccountSettings />} />
             </Route>
-        </Route>
-
-        {/* Educator Role Element */}
-        <Route path="/views/educator/*" element={<EducatorPage />}>
-          <Route path="dashboard" element={<EducatorDashboard />}/>
-          <Route path="history" element={<EducatorHistory />}/>
-          {/* Sibling Settings Element */}
-          <Route path="settings/*" >
-              <Route path="general" element={<GeneralSettings />} />
-              <Route path="account" element={<AccountSettings />} />
           </Route>
-        </Route>
 
-      </Routes>
+        </Routes>
       <Footer />  
     </Router>
   );

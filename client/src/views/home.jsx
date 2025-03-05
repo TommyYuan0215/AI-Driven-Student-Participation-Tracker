@@ -3,6 +3,7 @@ import { Container, Card, Carousel, Row, Col } from 'react-bootstrap';
 import Slideshow from '../components/CarouselComponent';
 import carouselImages from '../utils/imageUtils';
 
+
 // Card data array
 const cardData = [
   {
@@ -30,7 +31,7 @@ const cardData = [
 function Home() {
     return(
       <div>
-        <section className='bg-dark'>
+        <section>
         <Carousel>
             {carouselImages.map((image, index) => (
               <Carousel.Item key={index}>

@@ -1,14 +1,14 @@
 import { useState } from "react";
 import { Nav, Navbar, NavDropdown } from "react-bootstrap";
 import "../App.css";
-import ModelComponent from "./XLargeModelComponent";
+import ModelComponent from "./LoginModelComponent";
 import LoginForm from "../views/Credentials/LoginForm";
 import SignUpForm from "../views/Credentials/SignUpForm";
 import useSession from "../utils/sessionUtils";
 import { useNavigate } from "react-router-dom";
 import { ToastContainer } from 'react-toastify';
 
-function ProfileIcon({ userData }) {
+function ProfileIcon({ userData, showName = true }) {
   return (
     <span>
       <img
@@ -17,7 +17,11 @@ function ProfileIcon({ userData }) {
         alt="profile-pic"
         width="40"
         height="40"
-      />
+      /> 
+      &nbsp;
+      {showName && userData.userName && (
+        <span>{userData.userName}</span>
+      )}
     </span>
   );
 }
@@ -25,13 +29,13 @@ function ProfileIcon({ userData }) {
 function Header() {
   const [modalType, setModalType] = useState(null); // "login" or "signup"
   const navigate = useNavigate();  // Use navigate here
-  const { userData, isLoggedIn, logout } = useSession(navigate);
+  const { userData, isLoggedIn } = useSession(navigate);
   const handleModalClose = () => setModalType(null); // Close modal
   const openLoginModal = () => setModalType("login"); // Open login modal
   const openSignUpModal = () => setModalType("signup"); // Open signup modal
 
   return (
-    <div className="header-gradient-background card">     
+    <div className="header-gradient-background">     
       <Navbar expand="lg" className="ps-4 pe-4">
         <Navbar.Brand href={isLoggedIn ? userData.redirect : "/"} className="fw-bolder custom-navbar-brand" style={{ display: 'flex', alignItems: 'center' }}>
           <img src={"/ai-technology.png"} alt="brand-icon" style={{width: '30px', height: '30px'}}></img> &nbsp; AI-Driven Student Participant Tracker
@@ -41,12 +45,13 @@ function Header() {
         <Navbar.Toggle aria-controls="navbar-nav" />
 
         <Navbar.Collapse id="navbar-nav" className="justify-content-end">
-          {/* Login/Logout or Profile Dropdown */}
           <Nav>
             {isLoggedIn ? (
-              <NavDropdown title={<>{<ProfileIcon userData={userData} />} {userData.userName}</>} id="profile-nav-dropdown" align="end">
-                <NavDropdown.Item onClick={logout}>Logout</NavDropdown.Item>
-              </NavDropdown>
+              <Nav.Item>
+                <Nav.Link className="px-3">
+                  <ProfileIcon userData={userData} />
+                </Nav.Link>
+              </Nav.Item>
             ) : (
               <NavDropdown title={<ProfileIcon userData={{}} />} id="profile-nav-dropdown" align="end">
                 <NavDropdown.Item onClick={openLoginModal}>Login to Account</NavDropdown.Item>
@@ -60,7 +65,6 @@ function Header() {
       <ModelComponent
         show={modalType !== null}
         onHide={handleModalClose}
-        title={modalType === "login" ? "Login into Account" : "Sign Up for an Account"}
       >
         {modalType === "login" ? (
           <LoginForm switchToSignUp={openSignUpModal} closeModel={handleModalClose}/>

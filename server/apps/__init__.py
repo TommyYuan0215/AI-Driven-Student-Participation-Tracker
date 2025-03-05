@@ -8,6 +8,7 @@ from apps.blueprints.testdata import test_route
 # from apps.blueprints.vggface_model_test import vggface_model_route, init_socketio
 from apps.blueprints.user_credential import userCredential_route
 from apps.blueprints.user_management import userManagement_route
+from apps.blueprints.content_management import contentManagement_route
 
 # Initialize Flask extensions
 socketio = SocketIO()
@@ -24,11 +25,12 @@ def create_app():
     socketio.init_app(app)
     Session(app)
 
-    # Register blueprints
+    # Register blueprints based on the routes
     app.register_blueprint(databases_route, url_prefix='/database')
     app.register_blueprint(test_route, url_prefix='/test')
     # app.register_blueprint(vggface_model_route, url_prefix='/vggface')
     app.register_blueprint(userCredential_route, url_prefix='/credential')
     app.register_blueprint(userManagement_route, url_prefix='/usermanagement')
+    app.register_blueprint(contentManagement_route, url_prefix='/contentmanagement')
 
     return app

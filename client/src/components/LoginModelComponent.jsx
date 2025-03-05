@@ -1,7 +1,7 @@
 import { Modal } from 'react-bootstrap';
 
 function ModelComponent(props) {
-    const { title, children, ...restProps } = props;
+    const { children, onHide, ...restProps } = props;
 
     return (
         <Modal
@@ -10,10 +10,14 @@ function ModelComponent(props) {
             aria-labelledby="contained-modal-title-vcenter"
             centered
         >
-            <Modal.Header closeButton>
-                <Modal.Title>{title}</Modal.Title>
-            </Modal.Header>
             <Modal.Body>
+                <div 
+                    className="back-button"
+                    onClick={onHide}
+                >
+                    <i className='bi bi-arrow-left'></i>
+                    <span>Back</span>
+                </div>
                 {children} {/* Render the passed content dynamically */}
             </Modal.Body>
         </Modal>

@@ -89,9 +89,56 @@ def create_table_if_not_exists():
             connection.commit()
         except mysql.connector.Error as err:
             print(f"Error creating trigger: {err}")
+            
+    def create_content_slideshow():
+        # Create Sequence Table for User Account
+        create_content_slideshow_seq = f'''
+        CREATE TABLE IF NOT EXISTS `{schemaName}`.CONTENT_SLIDESHOW_SEQ (
+            slideshowID INT NOT NULL AUTO_INCREMENT PRIMARY KEY
+        )
+        '''
+        try:
+            cursor.execute(create_content_slideshow_seq)
+            connection.commit()
+        except mysql.connector.Error as err:
+            print(f"Error creating CONTENT_SLIDESHOW_SEQ table: {err}")
+        
+        # SQL query to create the content_slideshow table if it doesn't exist
+        create_content_slideshow_table = '''
+        CREATE TABLE IF NOT EXISTS CONTENT_SLIDESHOW (
+            slideshowID VARCHAR(12) NOT NULL,
+            slideshowTitle VARCHAR(255) NOT NULL,
+            slideshowDescription TEXT,
+            slideshowImage BLOB,
+            slideshowStatus INT(2) DEFAULT 0,
+            PRIMARY KEY (slideshowID)
+        )
+        '''
+        try:
+            cursor.execute(create_content_slideshow_table)
+            connection.commit()
+        except mysql.connector.Error as err:
+            print(f"Error creating CONTENT_SLIDESHOW table: {err}")
+            
+        # Create Trigger for Content Slideshow Table
+        create_content_slideshow_trigger = f'''
+            CREATE TRIGGER IF NOT EXISTS CONTENT_SLIDESHOW_TRIGGER
+            BEFORE INSERT ON CONTENT_SLIDESHOW
+            FOR EACH ROW
+            BEGIN
+                INSERT INTO `{schemaName}`.CONTENT_SLIDESHOW_SEQ VALUES (NULL);
+                SET NEW.slideshowID = CONCAT('S-', LPAD(LAST_INSERT_ID(), 5, '0'));
+            END
+        '''
+        try:
+            cursor.execute(create_content_slideshow_trigger)
+            connection.commit()
+        except mysql.connector.Error as err:
+            print(f"Error creating trigger: {err}")
     
     # Calling function for creating sub module table.      
     create_user_account()
+    create_content_slideshow()
 
     cursor.close()
     connection.close()

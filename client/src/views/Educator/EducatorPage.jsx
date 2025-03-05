@@ -3,7 +3,7 @@ import { Outlet } from "react-router-dom";
 import NavContentLayout from "../../components/NavContentLayout";
 import EducationNavigation, { sidebarItems } from "./EducatorNavigation";
 
-function AdminPage() {
+function EducatorPage() {
     // State to manage the active tab
     const [activeTab, setActiveTab] = useState(sidebarItems[0]?.id || "dashboard");
 
@@ -24,4 +24,4 @@ function AdminPage() {
     );
 }
 
-export default AdminPage;
+export default EducatorPage;

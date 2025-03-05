@@ -45,9 +45,7 @@ function Footer() {
 
         {/* Copyright Section */}
         <div className="row">
-          <div className="col">
             <h6 className="copyright">Copyright © Jun Lin's FYP 2024/2025</h6>
-          </div>
         </div>
       </div>
     </footer>

@@ -1,24 +1,51 @@
 import React, { useEffect, useState } from "react";
-import { Table, Container, Button, Form, Pagination } from 'react-bootstrap'
+import { Table, Container, Button, Form, Pagination, FormGroup } from 'react-bootstrap'
 import UserStatusBadge from "../../components/UserStatusBadge";
 import SmallModelComponent from "../../components/SmallModelComponent";
 import LargeModelComponent from "../../components/LargeModelComponent";
 import { toast } from 'react-toastify';
+import axios from '../../utils/axios_configure';
 
 
 function UserManagement() {
     const [modalShowAuthorized, setModalShowAuthorized] = useState(false);
     const [selectedUserEmail, setSelectedUserEmail] = useState("");
+
+    // Initialize the form
+    const [formData, setFormData] = useState({
+        userId: '',
+        userName: '',
+        userEmail: ''
+    });
+
+    // Handle modal for authorized button
     const handleOpenModalAuthorized = (email) => {
         setSelectedUserEmail(email);
         setModalShowAuthorized(true);
-    }
-        
+    }    
     const handleCloseModalAuthorized = () => setModalShowAuthorized(false);
 
+    // Handle edit modal
     const [modalShowEdit, setModalShowEdit] = useState(false);
-    const handleOpenModalEdit = () => setModalShowEdit(true);
+    const handleOpenModalEdit = (id, name, email) => {
+        setFormData({
+            userId: id,
+            userName: name,
+            userEmail: email
+        });
+        setModalShowEdit(true);
+    };
     const handleCloseModalEdit = () => setModalShowEdit(false);
+
+    // Add clear form handler
+    const handleClearForm = (e) => {
+        e.preventDefault();
+        setFormData({
+            userName: '',
+            userEmail: ''
+        });
+        toast.info("Form has been reset to original values");
+    };
 
     const [userList, setUserList] = useState([]);
 
@@ -29,47 +56,33 @@ function UserManagement() {
     const indexOfFirstItem = indexOfLastItem - itemsPerPage;
     const currentUsers = userList.slice(indexOfFirstItem, indexOfLastItem);
 
-    // Breadcrumb items for the page
-    const breadcrumbItems = [
-        { label: 'Home', path: '../dashboard' },
-        { label: 'User Account' }
-    ];
-
     useEffect(() => {
-        fetch("http://localhost:5000/usermanagement/get_user_data")
-        .then(response => response.json())
-        .then(data => {
-            setUserList(data);
-        })
-        .catch(error => {
-            console.error("Error fetching user data:", error);
-        });
+        const fetchUsers = async () => {
+            try {
+                const response = await axios.get('/usermanagement/get_user_data');
+                setUserList(response.data);
+            } catch (error) {
+                console.error("Error fetching user data:", error);
+                toast.error("Failed to load users. Please try again later.");
+            }
+        };
+
+        fetchUsers();
     }, []);
 
-    const handleUpdateStatus= async (e) => {
+    const handleUpdateStatus = async (e) => {
         e.preventDefault();
-
         const userStatus = e.nativeEvent.submitter.value;
-
+    
         try {
-            const response = await fetch("http://localhost:5000/usermanagement/authorized_user", {
-                method: "POST",
-                headers: {
-                  "Content-Type": "application/json",
-                },
-                body: JSON.stringify({ userStatus, userEmail: selectedUserEmail }),
-                credentials: "include", // Include cookies for session handling
-              });
-
-            if (!response.ok) {
-                throw new Error("Server error");
-            }
-
-            const data = await response.json();
-
-            if (data.success) {
+            const response = await axios.post('/usermanagement/authorized_user', {
+                userStatus,
+                userEmail: selectedUserEmail
+            });
+    
+            if (response.data.success) {
                 // Show success toast
-                toast.success(data.message || "User status updated successfully!");
+                toast.success(response.data.message || "User status updated successfully!");
     
                 // Update the badge dynamically
                 setUserList((prevList) =>
@@ -83,18 +96,94 @@ function UserManagement() {
                 // Close modal after updating
                 handleCloseModalAuthorized();
             } else {
-                // Show error toast
-                toast.error(data.message || "Failed to update user status.");
+                // Show error message from server
+                toast.error(response.data.message || "Failed to update user status");
             }
         } catch (error) {
-            console.error("Fetch Error:", error);
-            toast.error("An error occurred. Please try again later.");
+            console.error("Update status error:", error);
+            toast.error(error.response?.data?.message || "Failed to update user status. Please try again.");
+        }
+    };
+
+    const handleUpdateUser = async (e) => {
+        e.preventDefault();
+
+        const { userId, userName, userEmail } = formData;
+
+        // Validate input
+        const validationErrors = [];
+        if (!userName || !userEmail) {
+            validationErrors.push("All fields are required.");
+            toast.error(validationErrors);
+        }
+
+        if (validationErrors.length > 0) {
+            toast.error(validationErrors);
+            return;
+        }
+
+        try {
+            const response = await axios.post('/usermanagement/update_user', {
+                userId,
+                userName,
+                userEmail
+            });
+
+            if (response.data.success) {
+                // Show success toast
+                toast.success(response.data.message || "User updated successfully!");
+
+                // Update the user list by replacing the updated user
+                setUserList((prevList) =>
+                    prevList.map((user) =>
+                        user.userID === userId
+                            ? { ...user, userName, userEmail }
+                            : user
+                    )
+                );
+
+                // Close modal after updating
+                handleCloseModalEdit();
+            } else {
+                // Show error message from server
+                toast.error(response.data.message || "Failed to update user");
+            }
+        } catch (error) {
+            console.error("Update user error:", error);
+            toast.error(error.response?.data?.message || "Failed to update user. Please try again.");
+        }
+    }
+
+    const handleDeleteUser = async (id, email) => {
+        // Ask for confirmation before deleting
+        if (!window.confirm(`Are you sure you want to delete user: ${email}?`)) {
+            return;
+        }
+
+        try {
+            const response = await axios.post('/usermanagement/delete_user', {
+                userId: id
+            });
+
+            if (response.data.success) {
+                // Show success message
+                toast.success(response.data.message || "User deleted successfully!");
+                
+                // Update the user list by removing the deleted user
+                setUserList(prevList => prevList.filter(user => user.userEmail !== email));
+            } else {
+                // Show error message from server
+                toast.error(response.data.message || "Failed to delete user");
+            }
+        } catch (error) {
+            console.error("Delete user error:", error);
+            toast.error(error.response?.data?.message || "Failed to delete user. Please try again.");
         }
     }
 
     return (
     <>
-    <h2 className="p-3 text-center">User Account Management</h2>
+    <h2 className="p-3">User Account Management</h2>
     <div className="ms-3 me-3">
         <Table striped hover responsive>
         <thead>
@@ -115,10 +204,15 @@ function UserManagement() {
                 <td><UserStatusBadge userStatus={user.userStatus} /></td>
                 <td>
                     {/* Action buttons */}
-                    <Button variant="primary" size="sm" onClick={() => handleOpenModalAuthorized(user.userEmail)}>Authorized?</Button> &nbsp;
-                    <Button variant="info" size="sm" onClick={handleOpenModalEdit}>Edit</Button> &nbsp;
-                    <Button variant="danger" size="sm">Delete</Button>
-
+                    <Button variant="primary" size="sm" onClick={() => handleOpenModalAuthorized(user.userEmail)}><i className="bi bi-clipboard-check"></i>&nbsp; Authorized?</Button> &nbsp;
+                    <Button variant="info" size="sm" onClick={() => handleOpenModalEdit(user.userID, user.userName, user.userEmail)}><i className="bi bi-pencil"></i>&nbsp; Edit</Button> &nbsp;
+                    <Button 
+                        variant="danger" 
+                        size="sm"
+                        onClick={() => handleDeleteUser(user.userID, user.userEmail)}
+                    >
+                        <i className="bi bi-trash"></i>&nbsp; Delete
+                    </Button>
                 </td>
             </tr>
         ))}
@@ -166,6 +260,7 @@ function UserManagement() {
                     <Button type="submit"
                         variant="success"
                         value="1">
+                    <i className="bi bi-check"></i> &nbsp;
                             Yes
                     </Button> 
                     &emsp;
@@ -173,6 +268,7 @@ function UserManagement() {
                         type="submit" 
                         variant="danger"
                         value="0">
+                    <i className="bi bi-x"></i> &nbsp;
                             No
                     </Button>
                 </Form>
@@ -184,6 +280,63 @@ function UserManagement() {
             onHide={handleCloseModalEdit}
             title="Edit User Profile"
         >
+            <Container>
+            <Form onSubmit={handleUpdateUser}>
+                    <Form.Group className="mb-3">
+                        <Form.Label>User ID</Form.Label>
+                        <Form.Control 
+                            type="text" 
+                            name="userId" 
+                            value={formData.userId} 
+                            disabled 
+                        />
+                    </Form.Group>
+                    <Form.Group className="mb-3">
+                        <Form.Label>Name</Form.Label>
+                        <Form.Control 
+                            type="text" 
+                            name="userName" 
+                            value={formData.userName}
+                            onChange={(e) => setFormData({
+                                ...formData, 
+                                userName: e.target.value.trim()
+                            })}
+                            required
+                        />
+                    </Form.Group>
+                    <Form.Group className="mb-3">
+                        <Form.Label>Email</Form.Label>
+                        <Form.Control 
+                            type="email" 
+                            name="userEmail" 
+                            value={formData.userEmail}
+                            onChange={(e) => setFormData({
+                                ...formData, 
+                                userEmail: e.target.value.trim()
+                            })}
+                            required
+                        />
+                    </Form.Group>
+                    <Form.Group className="mb-3 d-flex justify-content-around">
+                        <Button 
+                            variant="success" 
+                            type="submit"
+                            disabled={!formData.userName || !formData.userEmail}
+                        >
+                            <i className="bi bi-save"></i> &nbsp;
+                            Save Changes
+                        </Button>
+                        <Button 
+                            variant="secondary" 
+                            onClick={handleClearForm} 
+                            type="button"
+                        >
+                            <i className="bi bi-arrow-counterclockwise"></i> &nbsp;
+                            Reset
+                        </Button>
+                    </Form.Group>
+                </Form>
+            </Container>
         </LargeModelComponent>
     </div>
     </>
