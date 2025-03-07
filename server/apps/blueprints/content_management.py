@@ -5,19 +5,41 @@ import base64
 contentManagement_route = Blueprint('contentmanagement', __name__)
 
 @contentManagement_route.route('/get_slideshow_data')
-def get_slideshow_data():
-    # Check connection status
+def get_slideshow():
     connection = get_db_connection()
     cursor = connection.cursor(dictionary=True)
     
-    cursor.execute("SELECT * FROM CONTENT_SLIDESHOW")
-    slideshow = cursor.fetchall()
-    
-    # Return user data as JSON response
-    return jsonify(slideshow), 200
+    try:
+        # Fetch all slideshows from database
+        cursor.execute("SELECT * FROM CONTENT_SLIDESHOW")
+        
+        slideshows = cursor.fetchall()
+        
+        # Process each slideshow's image data
+        for slideshow in slideshows:
+            if slideshow['slideshowImage']:
+                # Convert image data to base64 string if it's not already
+                slideshow['slideshowImage'] = base64.b64encode(slideshow['slideshowImage']).decode('utf-8')
+                
+
+        return jsonify({
+            "status": "success",
+            "data": slideshows,
+            "message": "Slideshows fetched successfully"
+        }), 200
+
+    except Exception as e:
+        return jsonify({
+            "status": "error",
+            "message": f"Error fetching slideshows: {str(e)}"
+        }), 500
+
+    finally:
+        cursor.close()
+        connection.close()
 
 @contentManagement_route.route('/add_slideshow', methods=['POST'])
-def addSlideshow():
+def add_slideshow():
     data = request.form
     
     slideshowTitle = data.get('slideshowTitle')
@@ -49,7 +71,7 @@ def addSlideshow():
     
     try:
         # Process image
-        slideshowImage_data = base64.b64encode(slideshowImage.read()).decode('utf-8')
+        slideshowImage_data = slideshowImage.read()
         
         # Insert into database
         cursor.execute(
@@ -74,46 +96,102 @@ def addSlideshow():
         cursor.close()
         connection.close()
         
-@contentManagement_route.route('/get_slideshows', methods=['GET'])
-def getSlideshows():
+@contentManagement_route.route('/edit_slideshow', methods=['POST'])
+def edit_slideshow():
+    data = request.form
+    
+    slideshowID = data.get('slideshowID')
+    slideshowTitle = data.get('slideshowTitle')
+    slideshowDesc = data.get('slideshowDesc')
+    slideshowImage = request.files.get('slideshowImage')
+    
+    errors = []
+    
+    # Validate inputs
+    if not slideshowID:
+        errors.append("Slideshow ID is required.")
+    if not slideshowTitle:
+        errors.append("Slideshow title is required.")
+    if not slideshowDesc:
+        errors.append("Slideshow description is required.")
+        
+    # Validate image file type if provided
+    if slideshowImage:
+        allowed_extensions = {'png', 'jpg', 'jpeg', 'gif'}
+        file_extension = slideshowImage.filename.rsplit('.', 1)[1].lower() if '.' in slideshowImage.filename else ''
+        if file_extension not in allowed_extensions:
+            errors.append("Invalid image format. Allowed formats: PNG, JPG, JPEG, GIF")
+    
+    if errors:
+        return jsonify({"status": "error", "message": errors}), 400
+    
     connection = get_db_connection()
     cursor = connection.cursor(dictionary=True)
     
     try:
-        # Fetch all slideshows from database
-        cursor.execute("""
-            SELECT 
-                slideshowID as _id,
-                slideshowTitle as title,
-                slideshowDescription as description,
-                slideshowImage as image
-            FROM CONTENT_SLIDESHOW
-        """)
+        if slideshowImage:
+            # Update with new image
+            slideshowImage_data = slideshowImage.read()
+            cursor.execute(
+                "UPDATE CONTENT_SLIDESHOW SET slideshowTitle = %s, slideshowDescription = %s, slideshowImage = %s WHERE slideshowID = %s", 
+                (slideshowTitle, slideshowDesc, slideshowImage_data, slideshowID)
+            )
+        else:
+            # Update without changing image
+            cursor.execute(
+                "UPDATE CONTENT_SLIDESHOW SET slideshowTitle = %s, slideshowDescription = %s WHERE slideshowID = %s", 
+                (slideshowTitle, slideshowDesc, slideshowID)
+            )
         
-        slideshows = cursor.fetchall()
-        
-        # Process each slideshow's image data
-        for slideshow in slideshows:
-            if slideshow['image']:
-                # Convert image data to base64 string if it's not already
-                slideshow['image'] = base64.b64encode(slideshow['image']).decode('utf-8')
-                
-                # Add data URL prefix for direct use in img src
-                slideshow['image'] = f"data:image/jpeg;base64,{slideshow['image']}"
-                
-
+        if cursor.rowcount == 0:
+            return jsonify({"status": "error", "message": "Slideshow not found."}), 404
+            
+        connection.commit()
         return jsonify({
             "status": "success",
-            "data": slideshows,
-            "message": "Slideshows fetched successfully"
+            "message": "Slideshow updated successfully."
         }), 200
-
+        
     except Exception as e:
+        connection.rollback()
         return jsonify({
             "status": "error",
-            "message": f"Error fetching slideshows: {str(e)}"
+            "message": f"Error updating slideshow: {str(e)}"
         }), 500
-
+    
     finally:
         cursor.close()
         connection.close()
+        
+@contentManagement_route.route('/delete_slideshow', methods=['POST'])
+def delete_slideshow():
+    data = request.get_json()
+    slideshowID = data.get('slideshowID')
+    
+    connection = get_db_connection()
+    cursor = connection.cursor(dictionary=True)
+    
+    try:
+        # Delete slideshow from database
+        cursor.execute(
+            "DELETE FROM CONTENT_SLIDESHOW WHERE slideshowID = %s", 
+            (slideshowID,)
+        )
+        
+        connection.commit()
+        return jsonify({
+            "status": "success",
+            "message": "Slideshow deleted successfully."
+        }), 200
+    
+    except Exception as e:
+        connection.rollback()
+        return jsonify({
+            "status": "error",
+            "message": f"Error deleting slideshow: {str(e)}"
+        }), 500
+    
+    finally:
+        cursor.close()
+        connection.close()
+        

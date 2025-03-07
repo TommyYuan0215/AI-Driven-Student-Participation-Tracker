@@ -12,8 +12,6 @@ function SignUpForm({ switchToLogin }) {
     confirmPassword: "",
   });
   const [previewImage, setPreviewImage] = useState("/profile.jpg");
-  const [errors, setErrors] = useState([]);
-  const [success, setSuccess] = useState("");
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -25,13 +23,13 @@ function SignUpForm({ switchToLogin }) {
     if (file) {
       // Validate image size (optional)
       if (file.size > 5 * 1024 * 1024) { // 5MB limit, for example
-        setErrors(["Image size exceeds the limit of 5MB"]);
+        toast.error("Image size exceeds the limit of 5MB");
         return;
       }
       // Validate image type (optional)
       const allowedTypes = ['image/jpeg', 'image/png'];
       if (!allowedTypes.includes(file.type)) {
-        setErrors(["Invalid image type. Only JPEG, and PNG are allowed."]);
+        toast.error("Invalid image type. Only JPEG, and PNG are allowed.")
         return;
       }
 
@@ -44,8 +42,6 @@ function SignUpForm({ switchToLogin }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setErrors([]);
-    setSuccess("");
 
     const { name, email, password, confirmPassword, image } = formData;
 
@@ -61,7 +57,6 @@ function SignUpForm({ switchToLogin }) {
     }
 
     if (validationErrors.length > 0) {
-      setErrors(validationErrors);
       toast.error(validationErrors);
       return;
     }
@@ -83,14 +78,12 @@ function SignUpForm({ switchToLogin }) {
       });
 
       if (response.status === 200) {
-        setSuccess(response.data.message);
         toast.success(response.data.message);
         // Optionally switch to login form after successful signup
         setTimeout(() => switchToLogin(), 2000);
       }
     } catch (error) {
       const errorMessage = error.response?.data?.message || "An error occurred. Please try again later.";
-      setErrors([errorMessage]);
       toast.error(errorMessage);
     }
   };
@@ -165,18 +158,6 @@ function SignUpForm({ switchToLogin }) {
                   onChange={handleInputChange}
                 />
               </Form.Group>
-
-              {/* Error Messages */}
-              {errors.length > 0 && (
-                <Alert variant="danger" className="text-center">
-                  {errors.map((error, index) => (
-                    <div key={index}>{error}</div>
-                  ))}
-                </Alert>
-              )}
-
-              {/* Success Messages */}
-              {success && <Alert variant="success" className="text-center">{success}</Alert>}
 
               {/* Submit Button */}
               <div className="d-grid">

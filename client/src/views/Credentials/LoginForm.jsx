@@ -7,12 +7,10 @@ import axios from '../../utils/axios_configure';  // Import the configured axios
 function LoginForm({ switchToSignUp, closeModel }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [errors, setErrors] = useState([]);
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setErrors([]);
 
     try {
       const response = await axios.post('/credential/login', { email, password });
@@ -26,7 +24,6 @@ function LoginForm({ switchToSignUp, closeModel }) {
     } catch (error) {
       console.error("Login Error:", error);
       const errorMessage = error.response?.data?.message || "An error occurred. Please try again later.";
-      setErrors([errorMessage]);
       toast.error(errorMessage);
     }
   };
@@ -73,15 +70,6 @@ function LoginForm({ switchToSignUp, closeModel }) {
                   onChange={(e) => setPassword(e.target.value)}
                 />
               </Form.Group>
-
-              {/* Error Message Dialog Box */}
-              {errors.length > 0 && (
-                <Alert variant="danger" className="text-center">
-                  {errors.map((error, index) => (
-                    <div key={index}>{error}</div>
-                  ))}
-                </Alert>
-              )}
 
               {/* Submit Button */}
               <div className="d-grid">

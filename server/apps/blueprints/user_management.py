@@ -9,7 +9,9 @@ def get_userData():
     connection = get_db_connection()
     cursor = connection.cursor(dictionary=True)
     
-    cursor.execute("SELECT userID, userName, userEmail, userStatus FROM USER_ACCOUNT WHERE userType NOT IN ('0')")
+    cursor.execute(
+        "SELECT userID, userName, userEmail, userStatus FROM USER_ACCOUNT WHERE userType NOT IN ('0')"
+    )
     user = cursor.fetchall()
     
     # Return user data as JSON response
@@ -27,8 +29,10 @@ def authorized_user():
     cursor = connection.cursor(dictionary=True)
     
     try:
-        query = "UPDATE USER_ACCOUNT SET userStatus = %s WHERE userEmail = %s"
-        cursor.execute(query, (userStatus, userEmail))
+        cursor.execute(
+            "UPDATE USER_ACCOUNT SET userStatus = %s WHERE userEmail = %s", 
+            (userStatus, userEmail)
+        )
         connection.commit()
 
         return jsonify({"success": True, "message": "User status updated successfully."})
@@ -41,19 +45,32 @@ def authorized_user():
         
 @userManagement_route.route('/update_user', methods=['POST'])
 def update_user():
-    data = request.get_json()
+    data = request.form
+    
     userId = data.get('userId')
     userName = data.get('userName')
     userEmail = data.get('userEmail')
     
     errors = []
     
+    if not userId:
+        errors.append("User ID is required.")
+    if not userName:
+        errors.append("User name is required.")
+    if not userEmail:
+        errors.append("User email is required.")
+        
+    if errors:
+        return jsonify({"success": False, "message": " ".join(errors)}), 400
+    
     connection = get_db_connection()
     cursor = connection.cursor(dictionary=True)
     
     try:
-        query = "UPDATE USER_ACCOUNT SET userName = %s, userEmail = %s WHERE userID = %s"
-        cursor.execute(query, (userName, userEmail, userId))
+        cursor.execute(
+            "UPDATE USER_ACCOUNT SET userName = %s, userEmail = %s WHERE userID = %s", 
+            (userName, userEmail, userId)
+        )
         connection.commit()
 
         return jsonify({"success": True, "message": "User account updated successfully."})
@@ -69,14 +86,14 @@ def delete_user():
     data = request.get_json()
     userId = data.get('userId')
     
-    errors = []
-    
     connection = get_db_connection()
     cursor = connection.cursor(dictionary=True)
     
     try:
-        query = "DELETE FROM USER_ACCOUNT WHERE userId = %s"
-        cursor.execute(query, (userId,))
+        cursor.execute(
+            "DELETE FROM USER_ACCOUNT WHERE userId = %s",
+            (userId,)
+        )
         connection.commit()
 
         return jsonify({"success": True, "message": "User deleted successfully."})

@@ -10,7 +10,7 @@ userCredential_route = Blueprint('credential', __name__)
 @userCredential_route.route('/get_user_session')
 def get_user_session():
     if 'logged_in' in session:
-        user_photo = session.get('user_photo')  # Replace with your actual function
+        user_photo = session.get('user_photo') 
 
         # Convert blob (bytes) to base64 string if it exists
         if user_photo:
@@ -93,7 +93,7 @@ def signup():
 
     errors = []
 
-    # Basic validation
+    # Backend validation
     if not name or not email or not password or not confirm_password:
         return jsonify({"status": "error", "message": "All fields are required."}), 400
     elif password != confirm_password:
@@ -117,14 +117,7 @@ def signup():
     hashed_password = generate_password_hash(password)
 
     # Handle image upload
-    image_data = None
-    if image:
-        try:
-            # Encode the data into base64
-            image_data = base64.b64encode(image.read()).decode('utf-8')
-            print("Image data encoded successfully.")
-        except Exception as e:
-            print(f"Error encoding image: {e}")
+    image_data = image.read()
 
     try:
         if image_data:

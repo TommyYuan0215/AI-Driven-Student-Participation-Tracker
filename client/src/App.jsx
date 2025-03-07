@@ -4,6 +4,7 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Header from './components/Header';
 import Footer from './components/Footer';
 import Cookies from 'js-cookie';
+import { ToastContainer } from 'react-toastify';
 
 import Home from './views/home'
 
@@ -29,8 +30,10 @@ function App() {
     <Router classhName="App">
       <Header />
         <Routes>
+          {/* Public Route */}
           <Route path="/" element={<Home />} ></Route>
-          {/* Admin Role Element */}
+
+          {/* Admin Protected Route */}
           <Route path="/views/admin/*" element={<AdminPage />}>
               <Route path="dashboard" element={<AdminDashboard />} />
               <Route path="usermanagement" element={<UserManagement />} />
@@ -55,6 +58,9 @@ function App() {
           </Route>
 
         </Routes>
+
+        {/* Toast Notifications */}
+        <ToastContainer position="top-center" autoClose={3000} />
       <Footer />  
     </Router>
   );

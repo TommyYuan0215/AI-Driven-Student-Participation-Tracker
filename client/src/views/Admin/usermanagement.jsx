@@ -1,6 +1,8 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { Table, Container, Button, Form, Pagination, FormGroup } from 'react-bootstrap'
 import UserStatusBadge from "../../components/UserStatusBadge";
+import { useLoadingState } from '../../utils/loadingUtils';
+import LoadingSpinner from "../../components/LoadingSpinner";
 import SmallModelComponent from "../../components/SmallModelComponent";
 import LargeModelComponent from "../../components/LargeModelComponent";
 import { toast } from 'react-toastify';
@@ -8,8 +10,16 @@ import axios from '../../utils/axios_configure';
 
 
 function UserManagement() {
+    const { data: userList, loading, refetch } = useLoadingState('/usermanagement/get_user_data', []);
     const [modalShowAuthorized, setModalShowAuthorized] = useState(false);
     const [selectedUserEmail, setSelectedUserEmail] = useState("");
+
+    // Pagination function
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 25; 
+    const indexOfLastItem = currentPage * itemsPerPage;
+    const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+    const registeredUsers = userList.slice(indexOfFirstItem, indexOfLastItem);
 
     // Initialize the form
     const [formData, setFormData] = useState({
@@ -27,11 +37,11 @@ function UserManagement() {
 
     // Handle edit modal
     const [modalShowEdit, setModalShowEdit] = useState(false);
-    const handleOpenModalEdit = (id, name, email) => {
+    const handleOpenModalEdit = (user) => {
         setFormData({
-            userId: id,
-            userName: name,
-            userEmail: email
+            userId: user.userID,
+            userName: user.userName,
+            userEmail: user.userEmail
         });
         setModalShowEdit(true);
     };
@@ -47,29 +57,6 @@ function UserManagement() {
         toast.info("Form has been reset to original values");
     };
 
-    const [userList, setUserList] = useState([]);
-
-    // Pagination function
-    const [currentPage, setCurrentPage] = useState(1);
-    const itemsPerPage = 25; 
-    const indexOfLastItem = currentPage * itemsPerPage;
-    const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-    const currentUsers = userList.slice(indexOfFirstItem, indexOfLastItem);
-
-    useEffect(() => {
-        const fetchUsers = async () => {
-            try {
-                const response = await axios.get('/usermanagement/get_user_data');
-                setUserList(response.data);
-            } catch (error) {
-                console.error("Error fetching user data:", error);
-                toast.error("Failed to load users. Please try again later.");
-            }
-        };
-
-        fetchUsers();
-    }, []);
-
     const handleUpdateStatus = async (e) => {
         e.preventDefault();
         const userStatus = e.nativeEvent.submitter.value;
@@ -81,81 +68,73 @@ function UserManagement() {
             });
     
             if (response.data.success) {
-                // Show success toast
                 toast.success(response.data.message || "User status updated successfully!");
-    
-                // Update the badge dynamically
-                setUserList((prevList) =>
-                    prevList.map((user) =>
-                        user.userEmail === selectedUserEmail
-                            ? { ...user, userStatus: parseInt(userStatus) }
-                            : user
-                    )
-                );
-    
-                // Close modal after updating
+                await refetch(); // Refresh the data instead of using setUserList
                 handleCloseModalAuthorized();
             } else {
-                // Show error message from server
                 toast.error(response.data.message || "Failed to update user status");
             }
         } catch (error) {
             console.error("Update status error:", error);
-            toast.error(error.response?.data?.message || "Failed to update user status. Please try again.");
+            toast.error(error.response?.data?.message || "Failed to update user status");
         }
     };
 
+    // Modify handleUpdateUser to use refetch
     const handleUpdateUser = async (e) => {
         e.preventDefault();
-
         const { userId, userName, userEmail } = formData;
 
-        // Validate input
-        const validationErrors = [];
-        if (!userName || !userEmail) {
-            validationErrors.push("All fields are required.");
-            toast.error(validationErrors);
+        // Enhanced validation
+        const ValidationErrors = [];
+        const emailPattern = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+
+        if (!userName) {
+            ValidationErrors.push("Name is required.");
+        }
+        if (!userEmail) {
+            ValidationErrors.push("Email is required.");
         }
 
-        if (validationErrors.length > 0) {
-            toast.error(validationErrors);
-            return;
+        if (!emailPattern.test(userEmail)) {
+            ValidationErrors.push("Invalid email format.");
         }
+
+        const formDataToSend = new FormData();
+        formDataToSend.append("userId", userId);
+        formDataToSend.append("userName", userName);
+        formDataToSend.append("userEmail", userEmail);
 
         try {
-            const response = await axios.post('/usermanagement/update_user', {
-                userId,
-                userName,
-                userEmail
+            const response = await axios.post('/usermanagement/update_user', formDataToSend,{
+                headers: {
+                    'Content-Type': 'multipart/form-data',
+                },
             });
 
-            if (response.data.success) {
-                // Show success toast
+            if (response.status === 200) {
+                // Reset the form
+                setFormData({
+                    userId: '',
+                    userName: '',
+                    userEmail: ''
+                });
+                
                 toast.success(response.data.message || "User updated successfully!");
-
-                // Update the user list by replacing the updated user
-                setUserList((prevList) =>
-                    prevList.map((user) =>
-                        user.userID === userId
-                            ? { ...user, userName, userEmail }
-                            : user
-                    )
-                );
-
-                // Close modal after updating
                 handleCloseModalEdit();
+
+                 // Refresh the user list
+                await refetch(); 
             } else {
-                // Show error message from server
-                toast.error(response.data.message || "Failed to update user");
+                toast.error(response.data.message || "Failed to update user. Please try again.");
             }
         } catch (error) {
             console.error("Update user error:", error);
-            toast.error(error.response?.data?.message || "Failed to update user. Please try again.");
+            toast.error(error.response?.data?.message || "Failed to update user");
         }
-    }
+    };
 
     const handleDeleteUser = async (id, email) => {
-        // Ask for confirmation before deleting
         if (!window.confirm(`Are you sure you want to delete user: ${email}?`)) {
             return;
         }
@@ -166,85 +145,87 @@ function UserManagement() {
             });
 
             if (response.data.success) {
-                // Show success message
                 toast.success(response.data.message || "User deleted successfully!");
-                
-                // Update the user list by removing the deleted user
-                setUserList(prevList => prevList.filter(user => user.userEmail !== email));
+                await refetch(); // Refresh the data instead of using setUserList
             } else {
-                // Show error message from server
                 toast.error(response.data.message || "Failed to delete user");
             }
         } catch (error) {
             console.error("Delete user error:", error);
-            toast.error(error.response?.data?.message || "Failed to delete user. Please try again.");
+            toast.error(error.response?.data?.message || "Failed to delete user");
         }
-    }
+    };
 
     return (
     <>
     <h2 className="p-3">User Account Management</h2>
     <div className="ms-3 me-3">
-        <Table striped hover responsive>
-        <thead>
-            <tr>
-            <th></th>
-            <th>User Name</th>
-            <th>User Email</th>
-            <th>Account Status</th>
-            <th>Action</th>
-            </tr>
-        </thead>
-        <tbody>
-        {currentUsers.map((user, index) => (
-            <tr key={user.userID}>
-                <td>{index + 1}</td>
-                <td>{user.userName}</td>
-                <td>{user.userEmail}</td>
-                <td><UserStatusBadge userStatus={user.userStatus} /></td>
-                <td>
-                    {/* Action buttons */}
-                    <Button variant="primary" size="sm" onClick={() => handleOpenModalAuthorized(user.userEmail)}><i className="bi bi-clipboard-check"></i>&nbsp; Authorized?</Button> &nbsp;
-                    <Button variant="info" size="sm" onClick={() => handleOpenModalEdit(user.userID, user.userName, user.userEmail)}><i className="bi bi-pencil"></i>&nbsp; Edit</Button> &nbsp;
-                    <Button 
-                        variant="danger" 
-                        size="sm"
-                        onClick={() => handleDeleteUser(user.userID, user.userEmail)}
-                    >
-                        <i className="bi bi-trash"></i>&nbsp; Delete
-                    </Button>
-                </td>
-            </tr>
-        ))}
-        </tbody>
-        </Table>
-
-        <Pagination className="d-flex justify-content-center">
-            <Pagination.First onClick={() => setCurrentPage(1)} disabled={currentPage === 1} />
-            <Pagination.Prev
-                onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-                disabled={currentPage === 1}
-            />
-            {Array.from({ length: Math.ceil(userList.length / itemsPerPage) }).map((_, pageIndex) => (
-                <Pagination.Item
-                    key={pageIndex + 1}
-                    active={pageIndex + 1 === currentPage}
-                    onClick={() => setCurrentPage(pageIndex + 1)}
-                >
-                    {pageIndex + 1}
-                </Pagination.Item>
+        {loading ? (
+            <LoadingSpinner text="Loading users..." />
+        ) : (
+        <>
+            <Table striped hover responsive>
+            <thead>
+                <tr>
+                <th></th>
+                <th>User Name</th>
+                <th>User Email</th>
+                <th>Account Status</th>
+                <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+            {registeredUsers.map((user, index) => (
+                <tr key={user.userID}>
+                    <td>{index + 1}</td>
+                    <td>{user.userName}</td>
+                    <td>{user.userEmail}</td>
+                    <td><UserStatusBadge userStatus={user.userStatus} /></td>
+                    <td>
+                        {/* Action buttons */}
+                        <Button variant="primary" size="sm" onClick={() => handleOpenModalAuthorized(user.userEmail)}><i className="bi bi-clipboard-check"></i>&nbsp; Authorized?</Button> &nbsp;
+                        <Button variant="info" size="sm" onClick={() => handleOpenModalEdit(user)}><i className="bi bi-pencil"></i>&nbsp; Edit</Button> &nbsp;
+                        <Button 
+                            variant="danger" 
+                            size="sm"
+                            onClick={() => handleDeleteUser(user.userID, user.userEmail)}
+                        >
+                            <i className="bi bi-trash"></i>&nbsp; Delete
+                        </Button>
+                    </td>
+                </tr>
             ))}
-            <Pagination.Next
-                onClick={() =>
-                    setCurrentPage((prev) => Math.min(prev + 1, Math.ceil(userList.length / itemsPerPage)))
-                }
-                disabled={currentPage === Math.ceil(userList.length / itemsPerPage)}
-            />
-            <Pagination.Last
-                onClick={() => setCurrentPage(Math.ceil(userList.length / itemsPerPage))}
-                disabled={currentPage === Math.ceil(userList.length / itemsPerPage)}
-            />
-        </Pagination>
+            </tbody>
+            </Table>
+
+            <Pagination className="d-flex justify-content-center">
+                <Pagination.First onClick={() => setCurrentPage(1)} disabled={currentPage === 1} />
+                <Pagination.Prev
+                    onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                    disabled={currentPage === 1}
+                />
+                {Array.from({ length: Math.ceil(userList.length / itemsPerPage) }).map((_, pageIndex) => (
+                    <Pagination.Item
+                        key={pageIndex + 1}
+                        active={pageIndex + 1 === currentPage}
+                        onClick={() => setCurrentPage(pageIndex + 1)}
+                    >
+                        {pageIndex + 1}
+                    </Pagination.Item>
+                ))}
+                <Pagination.Next
+                    onClick={() =>
+                        setCurrentPage((prev) => Math.min(prev + 1, Math.ceil(userList.length / itemsPerPage)))
+                    }
+                    disabled={currentPage === Math.ceil(userList.length / itemsPerPage)}
+                />
+                <Pagination.Last
+                    onClick={() => setCurrentPage(Math.ceil(userList.length / itemsPerPage))}
+                    disabled={currentPage === Math.ceil(userList.length / itemsPerPage)}
+                />
+            </Pagination>
+        </>
+        )}
 
         {/* Model component for authorized button */}
         <SmallModelComponent

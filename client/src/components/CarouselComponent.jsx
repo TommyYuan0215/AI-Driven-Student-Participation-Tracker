@@ -1,6 +1,6 @@
 import React from 'react';
 
-function ExampleCarouselImage({ text, imageUrl }) {
+function CarouselImage({ imageUrl, text }) {
   return (
     <div 
       className="carousel-image-container"
@@ -10,7 +10,7 @@ function ExampleCarouselImage({ text, imageUrl }) {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        position: 'relative'  // Added for overlay positioning
+        position: 'relative'
       }}
     >
       {imageUrl ? (
@@ -31,8 +31,8 @@ function ExampleCarouselImage({ text, imageUrl }) {
               left: 0,
               right: 0,
               bottom: 0,
-              backgroundColor: 'rgba(0, 0, 0, 0.30)',  // 75% opaque black overlay
-              pointerEvents: 'none'  // Allows clicking through the overlay
+              backgroundColor: 'rgba(0, 0, 0, 0.30)',
+              pointerEvents: 'none'
             }}
           />
         </>
@@ -51,4 +51,4 @@ function ExampleCarouselImage({ text, imageUrl }) {
   );
 }
 
-export default ExampleCarouselImage;
+export default CarouselImage;

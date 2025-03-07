@@ -1,44 +1,63 @@
-import React, { useState, useEffect } from "react";
-import { Container, Row, Col, Card, Button, Form } from "react-bootstrap";
+import React, { useState } from "react";
+import { Container, Row, Col, Card, Button, Form, Spinner } from "react-bootstrap";
 import ModelComponent from "../../components/XLargeModelComponent";
+import LoadingSpinner from "../../components/LoadingSpinner";
+import SlideshowForm from "../../components/SlideshowFormComponent";
 import axios from '../../utils/axios_configure';
 import { toast } from 'react-toastify';
+import { useLoadingState } from '../../utils/loadingUtils';
 
 function ContentManagement() {
+    const { data: slideshowData, loading, refetch } = useLoadingState('/contentmanagement/get_slideshow_data', []);
+
     const [formData, setFormData] = useState({
+        slideshowId: "",
         slideshowImage: "",
         slideshowTitle: "",
         slideshowDesc: "",
     });
-    const [previewImage, setPreviewImage] = useState("");
-    const [images, setImages] = useState([]);
-    const [slideshowData, setSlideshowData] = useState([]);
-    const [showModal, setShowModal] = useState(false);
-
-    // Fetch slideshow data from database
-    useEffect(() => {
-        const fetchSlideshows = async () => {
-            try {
-                const response = await axios.get('/contentmanagement/get_slideshows');
-                if (response.status === 200) {
-                    setSlideshowData(response.data.data); // Note: .data.data because of nested response
-                }
-            } catch (error) {
-                toast.error("Failed to fetch slideshows");
-                console.error("Error fetching slideshows:", error);
-            }
-        };
     
-        fetchSlideshows();
-    }, []);
-
-    const handleDelete = (fileName) => {
-        setImages(images.filter(img => img.fileName !== fileName));
-    };
+    const [previewImage, setPreviewImage] = useState("");
+    const [showNewModal, setShowNewModal] = useState(false);
+    const [showEditModal, setShowEditModal] = useState(false);
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
         setFormData({ ...formData, [name]: value });
+    };
+
+    const handleOpenModalEdit = (slideshow) => {
+        setFormData({
+            slideshowID: slideshow.slideshowID,
+            slideshowImage: slideshow.slideshowImage,
+            slideshowTitle: slideshow.slideshowTitle,
+            slideshowDesc: slideshow.slideshowDescription
+        });
+        setPreviewImage(`data:image/*;base64,${slideshow.slideshowImage}`);
+        setShowEditModal(true);
+    };
+
+    // To ensure clear all the data after closing the modal
+    const handleCloseNewModal = () => {
+        setShowNewModal(false);
+        setPreviewImage('');
+        setFormData({
+            slideshowID: '',
+            slideshowImage: '',
+            slideshowTitle: '',
+            slideshowDesc: '',
+        });
+    };
+
+    const handleCloseEditModal = () => {
+        setShowEditModal(false);
+        setPreviewImage('');
+        setFormData({
+            slideshowID: '',
+            slideshowImage: '',
+            slideshowTitle: '',
+            slideshowDesc: '',
+        });
     };
 
     const handleImageChange = (e) => {
@@ -63,12 +82,12 @@ function ContentManagement() {
         }
       };
 
-    const handleSubmit = async (e) => {
+    const handleNewSlideshow = async (e) => {
         e.preventDefault();
 
         const { slideshowImage, slideshowTitle, slideshowDesc } = formData;
 
-        // Enhanced validation
+        // Enhanced frontend validation
         const validationErrors = [];
         if (!slideshowTitle) validationErrors.push("Slideshow title is required");
         if (!slideshowDesc) validationErrors.push("Slideshow description is required");
@@ -87,20 +106,106 @@ function ContentManagement() {
 
         try {
             const response = await axios.post('/contentmanagement/add_slideshow', formDataToSend, {
-            headers: {
-                'Content-Type': 'multipart/form-data',
-            },
+                headers: {
+                    'Content-Type': 'multipart/form-data',
+                },
             });
-
+    
             if (response.status === 200) {
-                toast.success(response.data.message);
-
-                // Reset form after successful submission
+                // Reset form data
                 setFormData({
                     slideshowTitle: '',
                     slideshowDesc: '',
                     slideshowImage: null
                 });
+
+                setPreviewImage('');
+                
+                // Refetch the data and close the modal
+                await refetch();
+                setShowNewModal(false);
+                
+                // Finally show success message
+                toast.success(response.data.message);
+            } else {
+                toast.error(response.data.message || "Failed to add slideshow");
+            }
+        } catch (error) {
+            console.error('Add slideshow error:', error);
+            const errorMessage = error.response?.data?.message || "An error occurred. Please try again later.";
+            toast.error(errorMessage);
+            // Reopen modal if there's an error
+            setShowNewModal(true);
+        }
+    };
+
+    const handleEditSlideshow = async (e) => {
+        e.preventDefault();
+    
+        const { slideshowID, slideshowImage, slideshowTitle, slideshowDesc } = formData;
+    
+        // Enhanced validation
+        const validationErrors = [];
+        if (!slideshowTitle) validationErrors.push("Slideshow title is required");
+        if (!slideshowDesc) validationErrors.push("Slideshow description is required");
+        if (!slideshowImage) validationErrors.push("Slideshow image is required");
+    
+        if (validationErrors.length > 0) {
+            validationErrors.forEach(error => toast.error(error));
+            return;
+        }
+
+        const formDataToSend = new FormData();
+        formDataToSend.append("slideshowID", slideshowID);
+        formDataToSend.append("slideshowTitle", slideshowTitle);
+        formDataToSend.append("slideshowDesc", slideshowDesc);
+        formDataToSend.append("slideshowImage", slideshowImage);
+    
+        try {
+            const response = await axios.post('/contentmanagement/edit_slideshow', formDataToSend, {
+                headers: {
+                    'Content-Type': 'multipart/form-data',
+                },
+            });
+    
+            if (response.status === 200) {         
+                setFormData({
+                    slideshowId: '',
+                    slideshowTitle: '',
+                    slideshowDesc: '',
+                    slideshowImage: null
+                });
+                setPreviewImage('');   
+
+                await refetch();
+                setShowEditModal(false);
+
+                toast.success(response.data.message);
+            } else {
+                toast.error(response.data.message || "Failed to update slideshow. Please try again later.");
+            }
+        } catch (error) {
+            const errorMessage = error.response?.data?.message || "An error occurred. Please try again later.";
+            toast.error(errorMessage);
+            // Reopen modal if there's an error
+            setShowEditModal(true);
+        }
+    };
+
+    const handleDeleteSlideshow = async (id) => {
+        if (!window.confirm("Are you sure you want to delete this slideshow?")) 
+            return;
+
+        try {
+            const response = await axios.post('/contentmanagement/delete_slideshow', {
+                slideshowID: id
+            });
+
+            if (response.status === 200) {
+                await refetch();
+                toast.success(response.data.message);
+            } else {
+                toast.error(response.data.message || "Failed to delete slideshow");
             }
         } catch (error) {
             const errorMessage = error.response?.data?.message || "An error occurred. Please try again later.";
@@ -112,36 +217,39 @@ function ContentManagement() {
         <>  
             <div className="d-flex justify-content-between align-items-center mb-3 me-3">
                 <h2 className="p-3">Content Management Center (Slideshow)</h2>
-                <Button variant="primary" onClick={() => setShowModal(true)}>
+                <Button variant="primary" onClick={() => setShowNewModal(true)}>
                     <i className="bi bi-plus"></i> &nbsp; Add New Slideshow
                 </Button>
             </div>
             <Container>
                 <section className="py-3">
+                    {loading ? (
+                        <LoadingSpinner text="Loading slideshows..." />
+                    ) : (
                     <Row>
-                        {Array.isArray(slideshowData) && slideshowData.map((slideshow) => (
-                            <Col key={slideshow._id} md={4} className="mb-4">
+                        {slideshowData && slideshowData.length > 0 ? (
+                        slideshowData.map((slideshow) => (
+                            <Col key={slideshow.slideshowID} md={4} className="mb-4">
                                 <Card>
                                     <Card.Img 
                                         variant="top" 
-                                        src={slideshow.image} // Now directly using the base64 image data
+                                        src={`data:image/*;base64,${slideshow.slideshowImage}`}
                                         style={{ height: '200px', objectFit: 'cover' }} 
                                     />
                                     <Card.Body>
-                                        <Card.Title className="text-center">{slideshow.title}</Card.Title>
-                                        <Card.Text className="card">{slideshow.description}</Card.Text>
+                                        <Card.Title className="text-center">{slideshow.slideshowTitle}</Card.Title>
+                                        <Card.Text className="card">{slideshow.slideshowDescription}</Card.Text>
                                         <div className="d-flex justify-content-between">
                                             <Button 
-                                                variant="info"
-                                            >
+                                                variant="info" 
+                                                onClick={() => handleOpenModalEdit(slideshow)}>
                                                 <i className="bi bi-pencil"></i>
                                                 &nbsp;
                                                 Edit
                                             </Button>
-
                                             <Button 
                                                 variant="danger"
-                                                onClick={() => handleDelete(slideshow._id)}
+                                                onClick={() => handleDeleteSlideshow(slideshow.slideshowID)}
                                             >
                                                 <i className="bi bi-trash"></i>
                                                 &nbsp;
@@ -151,64 +259,36 @@ function ContentManagement() {
                                     </Card.Body>
                                 </Card>
                             </Col>
-                        ))}
+                        ))
+                    ) : (
+                        <Col className="md-12">
+                            <div className="card text-center" style={{ minHeight: 'calc(100vh - 250px)' }}>
+                                <div className="card-body py-5 d-flex flex-column justify-content-center align-items-center">
+                                    <i className="bi bi-calendar-x text-muted fs-1"></i>
+                                    <h3 className="text-muted mt-3">No slideshows available</h3>
+                                    <p className="text-muted">Click the add button to create a new slideshow.</p>
+                                </div>
+                            </div>
+                        </Col>
+                    )}
                     </Row>
+                     )}
                 </section>
 
-                {/* Add Image Modal */}
+                {/* Add and Edit Image Modals */}
                 <ModelComponent
-                    show={showModal}
-                    onHide={() => setShowModal(false)}
-                    title={"Add New Slideshow"}
+                    show={showNewModal || showEditModal}
+                    onHide={showNewModal ? handleCloseNewModal : handleCloseEditModal}
+                    title={showNewModal ? "Add New Slideshow" : "Edit Slideshow"}
                 >
-                    <Form onSubmit={handleSubmit}>
-                        <Form.Group className="mb-3">
-                            <img 
-                                src={previewImage}
-                                style={{ 
-                                    height: "350px", 
-                                    width: "100%", 
-                                    objectFit: "cover",
-                                    borderRadius: '8px',
-                                    display: 'block',
-                                    backgroundColor: '#f8f9fa'
-                                }}
-                                alt="Preview Image"
-                            />
-                        </Form.Group>
-                        <Form.Group controlId="image" className="mb-3">
-                            <Form.Label>Image</Form.Label>
-                            <Form.Control 
-                                type="file" 
-                                accept="image/*"
-                                name="slideshowImage"
-                                onChange={handleImageChange}
-                            />
-                        </Form.Group>
-                        <Form.Group controlId="title" className="mb-3">
-                            <Form.Label>Title</Form.Label>
-                            <Form.Control 
-                                type="text"
-                                name="slideshowTitle"
-                                value={formData.slideshowTitle}
-                                onChange={handleInputChange}
-                            />
-                        </Form.Group>
-                        <Form.Group controlId="description" className="mb-3">
-                            <Form.Label>Description</Form.Label>
-                            <Form.Control 
-                                as="textarea"
-                                name="slideshowDesc"
-                                value={formData.slideshowDesc}
-                                onChange={handleInputChange}
-                            />
-                        </Form.Group>
-                        <Form.Group className="mb-3 d-flex justify-content-center">
-                            <Button className="form-control" variant="success" type="submit">
-                                Submit
-                            </Button>
-                        </Form.Group>
-                    </Form>
+                    <SlideshowForm 
+                        formData={formData}
+                        previewImage={previewImage}
+                        handleInputChange={handleInputChange}
+                        handleImageChange={handleImageChange}
+                        handleSubmit={showNewModal ? handleNewSlideshow : handleEditSlideshow}
+                        isEdit={!showNewModal}
+                    />
                 </ModelComponent>
             </Container>
         </>

@@ -6,7 +6,6 @@ import LoginForm from "../views/Credentials/LoginForm";
 import SignUpForm from "../views/Credentials/SignUpForm";
 import useSession from "../utils/sessionUtils";
 import { useNavigate } from "react-router-dom";
-import { ToastContainer } from 'react-toastify';
 
 function ProfileIcon({ userData, showName = true }) {
   return (
@@ -72,9 +71,6 @@ function Header() {
           <SignUpForm switchToLogin={openLoginModal}/>
         )}
       </ModelComponent>
-
-      {/* Toast Notifications */}
-      <ToastContainer position="top-center" autoClose={3000} />
     </div>
   );
 }

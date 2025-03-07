@@ -6,7 +6,7 @@ import useSession from "../../utils/sessionUtils";
 function AccountSettings() {
     const navigate = useNavigate();
     const { userData, isLoggedIn } = useSession(navigate);
-    const [imagePreview, setImagePreview] = useState("/assets/images/profile.jpg");
+    const [imagePreview, setImagePreview] = useState("/profile.jpg");
     const [imageFile, setImageFile] = useState(null);
 
     const previewImage = (e) => {
@@ -19,7 +19,7 @@ function AccountSettings() {
           reader.readAsDataURL(file);
           setImageFile(file);
         }
-      };
+    };
 
     if (!isLoggedIn) {
         return <p>Please log in to access account settings.</p>;
@@ -126,17 +126,17 @@ function AccountSettings() {
                                 id="submitButton"
                                 type="submit"
                                 name="process_delete_profile_pic"
-                                onClick={(e) => {
+                                onClick={() => {
                                     // Confirm reset to default
                                     if (
                                     window.confirm(
                                         "Are you sure you want to reset to the default profile picture?"
                                     )
                                     ) {
-                                    setImagePreview("/assets/images/profile.jpg");
+                                    setImagePreview("/profile.jpg");
                                     }
                                 }}
-                                disabled={imagePreview === "/assets/images/profile.jpg"}
+                                disabled={imagePreview === "/profile.jpg"}
                                 >
                                 Reset to Default Profile Picture
                                 </button>
