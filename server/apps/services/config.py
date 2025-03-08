@@ -2,13 +2,13 @@
 db_config_init = {
     'host': 'localhost',
     'user': 'root',
-    'password': ''
+    'password': 'root'
 }
 
 db_config = {
     'host': 'localhost',
     'user': 'root',
-    'password': '',
+    'password': 'root',
     'database': 'AISPT'
 }
 

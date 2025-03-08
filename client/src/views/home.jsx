@@ -39,14 +39,13 @@ function Home() {
             ) : slideshowData.length > 0 && (
                 <Carousel>
                     {slideshowData.map((slide) => (
-                        <Carousel.Item key={slide.id}>
+                        <Carousel.Item key={slide.slideshowID}>
                             <Slideshow 
-                                text={slide.title} 
-                                imageUrl={`data:image/jpeg;base64,${slide.image}`} 
+                                imageUrl={`data:image/jpeg;base64,${slide.slideshowImage}`} 
                             />
                             <Carousel.Caption>
-                                <h3>{slide.title}</h3>
-                                <p>{slide.description}</p>
+                                <h3>{slide.slideshowTitle}</h3>
+                                <p>{slide.slideshowDescription}</p>
                             </Carousel.Caption>
                         </Carousel.Item>
                     ))}

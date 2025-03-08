@@ -116,11 +116,11 @@ def signup():
     # Hash password before saving
     hashed_password = generate_password_hash(password)
 
-    # Handle image upload
-    image_data = image.read()
-
     try:
-        if image_data:
+        if image:
+            # Handle image upload
+            image_data = image.read()
+            
             # Insert with image data
             cursor.execute(
                 "INSERT INTO USER_ACCOUNT (userName, userEmail, userPassword, userPhoto) VALUES (%s, %s, %s, %s)",
