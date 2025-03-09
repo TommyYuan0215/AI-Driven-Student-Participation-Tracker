@@ -20,6 +20,9 @@ def initialize_database():
 def create_database_if_not_exists():
     # Establish a connection to the server (no database specified)
     connection = get_db_connection_init()
+    if not connection:
+            raise Exception("Failed to establish database connection")
+        
     cursor = connection.cursor(dictionary=True)
 
     # SQL query to create the database if it doesn't exist

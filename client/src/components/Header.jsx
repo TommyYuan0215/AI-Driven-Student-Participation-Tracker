@@ -28,7 +28,7 @@ function ProfileIcon({ userData, showName = true }) {
 function Header() {
   const [modalType, setModalType] = useState(null); // "login" or "signup"
   const navigate = useNavigate();  // Use navigate here
-  const { userData, isLoggedIn } = useSession(navigate);
+  const { userData, isLoggedIn, refetch } = useSession(navigate);
   const handleModalClose = () => setModalType(null); // Close modal
   const openLoginModal = () => setModalType("login"); // Open login modal
   const openSignUpModal = () => setModalType("signup"); // Open signup modal

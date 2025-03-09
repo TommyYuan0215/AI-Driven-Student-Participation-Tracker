@@ -3,29 +3,49 @@ import { Accordion, Table, Form, Button, Row, Col } from "react-bootstrap";
 import { useNavigate } from "react-router-dom";
 import useSession from "../../utils/sessionUtils";
 import { toast } from "react-toastify";
+import axios from "../../utils/axios_configure";
 
 function AccountSettings() {
     const navigate = useNavigate();
-    const { userData, isLoggedIn } = useSession(navigate);
+    const { userData, isLoggedIn, refetch } = useSession(navigate);
     const [imagePreview, setImagePreview] = useState("/profile.jpg");
     const [imageFile, setImageFile] = useState(null);
 
+    // Initialize form data with empty values
     const [formData, setFormData] = useState({
-        name: userData?.userName || '',
-        email: userData?.userEmail || '',
-        currentPassword: '',
-        newPassword: '',
-        confirmPassword: ''
+        id: '',
+        name: '',
+        email: '',
+        currentpass: '',
+        newpass: '',
+        confirmpass: ''
     });
+
+    // Update form data when userData becomes available
+    useEffect(() => {
+        if (userData) {
+            setFormData(prev => ({
+                ...prev,
+                id: userData.userID || '',
+                name: userData.userName || '',
+                email: userData.userEmail || ''
+            }));
+            
+            // Update profile image if exists
+            if (userData.userPhoto) {
+                setImagePreview(`data:image/jpeg;base64,${userData.userPhoto}`);
+            }
+        }
+    }, [userData]);
 
     const [isMandatoryFilled, setIsMandatoryFilled] = useState(false);
 
     // Check mandatory fields (Email, Name and current password)
     useEffect(() => {
-        const { name, email, currentPassword } = formData;
+        const { name, email, currentpass } = formData;
         setIsMandatoryFilled(name.trim() !== '' && 
                   email.trim() !== '' && 
-                  currentPassword.trim() !== '');
+                  currentpass.trim() !== '');
     }, [formData]);
 
     // Handle input changes
@@ -53,9 +73,114 @@ function AccountSettings() {
     // Handle form save changes
     const handleFormSaveChanges = async (e) => {
         e.preventDefault();
+        
+        // Check mandatory fields
         if (!isMandatoryFilled) {
-            toast.error("Please fill in all mandatory field before click on save changes.");
+            toast.error("Please fill in all mandatory fields before saving changes.");
             return;
+        }
+    
+        // Validate password match if new password is provided
+        if (formData.newpass) {
+            if (formData.newpass !== formData.confirmpass) {
+                toast.error("New password and confirm password do not match!");
+                return;
+            }
+        }
+    
+        try {
+            const formDataToSend = new FormData();
+            
+            // Add mandatory fields
+            formDataToSend.append("id", formData.id);
+            formDataToSend.append("name", formData.name);
+            formDataToSend.append("email", formData.email);
+            formDataToSend.append("currentPassword", formData.currentpass);
+    
+            // Add optional fields if they exist
+            if (formData.newpass) {
+                formDataToSend.append("newPassword", formData.newpass);
+            }
+    
+            // Add profile image if changed
+            if (imageFile && imagePreview !== "/profile.jpg") {
+                formDataToSend.append("profileImage", imageFile);
+            }
+    
+            const response = await axios.post('/settings/update_account', formDataToSend, {
+                headers: {
+                    'Content-Type': 'multipart/form-data',
+                },
+            });
+    
+            if (response.status === 200) {
+                // Refresh session data
+                await axios.get('/credential/get_user_session');
+                await refetch();
+
+                // Reset optional fields
+                setFormData(prev => ({
+                    ...prev,
+                    currentpass: '',
+                    newpass: '',
+                    confirmpass: ''
+                }));
+
+                // Reset image if it was changed
+                if (imageFile) {
+                    setImageFile(null);
+                }
+
+                toast.success("Account settings updated successfully!");
+            } else {
+                toast.error(response.data.message || "Failed to update account settings");
+            }
+        } catch (error) {
+            console.error('Update account error:', error);
+            toast.error(error.response?.data?.message || "An error occurred while updating account settings");
+        }
+    };
+
+    const handleResetPhoto = async (e) => {
+        e.preventDefault();
+        
+        if (!window.confirm("Are you sure you want to reset to the default profile picture?")) {
+            return;
+        }
+
+        // Check mandatory fields
+        if (!isMandatoryFilled) {
+            toast.error("Please fill in all mandatory fields before saving changes.");
+            return;
+        }
+    
+        try {
+            const formDataToSend = new FormData();
+            formDataToSend.append('id', userData.userID);
+            formDataToSend.append('resetPhoto', 'true');
+            formDataToSend.append('currentPassword', formData.currentpass);
+    
+            const response = await axios.post('/settings/reset_account_photo', formDataToSend, {
+                headers: {
+                    'Content-Type': 'multipart/form-data',
+                },
+            });
+    
+            if (response.status === 200) {
+                // Update local state
+                setImagePreview('/profile.jpg');
+                setImageFile(null);
+    
+                // Refresh session
+                await refetch();
+    
+                toast.success("Profile picture reset successfully");
+            } else {
+                toast.error(response.data.message || "Failed to reset profile picture");
+            }
+        } catch (error) {
+            console.error('Reset photo error:', error);
+            toast.error(error.response?.data?.message || "Failed to reset profile picture");
         }
     };
 
@@ -71,7 +196,7 @@ function AccountSettings() {
                 <div className="col-md-12">
                     <div className="card">
                         <div className="card-header">
-                            <img src="/profile.jpg" alt="User" 
+                            <img src={userData.userPhoto ? `data:image/jpeg;base64,${userData.userPhoto}` : "/profile.jpg"} alt="User" 
                             className="rounded-circle mx-auto d-block img-thumbnail" width="120" height="120"/>
                             <br />
                             <h5 className="card-title text-center">Hello,  {userData.userName} &#128075;</h5>
@@ -100,18 +225,22 @@ function AccountSettings() {
                         <Accordion.Header><strong style={{color: "red"}}>(Mandatory)</strong> &nbsp; Basic Information</Accordion.Header>
                         <Accordion.Body>
                             <Form.Group>
+                                <Form.Group className="form-floating mb-3 d-none">
+                                    <input className="form-control" id="id" type="text" name="id" value={formData.id} onChange={handleInputChange} placeholder="UserID" data-sb-validations="required" disabled/>
+                                    <label for="name">User ID</label>
+                                </Form.Group>
                                 <Form.Group className="form-floating mb-3">
-                                    <input className="form-control" id="name" type="name" name="name" value={userData.userName} placeholder="Name" data-sb-validations="required,email" />
+                                    <input className="form-control" id="name" type="text" name="name" value={formData.name} onChange={handleInputChange} placeholder="Name" data-sb-validations="required" />
                                     <label for="name">Name</label>
                                 </Form.Group>
 
                                 <Form.Group className="form-floating mb-3">
-                                    <input className="form-control" id="email" type="email" name="email" value={userData.userEmail} placeholder="name@example.com" data-sb-validations="required,email" readonly />
+                                    <input className="form-control" id="email" type="email" name="email" value={formData.email} onChange={handleInputChange} placeholder="name@example.com" data-sb-validations="required,email" readonly />
                                     <label for="email">Email address</label>
                                 </Form.Group>
 
                                 <Form.Group className="form-floating mb-3">
-                                    <input className="form-control" id="password" type="password" name="currentpass" placeholder="Enter your password here..." data-sb-validations="required" required />
+                                    <input className="form-control" id="password" type="password" name="currentpass" value={formData.currentpass} onChange={handleInputChange} placeholder="Enter your password here..." data-sb-validations="required" required />
                                     <label for="password">Current Password</label>
                                 </Form.Group>
                             </Form.Group>    
@@ -123,13 +252,13 @@ function AccountSettings() {
                             <Row className="g-2">
                                 <Col md>
                                     <Form.Group className="form-floating mb-3">
-                                        <input className="form-control" id="password" type="password" name="pass1" placeholder="Enter your password here..." />
+                                        <input className="form-control" id="password" type="password" name="newpass" placeholder="Enter your password here..." />
                                         <Form.Label for="password">New Password</Form.Label>
                                     </Form.Group>
                                 </Col>
                                 <Col md>
                                     <Form.Group className="form-floating mb-3">
-                                        <input className="form-control" id="password" type="password" name="pass2" placeholder="Enter your password here..." />
+                                        <input className="form-control" id="password" type="password" name="confirmpass" placeholder="Enter your password here..." />
                                         <Form.Label for="password">Confirm New Password</Form.Label>
                                     </Form.Group>
                                 </Col>
@@ -162,25 +291,15 @@ function AccountSettings() {
                                     <br />
                                 </Form.Group>
                                 <Form.Group className="d-grid">
-                                    <button
-                                    className="btn btn-danger btn-sm"
-                                    id="submitButton"
-                                    type="submit"
-                                    name="process_delete_profile_pic"
-                                    onClick={() => {
-                                        // Confirm reset to default
-                                        if (
-                                        window.confirm(
-                                            "Are you sure you want to reset to the default profile picture?"
-                                        )
-                                        ) {
-                                        setImagePreview("/profile.jpg");
-                                        }
-                                    }}
+                                <Button
+                                    variant="danger"
+                                    size="sm"
                                     disabled={imagePreview === "/profile.jpg"}
-                                    >
-                                    Reset to Default Profile Picture
-                                    </button>
+                                    onClick={handleResetPhoto}
+                                >
+                                    <i className="bi bi-arrow-counterclockwise"></i>
+                                    &nbsp;Reset to Default Profile Picture
+                                </Button>
                                 </Form.Group> 
                             </>                            
                         </Accordion.Body>
@@ -188,7 +307,7 @@ function AccountSettings() {
                 </Accordion>
                 <br/>
                 <Form.Group className="d-flex justify-content-around align-content-center">
-                    <Button className="" variant="success"><i className="bi bi-save"></i>&nbsp; Save Changes</Button>
+                    <Button className="" variant="success" type="submit"><i className="bi bi-save"></i>&nbsp; Save Changes</Button>
                     <Button variant="secondary"><i className="bi bi-arrow-clockwise"></i>&nbsp; Clear Optional</Button>
                 </Form.Group>
             </Form>

@@ -8,6 +8,7 @@ from apps.blueprints.database import databases_route
 from apps.blueprints.user_credential import userCredential_route
 from apps.blueprints.user_management import userManagement_route
 from apps.blueprints.content_management import contentManagement_route
+from apps.blueprints.settings import settings_route
 
 # Initialize Flask extensions
 socketio = SocketIO()
@@ -30,5 +31,6 @@ def create_app():
     app.register_blueprint(userCredential_route, url_prefix='/credential')
     app.register_blueprint(userManagement_route, url_prefix='/usermanagement')
     app.register_blueprint(contentManagement_route, url_prefix='/contentmanagement')
+    app.register_blueprint(settings_route, url_prefix='/settings')
 
     return app
