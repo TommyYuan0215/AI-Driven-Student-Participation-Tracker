@@ -7,6 +7,7 @@ client/yarn-error.log*
 client/pnpm-debug.log*
 client/lerna-debug.log*
 
+# Ignore client directory list
 client/node_modules
 client/dist
 client/dist-ssr
@@ -16,6 +17,12 @@ client/*.local
 server/.venv/
 server/apps/model/
 server/apps/__pycache__/
+
+# Ignore Flask session files
+flask_session/
+.flask_session/
+*/flask_session/*
+flask_session/*
 
 # Editor directories and files
 .vscode/*
