@@ -24,6 +24,16 @@ flask_session/
 */flask_session/*
 flask_session/*
 
+# Ignore Python cache files
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*/__pycache__/*
+**/__pycache__/
+**/*.pyc
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
