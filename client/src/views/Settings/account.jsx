@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import useSession from "../../utils/sessionUtils";
 import { toast } from "react-toastify";
 import axios from "../../utils/axios_configure";
+import PageTitleBreadcrumb from "../../components/PageTitleBreadcrumb";
 
 function AccountSettings() {
     const navigate = useNavigate();
@@ -190,8 +191,8 @@ function AccountSettings() {
 
     return (
         <>
-        <h2 className="p-3">Account Settings</h2>
-        <div className="ms-4 me-4">  
+        <PageTitleBreadcrumb title="Account Settings" path={location.pathname} />
+        <div className="ms-4 me-4 m-3">  
             <div className="row">
                 <div className="col-md-12">
                     <div className="card">

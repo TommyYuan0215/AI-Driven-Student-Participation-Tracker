@@ -3,6 +3,7 @@ import { Accordion } from "react-bootstrap";
 import Cookies from "js-cookie";
 import { useNavigate } from "react-router-dom";
 import useSession from "../../utils/sessionUtils";
+import PageTitleBreadcrumb from "../../components/PageTitleBreadcrumb";
 
 function GeneralSettings() {
     const [darkMode, setDarkMode] = useState(false);
@@ -29,7 +30,7 @@ function GeneralSettings() {
 
     return (
         <>
-        <h2 className="p-3">General Settings</h2>
+        <PageTitleBreadcrumb title="General Settings" path={location.pathname} />
         <div className="ms-4 me-4">
             <Accordion defaultActiveKey="0">
                 <Accordion.Item eventKey="0">
@@ -48,7 +49,44 @@ function GeneralSettings() {
                         </>
                         <hr/>
                         <>
-                            <p>T</p>
+                        <p>Model Selection</p>
+                        <div className="d-flex flex-column gap-3">
+                            <div className="model-toggle d-flex align-items-center">
+                                <label className="toggle-switch mb-0">
+                                    <input 
+                                        type="checkbox" checked="true"
+                                        // checked={modelSettings.emotionModel}
+                                        // onChange={() => toggleModel('emotionModel')}
+                                    />
+                                    <span className="slider"></span>
+                                </label>
+                                <span className="model-label ms-2">Face Emotional Recognition Model</span>
+                            </div>
+
+                            <div className="model-toggle d-flex align-items-center">
+                                <label className="toggle-switch mb-0">
+                                    <input 
+                                        type="checkbox" checked="true"
+                                        // checked={modelSettings.attentionModel}
+                                        // onChange={() => toggleModel('attentionModel')}
+                                    />
+                                    <span className="slider"></span>
+                                </label>
+                                <span className="model-label ms-2">Body Language Analyser Model</span>
+                            </div>
+
+                            <div className="model-toggle d-flex align-items-center">
+                                <label className="toggle-switch mb-0">
+                                    <input 
+                                        type="checkbox" checked="true"
+                                        // checked={modelSettings.engagementModel}
+                                        // onChange={() => toggleModel('engagementModel')}
+                                    />
+                                    <span className="slider"></span>
+                                </label>
+                                <span className="model-label ms-2">Gaze Tracking Model</span>
+                            </div>
+                        </div>
                         </>
 
                     </Accordion.Body>

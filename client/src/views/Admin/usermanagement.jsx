@@ -5,6 +5,7 @@ import { useLoadingState } from '../../utils/loadingUtils';
 import LoadingSpinner from "../../components/LoadingSpinner";
 import SmallModelComponent from "../../components/SmallModelComponent";
 import LargeModelComponent from "../../components/LargeModelComponent";
+import PageTitleBreadcrumb from "../../components/PageTitleBreadcrumb";
 import { toast } from 'react-toastify';
 import axios from '../../utils/axios_configure';
 
@@ -158,7 +159,7 @@ function UserManagement() {
 
     return (
     <>
-    <h2 className="p-3">User Account Management</h2>
+    <PageTitleBreadcrumb title="User Management" path={location.pathname} />
     <div className="ms-3 me-3">
         {loading ? (
             <LoadingSpinner text="Loading users..." />

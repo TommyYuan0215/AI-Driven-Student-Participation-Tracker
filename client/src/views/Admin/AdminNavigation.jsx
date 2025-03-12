@@ -3,13 +3,13 @@ import SidebarComponent from "../../components/SidebarComponent";
 
 // Define sidebar items for Admin navigation
 const sidebarItems = [
-    { id: "dashboard", label: "Dashboard", path: "/views/admin/dashboard", icon: "bi bi-motherboard" },
+    { id: "dashboard", label: "Dashboard", path: "/views/admin/dashboard", icon: "bi bi-house" },
     { id: "usermanagement", label: "User Account Management", path: "/views/admin/usermanagement", icon: "bi bi-people"},
     { id: "contentmanagement", label: "Content Management", path: "/views/admin/contentmanagement", icon: "bi bi-images" },
     { id: "datamanagement", label: "View Data", icon: "bi bi-database",
         subItems: [
-            { label: "Overall Statistics Data", path: "/views/admin/statistic/1", icon: "bi bi-bar-chart-line" },
-            { label: "Trend Analysis", path: "/views/admin/statistic/2", icon: "bi bi-graph-up-arrow" },
+            { label: "Overall Statistics Data", path: "/views/admin/datamanagement/statistics", icon: "bi bi-bar-chart-line" },
+            { label: "Trend Analysis", path: "/views/admin/datamanagement/2", icon: "bi bi-graph-up-arrow" },
         ] 
     },
     

@@ -142,6 +142,9 @@
     min-height: calc(100vh - 75px);
     height: auto;
     position: relative;
+    margin: 0;
+    padding: 0;
+    overflow: none;
   }
 
   .sidebar-wrapper {
@@ -213,13 +216,10 @@
   }
   
   .content-wrapper {
-    margin-left: 0;
-    transition: margin 0.3s ease;
-    width: calc(100% - 250px);
-    padding: 20px;
-    min-height: calc(100vh - 75px); /* Match sidebar min-height */
-    height: auto; /* Allow content to expand */
-    overflow-y: auto;
+    flex: 1;
+    margin: 0;
+    padding: 0;
+    transition: margin-left 0.3s ease;
   }
   
   .content-wrapper.expanded {
@@ -228,7 +228,7 @@
   }
   
   /* ==========================================================================
-     5. Feature Cards
+     5. Index Feature Cards
      ========================================================================== */
   .feature-card {
     background: white;
@@ -353,7 +353,7 @@
     text-align: center;
     font-size: 0.9rem;
   }
-  
+
   /* ==========================================================================
      8. Responsive Design
      ========================================================================== */

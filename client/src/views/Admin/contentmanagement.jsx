@@ -3,6 +3,7 @@ import { Container, Row, Col, Card, Button, Form, Spinner } from "react-bootstra
 import ModelComponent from "../../components/XLargeModelComponent";
 import LoadingSpinner from "../../components/LoadingSpinner";
 import SlideshowForm from "../../components/SlideshowFormComponent";
+import PageTitleBreadcrumb from "../../components/PageTitleBreadcrumb";
 import axios from '../../utils/axios_configure';
 import { toast } from 'react-toastify';
 import { useLoadingState } from '../../utils/loadingUtils';
@@ -215,12 +216,19 @@ function ContentManagement() {
 
     return (
         <>  
-            <div className="d-flex justify-content-between align-items-center mb-3 me-3">
-                <h2 className="p-3">Content Management Center (Slideshow)</h2>
-                <Button variant="primary" onClick={() => setShowNewModal(true)}>
-                    <i className="bi bi-plus"></i> &nbsp; Add New Slideshow
-                </Button>
-            </div>
+            <PageTitleBreadcrumb title="Content Management" path={location.pathname} />
+            <Button 
+                variant="success" 
+                className="position-fixed bottom-0 end-0 d-flex align-items-center justify-content-center m-3"
+                onClick={() => setShowNewModal(true)}
+                style={{ 
+                    zIndex: 1050,
+                    boxShadow: '0 2px 5px rgba(0,0,0,0.2)'
+                }}
+            >
+                <i className="bi bi-plus-lg fs-4"></i> &nbsp;
+                Add New Slideshow
+            </Button>
             <Container>
                 <section className="py-3">
                     {loading ? (

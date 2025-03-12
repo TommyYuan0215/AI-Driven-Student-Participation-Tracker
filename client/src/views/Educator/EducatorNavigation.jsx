@@ -4,11 +4,11 @@ import SidebarComponent from "../../components/SidebarComponent";
 // Define sidebar items for Educator navigation
 const sidebarItems = [
     { id: "realtime", label: "Real-Time Monitoring", path: "/views/educator/dashboard", icon: "bi bi-speedometer2" },
-    { id: "history", label: "Post Class Analytics & Report", icon: "bi bi-kanban",
+    { id: "postanalytics", label: "Post Class Analytics & Report", icon: "bi bi-kanban",
         subItems: [
-            { label: "Overall Statistics Data", path: "/views/educator/overallstatistics", icon: "bi bi-bar-chart-line" },
-            { label: "Trend Data", path: "/views/educator/trend", icon: "bi bi-graph-up-arrow" },
-            { label: "Generate Reports", path: "/views/educator/generatereport", icon: "bi bi-file-earmark-text" }
+            { label: "Statistics Dashboard", path: "/views/educator/postanalytics/statistics", icon: "bi bi-bar-chart-line" },
+            { label: "Trend Data", path: "/views/educator/postanalytics/trend", icon: "bi bi-graph-up-arrow" },
+            { label: "Generate Reports", path: "/views/educator/postanalytics/generatereport", icon: "bi bi-file-earmark-text" }
         ]
      },
     { id: "settings", label: "Settings", icon: "bi bi-gear",

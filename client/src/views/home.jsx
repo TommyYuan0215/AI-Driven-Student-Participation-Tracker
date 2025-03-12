@@ -53,7 +53,7 @@ function Home() {
             )}
           </section>
 
-      <section className="bg-light py-5">
+      <section className="py-5">
         <h3 className='p-3 text-center'>Key Features</h3>
         <Container>
         <Row>

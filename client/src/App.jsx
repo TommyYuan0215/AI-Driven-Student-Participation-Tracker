@@ -11,12 +11,12 @@ import Home from './views/home'
 import AdminPage from './views/Admin/AdminPage';
 import AdminDashboard from './views/Admin/dashboard';
 import UserManagement from './views/Admin/usermanagement';
-import DataManagement from './views/Admin/datamanagement';
+import AdminStatistics from './views/Admin/statistics';
 import ContentManagement from './views/Admin/contentmanagement';
 
 import EducatorPage from './views/Educator/EducatorPage'
 import EducatorDashboard from './views/Educator/dashboard';
-import EducatorHistory from './views/Educator/history';
+import EducatorStatistics from './views/Educator/statistics';
 import GeneralSettings from './views/Settings/general';
 import AccountSettings from './views/Settings/account';
 
@@ -27,33 +27,36 @@ function App() {
   }, []);
 
   return (
-    <Router classhName="App">
+    <Router className="App">
       <Header />
         <Routes>
           {/* Public Route */}
-          <Route path="/" element={<Home />} ></Route>
+          <Route path="/" element={<Home />} />
 
-          {/* Admin Protected Route */}
+          {/* Admin Protected Routes */}
           <Route path="/views/admin/*" element={<AdminPage />}>
-              <Route path="dashboard" element={<AdminDashboard />} />
-              <Route path="usermanagement" element={<UserManagement />} />
-              <Route path="datamanagement" element={<DataManagement />} />
-              <Route path="contentmanagement" element={<ContentManagement />} />
-              {/* Sibling Settings Element */}
-              <Route path="settings/*" >
-                  <Route path="general" element={<GeneralSettings />} />
-                  <Route path="account" element={<AccountSettings />} />
-              </Route>
+            <Route path="dashboard" element={<AdminDashboard />} />
+            <Route path="usermanagement" element={<UserManagement />} />
+            <Route path="datamanagement/*">
+              <Route path="statistics" element={<AdminStatistics />} />
+              <Route path="account" element={<AccountSettings />} />
+            </Route>
+            <Route path="contentmanagement" element={<ContentManagement />} />
+            <Route path="settings/*">
+              <Route path="general" element={<GeneralSettings />} />
+              <Route path="account" element={<AccountSettings />} />
+            </Route>
           </Route>
 
-          {/* Educator Role Element */}
+          {/* Educator Protected Routes */}
           <Route path="/views/educator/*" element={<EducatorPage />}>
-            <Route path="dashboard" element={<EducatorDashboard />}/>
-            <Route path="history" element={<EducatorHistory />}/>
-            {/* Sibling Settings Element */}
-            <Route path="settings/*" >
-                <Route path="general" element={<GeneralSettings />} />
-                <Route path="account" element={<AccountSettings />} />
+            <Route path="dashboard" element={<EducatorDashboard />} />
+            <Route path="postanalytics/*">
+              <Route path="statistics" element={<EducatorStatistics />} />
+            </Route>
+            <Route path="settings/*">
+              <Route path="general" element={<GeneralSettings />} />
+              <Route path="account" element={<AccountSettings />} />
             </Route>
           </Route>
 
