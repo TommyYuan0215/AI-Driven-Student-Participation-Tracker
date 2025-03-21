@@ -5,21 +5,76 @@ import { toast } from 'react-toastify';
 function EducatorDashboard() {
   const [isTracking, setIsTracking] = useState(false);
   const [isShareScreen, setIsShareScreen] = useState(false);
-  const videoRef = useRef();
+  const [isCameraOn, setIsCameraOn] = useState(false);
+  const cameraRef = useRef();
+  const screenRef = useRef();
+
   const mediaStreamRef = useRef(null);
 
-  // Add cleanup effect
-  useEffect(() => {
-    return () => {
-      if (mediaStreamRef.current) {
-        mediaStreamRef.current.getTracks().forEach(track => track.stop());
+  const handleCamera = async () => {
+    try {
+      if (isCameraOn) {
+        // If camera is on, turn it off
+        if (mediaStreamRef.current) {
+          mediaStreamRef.current.getTracks().forEach(track => track.stop());
+          mediaStreamRef.current = null;
+          
+          if (cameraRef.current) {
+            cameraRef.current.srcObject = null;
+          }
+        }
+        setIsCameraOn(false);
+        toast.info('Camera turned off');
+      } else {
+        // If screen sharing is on, turn it off first
+        if (isShareScreen) {
+          stopScreenShare();
+        }
+        
+        // Turn on camera
+        const constraints = {
+          video: true,
+          audio: false
+        };
+        
+        const stream = await navigator.mediaDevices.getUserMedia(constraints);
+        mediaStreamRef.current = stream;
+        
+        if (cameraRef.current) {
+          cameraRef.current.srcObject = stream;
+          cameraRef.current.onloadedmetadata = async () => {
+            try {
+              await cameraRef.current.play();
+            } catch (err) {
+              console.error('Error playing video:', err);
+            }
+          };
+        }
+        
+        setIsCameraOn(true);
+        toast.success('Camera turned on');
       }
-    };
-  }, []);
-
+    } catch (error) {
+      console.error('Error accessing camera:', error);
+      toast.error('Failed to access camera');
+    }
+  };
+  
   const handleShareScreen = async () => {
     try {
       if (!isShareScreen) {
+        // If camera is on, turn it off first
+        if (isCameraOn) {
+          // Stop camera and clear state
+          if (mediaStreamRef.current) {
+            mediaStreamRef.current.getTracks().forEach(track => track.stop());
+            if (cameraRef.current) {
+              cameraRef.current.srcObject = null;
+            }
+          }
+          setIsCameraOn(false);
+        }
+        
         const stream = await navigator.mediaDevices.getDisplayMedia({
           video: {
             cursor: "always",
@@ -30,28 +85,26 @@ function EducatorDashboard() {
           },
           audio: false
         });
-
-        // Set stream to video element
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream;
-          // Ensure video loads metadata before playing
-          videoRef.current.onloadedmetadata = async () => {
+  
+        mediaStreamRef.current = stream;
+        
+        if (screenRef.current) {
+          screenRef.current.srcObject = stream;
+          screenRef.current.onloadedmetadata = async () => {
             try {
-              await videoRef.current.play();
+              await screenRef.current.play();
             } catch (err) {
               console.error('Error playing video:', err);
               throw new Error('Failed to play video stream');
             }
           };
         }
-
-        mediaStreamRef.current = stream;
-
+  
         // Handle stream stop event
         stream.getVideoTracks()[0].onended = () => {
           stopScreenShare();
         };
-
+  
         setIsShareScreen(true);
         toast.success('Screen sharing started');
       } else {
@@ -63,12 +116,14 @@ function EducatorDashboard() {
       setIsShareScreen(false);
     }
   };
-
+  
   const stopScreenShare = () => {
     if (mediaStreamRef.current) {
       mediaStreamRef.current.getTracks().forEach(track => track.stop());
-      if (videoRef.current) {
-        videoRef.current.srcObject = null;
+      mediaStreamRef.current = null;
+      
+      if (screenRef.current) {
+        screenRef.current.srcObject = null;
       }
     }
     setIsShareScreen(false);
@@ -89,19 +144,32 @@ function EducatorDashboard() {
           <div className="camera-container h-100 d-flex align-items-center justify-content-center border rounded bg-light">
             {isShareScreen ? (
               <video 
-                ref={videoRef}
+              ref={screenRef}
+              className="w-100 h-100"
+              autoPlay
+              playsInline
+              muted
+              style={{ 
+                objectFit: 'cover',
+                backgroundColor: '#000'
+              }}
+            />
+            ) : isCameraOn ? (
+              <video 
+                ref={cameraRef}
                 className="w-100 h-100"
                 autoPlay
                 playsInline
+                muted
                 style={{ 
-                  objectFit: 'contain',
+                  objectFit: 'cover',
                   backgroundColor: '#000'
                 }}
               />
             ) : (
               <div className="text-center text-muted">
-                <i className="bi bi-cast fs-1"></i>
-                <p className="mt-2">Click 'Start Share Screen' to begin presentation</p>
+                <span><i className="bi bi-cast fs-1"></i> &nbsp; <i className='bi bi-camera fs-1'></i></span>
+                <p className="mt-2">Click 'Start Share Screen' or 'Start Camera' to begin</p>
               </div>
             )}
           </div>
@@ -125,6 +193,14 @@ function EducatorDashboard() {
       {/* Bottom Control Bar */}
       <Row className="g-0 border-top" style={{ height: '8%', backgroundColor: '#2A2A2A' }}>
         <Col xs={12} className="d-flex align-items-center justify-content-center gap-3">
+        <Button
+            variant={isCameraOn ? "danger" : "primary"}
+            className="px-3"
+            onClick={handleCamera}
+          >
+            <i className={`bi bi-${isCameraOn ? 'stop-btn' : 'camera'}`}></i> &nbsp; {isCameraOn ? 'Stop Camera' : 'Start Camera'}
+          </Button>
+
           <Button
             variant={isShareScreen ? "danger" : "primary"}
             className="px-3"
@@ -132,6 +208,7 @@ function EducatorDashboard() {
           >
             <i className={`bi bi-${isShareScreen ? 'stop-btn' : 'cast'}`}></i> &nbsp; {isShareScreen ? 'Stop Share Screen' : 'Start Share Screen'}
           </Button>
+
           <Button 
             variant={isTracking ? "danger" : "success"}
             className="px-3"

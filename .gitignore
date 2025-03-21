@@ -7,22 +7,19 @@ client/yarn-error.log*
 client/pnpm-debug.log*
 client/lerna-debug.log*
 
-# Ignore client directory list
-client/node_modules
-client/dist
-client/dist-ssr
+# Ignore client dependencies & builds
+client/node_modules/
+client/dist/
+client/dist-ssr/
 client/*.local
 
-# Ignore server directory list
+# Ignore server dependencies & builds
 server/.venv/
 server/apps/model/
 server/apps/__pycache__/
 
 # Ignore Flask session files
 flask_session/
-.flask_session/
-*/flask_session/*
-flask_session/*
 
 # Ignore Python cache files
 __pycache__/
@@ -30,14 +27,14 @@ __pycache__/
 *$py.class
 *.so
 .Python
-*/__pycache__/*
-**/__pycache__/
-**/*.pyc
 
-# Editor directories and files
-.vscode/*
+# Ignore Docker volumes
+mysql_data/
+
+# Editor directories and system files
+.vscode/
 !.vscode/extensions.json
-.idea
+.idea/
 .DS_Store
 *.suo
 *.ntvs*

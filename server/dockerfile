@@ -1,0 +1,24 @@
+# Use Python base image
+FROM python:3.11.6
+
+# Set the working directory
+WORKDIR /app
+
+# Copy only requirements first (to leverage Docker caching)
+COPY requirements.txt .
+
+# Install dependencies
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Now copy the rest of the app code
+COPY . .
+
+# Expose Flask's default port
+EXPOSE 5000
+
+# Set environment variables for Flask
+ENV FLASK_APP=server.py
+ENV FLASK_RUN_HOST=0.0.0.0
+
+# Run the Flask app
+CMD ["flask", "run", "--host=0.0.0.0", "--port=5000"]
