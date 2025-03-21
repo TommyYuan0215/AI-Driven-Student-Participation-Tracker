@@ -1,42 +1,50 @@
-import { useEffect, useState } from 'react';
-import { useNavigate, Outlet } from 'react-router-dom';
-import { useSession } from './sessionUtils';
-import LoadingSpinner from '../components/LoadingSpinner';
+import { useEffect, useState } from "react";
+import { useNavigate, Outlet } from "react-router-dom";
+import { useSession } from "./sessionUtils";
+import LoadingSpinner from "../components/LoadingSpinner";
 
 const ProtectedRoute = ({ children, requiredRoles = [] }) => {
-    const navigate = useNavigate();
-    const { isLoggedIn, userData, checkAuth } = useSession(navigate);
-    const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
+  const { isLoggedIn, userData, checkAuth } = useSession(navigate);
+  const [loading, setLoading] = useState(true);
 
-    useEffect(() => {
-        const verifyAccess = async () => {
-            try {
-                setLoading(true);
-                const isAuthenticated = await checkAuth();
-                
-                if (!isAuthenticated) {
-                    navigate('/');
-                    return;
-                }
+  useEffect(() => {
+    const verifyAccess = async () => {
+      try {
+        setLoading(true);
+        const isAuthenticated = await checkAuth();
 
-                // Check if user has required role
-                if (requiredRoles.length > 0 && !requiredRoles.includes(userData?.role)) {
-                    navigate('/');
-                    return;
-                }
-            } finally {
-                setLoading(false);
-            }
-        };
+        if (!isAuthenticated) {
+          navigate("/");
+          return;
+        }
 
-        verifyAccess();
-    }, [checkAuth, navigate, requiredRoles, userData?.role]);
+        // Check if user has required role
+        if (
+          requiredRoles.length > 0 &&
+          !requiredRoles.includes(userData?.role)
+        ) {
+          navigate("/");
+          return;
+        }
+      } finally {
+        setLoading(false);
+      }
+    };
 
-    if (loading) {
-        return <LoadingSpinner text="Verifying access..." />;
-    }
+    verifyAccess();
+  }, [checkAuth, navigate, requiredRoles, userData?.role]);
 
-    return isLoggedIn ? <>{children}<Outlet /></> : null;
+  if (loading) {
+    return <LoadingSpinner text="Verifying access..." />;
+  }
+
+  return isLoggedIn ? (
+    <>
+      {children}
+      <Outlet />
+    </>
+  ) : null;
 };
 
 export default ProtectedRoute;

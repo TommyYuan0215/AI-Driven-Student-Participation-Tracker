@@ -168,31 +168,6 @@ function EducatorDashboard() {
               }}
             />
 
-            {/* {isShareScreen ? (
-              <video
-                ref={screenRef}
-                className="w-100 h-100"
-                autoPlay
-                playsInline
-                muted
-                style={{
-                  objectFit: "cover",
-                  backgroundColor: "#000",
-                }}
-              />
-            ) : isCameraOn ? (
-              <video
-                ref={cameraRef}
-                className="w-100 h-100"
-                autoPlay
-                playsInline
-                muted
-                style={{
-                  objectFit: "cover",
-                  backgroundColor: "#000",
-                }}
-              />
-            ) : ( */}
             <div
               className="text-center text-muted"
               style={{

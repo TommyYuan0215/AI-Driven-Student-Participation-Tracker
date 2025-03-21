@@ -1,20 +1,20 @@
-import { useState, useEffect } from 'react';
-import axios from './axios_configure';
-import { toast } from 'react-toastify';
+import { useState, useEffect } from "react";
+import axios from "./axios_configure";
+import { toast } from "react-toastify";
 
 const SESSION_TIMEOUT = 180 * 60 * 1000; // 3 hours in milliseconds
 
 const useSession = (navigate) => {
   // Initialize states with session storage data
   const initializeUserData = () => {
-    const savedUserData = sessionStorage.getItem('userData');
-    const lastActivity = sessionStorage.getItem('lastActivity');
-    
+    const savedUserData = sessionStorage.getItem("userData");
+    const lastActivity = sessionStorage.getItem("lastActivity");
+
     if (savedUserData && lastActivity) {
       const now = new Date().getTime();
       if (now - parseInt(lastActivity) > SESSION_TIMEOUT) {
-        sessionStorage.removeItem('userData');
-        sessionStorage.removeItem('lastActivity');
+        sessionStorage.removeItem("userData");
+        sessionStorage.removeItem("lastActivity");
         return null;
       }
     }
@@ -28,27 +28,27 @@ const useSession = (navigate) => {
 
   // Session management functions
   const updateLastActivity = () => {
-    sessionStorage.setItem('lastActivity', new Date().getTime().toString());
+    sessionStorage.setItem("lastActivity", new Date().getTime().toString());
   };
 
   const clearSession = () => {
     setUserData(null);
     setIsLoggedIn(false);
-    sessionStorage.removeItem('userData');
-    sessionStorage.removeItem('lastActivity');
+    sessionStorage.removeItem("userData");
+    sessionStorage.removeItem("lastActivity");
   };
 
   // API interaction functions
   const refetch = async () => {
     try {
-      const response = await axios.get("/credential/get_user_session", { 
-        withCredentials: true 
+      const response = await axios.get("/credential/get_user_session", {
+        withCredentials: true,
       });
 
       if (response.data.logged_in) {
         setUserData(response.data);
         setIsLoggedIn(true);
-        sessionStorage.setItem('userData', JSON.stringify(response.data));
+        sessionStorage.setItem("userData", JSON.stringify(response.data));
         updateLastActivity();
         return true;
       } else {
@@ -56,7 +56,7 @@ const useSession = (navigate) => {
         return false;
       }
     } catch (error) {
-      console.error('Session refresh error:', error);
+      console.error("Session refresh error:", error);
       clearSession();
       return false;
     }
@@ -64,12 +64,15 @@ const useSession = (navigate) => {
 
   const login = async (email, password) => {
     try {
-      const response = await axios.post("/credential/login", { email, password });
-      
+      const response = await axios.post("/credential/login", {
+        email,
+        password,
+      });
+
       if (response.data.status === "success") {
         setUserData(response.data);
         setIsLoggedIn(true);
-        sessionStorage.setItem('userData', JSON.stringify(response.data));
+        sessionStorage.setItem("userData", JSON.stringify(response.data));
         updateLastActivity();
         navigate(response.data.redirect);
         toast.success(response.data.message);
@@ -86,23 +89,23 @@ const useSession = (navigate) => {
 
   const logout = async () => {
     if (isLoggingOut) return false;
-    
+
     try {
       setIsLoggingOut(true);
       const response = await axios.post("/credential/logout");
-      
+
       if (response.data.status === "success") {
         clearSession();
         navigate(response.data.redirect);
         toast.success(response.data.message, {
-          toastId: 'logout-success'
+          toastId: "logout-success",
         });
         return true;
       }
       return false;
     } catch (error) {
       toast.error(`Error during logout: ${error.message}`, {
-        toastId: 'logout-error'
+        toastId: "logout-error",
       });
       return false;
     } finally {
@@ -116,19 +119,22 @@ const useSession = (navigate) => {
       if (isLoggedIn) updateLastActivity();
     };
 
-    const activities = ['mousemove', 'keydown', 'click', 'scroll'];
-    activities.forEach(activity => {
+    const activities = ["mousemove", "keydown", "click", "scroll"];
+    activities.forEach((activity) => {
       window.addEventListener(activity, handleActivity);
     });
 
     const checkSession = setInterval(() => {
-      const lastActivity = sessionStorage.getItem('lastActivity');
+      const lastActivity = sessionStorage.getItem("lastActivity");
       if (lastActivity && isLoggedIn) {
         const now = new Date().getTime();
-        if (now - parseInt(lastActivity) > SESSION_TIMEOUT && !hasShownExpirationToast) {
+        if (
+          now - parseInt(lastActivity) > SESSION_TIMEOUT &&
+          !hasShownExpirationToast
+        ) {
           setHasShownExpirationToast(true);
           toast.info("Session expired. Please login again.", {
-            toastId: 'session-expired'
+            toastId: "session-expired",
           });
           logout();
         }
@@ -136,7 +142,7 @@ const useSession = (navigate) => {
     }, 1000);
 
     return () => {
-      activities.forEach(activity => {
+      activities.forEach((activity) => {
         window.removeEventListener(activity, handleActivity);
       });
       clearInterval(checkSession);
@@ -148,13 +154,13 @@ const useSession = (navigate) => {
     refetch();
   }, [navigate]);
 
-  return { 
-    userData, 
-    isLoggedIn, 
-    login, 
-    logout, 
+  return {
+    userData,
+    isLoggedIn,
+    login,
+    logout,
     refetch,
-    updateLastActivity 
+    updateLastActivity,
   };
 };
 

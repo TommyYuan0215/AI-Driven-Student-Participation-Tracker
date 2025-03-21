@@ -10,12 +10,13 @@ const FaceDetection = () => {
     const socket = io.connect("http://localhost:5000");
 
     // Start video stream from webcam
-    navigator.mediaDevices.getUserMedia({ video: true })
-      .then(stream => {
+    navigator.mediaDevices
+      .getUserMedia({ video: true })
+      .then((stream) => {
         videoElement.current.srcObject = stream;
         sendVideoFrames(socket);
       })
-      .catch(err => {
+      .catch((err) => {
         console.error("Error accessing webcam:", err);
       });
 
@@ -37,8 +38,14 @@ const FaceDetection = () => {
     const context = canvas.getContext("2d");
 
     setInterval(() => {
-      context.drawImage(videoElement.current, 0, 0, canvas.width, canvas.height);
-      canvas.toBlob(blob => {
+      context.drawImage(
+        videoElement.current,
+        0,
+        0,
+        canvas.width,
+        canvas.height
+      );
+      canvas.toBlob((blob) => {
         const reader = new FileReader();
         reader.onloadend = function () {
           const base64data = reader.result.split(",")[1]; // Get base64 string without prefix

@@ -1,8 +1,8 @@
 import React, { useState } from "react";
 import { Form, Button, Alert } from "react-bootstrap";
-import { useNavigate } from 'react-router-dom';
-import { toast } from 'react-toastify';
-import axios from '../../utils/axios_configure';  // Import the configured axios instance
+import { useNavigate } from "react-router-dom";
+import { toast } from "react-toastify";
+import axios from "../../utils/axios_configure"; // Import the configured axios instance
 
 function LoginForm({ switchToSignUp, closeModel }) {
   const [email, setEmail] = useState("");
@@ -13,17 +13,21 @@ function LoginForm({ switchToSignUp, closeModel }) {
     e.preventDefault();
 
     try {
-      const response = await axios.post('/credential/login', { email, password });
-      
+      const response = await axios.post("/credential/login", {
+        email,
+        password,
+      });
+
       const result = response.data;
-      navigate(result.redirect);  // Redirect to the specified page
+      navigate(result.redirect); // Redirect to the specified page
       closeModel();
       // toast.success(result.message);
       window.location.reload();
-
     } catch (error) {
       console.error("Login Error:", error);
-      const errorMessage = error.response?.data?.message || "An error occurred. Please try again later.";
+      const errorMessage =
+        error.response?.data?.message ||
+        "An error occurred. Please try again later.";
       toast.error(errorMessage);
     }
   };
@@ -46,7 +50,9 @@ function LoginForm({ switchToSignUp, closeModel }) {
           <div className="w-100">
             <div className="text-center mb-5">
               <h1 className="fw-bolder">Login</h1>
-              <p className="lead fw-normal text-muted mb-0">Let's work together!</p>
+              <p className="lead fw-normal text-muted mb-0">
+                Let's work together!
+              </p>
             </div>
             <Form onSubmit={handleSubmit}>
               {/* Email input */}

@@ -1,16 +1,17 @@
 import React from "react";
 import PageTitleBreadcrumb from "../../components/PageTitleBreadcrumb";
-import { toast } from 'react-toastify';
-import axios from '../../utils/axios_configure';
-
+import { toast } from "react-toastify";
+import axios from "../../utils/axios_configure";
 
 function EducatorStatistics() {
-
-    return (
-        <>
-        <PageTitleBreadcrumb title="Statistics Dashboard" path={location.pathname} />
+  return (
+    <>
+      <PageTitleBreadcrumb
+        title="Statistics Dashboard"
+        path={location.pathname}
+      />
     </>
-    )
-};
+  );
+}
 
 export default EducatorStatistics;

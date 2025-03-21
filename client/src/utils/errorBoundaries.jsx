@@ -1,4 +1,4 @@
-import React from 'react';
+import React from "react";
 
 class ErrorBoundary extends React.Component {
   constructor(props) {
@@ -11,8 +11,8 @@ class ErrorBoundary extends React.Component {
   }
 
   componentDidCatch(error, errorInfo) {
-    console.error('Application error:', error);
-    console.error('Error details:', errorInfo);
+    console.error("Application error:", error);
+    console.error("Error details:", errorInfo);
   }
 
   render() {
@@ -21,7 +21,7 @@ class ErrorBoundary extends React.Component {
         <div className="error-container p-4 text-center">
           <h2>Something went wrong.</h2>
           <p className="text-danger">
-            {this.state.error?.message || 'An unexpected error occurred'}
+            {this.state.error?.message || "An unexpected error occurred"}
           </p>
         </div>
       );

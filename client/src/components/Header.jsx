@@ -12,34 +12,45 @@ function ProfileIcon({ userData, showName = true }) {
     <span>
       <img
         className="rounded-circle userprofile me-1 img-thumbnail"
-        src={userData.userPhoto ? `data:image/jpeg;base64,${userData.userPhoto}` : "/profile.jpg"}
+        src={
+          userData.userPhoto
+            ? `data:image/jpeg;base64,${userData.userPhoto}`
+            : "/profile.jpg"
+        }
         alt="profile-pic"
         width="40"
         height="40"
-      /> 
+      />
       &nbsp;
-      {showName && userData.userName && (
-        <span>{userData.userName}</span>
-      )}
+      {showName && userData.userName && <span>{userData.userName}</span>}
     </span>
   );
 }
 
 function Header() {
   const [modalType, setModalType] = useState(null); // "login" or "signup"
-  const navigate = useNavigate();  // Use navigate here
+  const navigate = useNavigate(); // Use navigate here
   const { userData, isLoggedIn, refetch } = useSession(navigate);
   const handleModalClose = () => setModalType(null); // Close modal
   const openLoginModal = () => setModalType("login"); // Open login modal
   const openSignUpModal = () => setModalType("signup"); // Open signup modal
 
   return (
-    <div className="header-gradient-background">     
+    <div className="header-gradient-background">
       <Navbar expand="lg" className="ps-4 pe-4">
-        <Navbar.Brand href={isLoggedIn ? userData.redirect : "/"} className="fw-bolder custom-navbar-brand" style={{ display: 'flex', alignItems: 'center' }}>
-          <img src={"/ai-technology.png"} alt="brand-icon" style={{width: '30px', height: '30px'}}></img> &nbsp; AI-Driven Student Participant Tracker
+        <Navbar.Brand
+          href={isLoggedIn ? userData.redirect : "/"}
+          className="fw-bolder custom-navbar-brand"
+          style={{ display: "flex", alignItems: "center" }}
+        >
+          <img
+            src={"/ai-technology.png"}
+            alt="brand-icon"
+            style={{ width: "30px", height: "30px" }}
+          ></img>{" "}
+          &nbsp; AI-Driven Student Participant Tracker
         </Navbar.Brand>
-        
+
         {/* Navbar toggle for smaller screens */}
         <Navbar.Toggle aria-controls="navbar-nav" />
 
@@ -52,8 +63,14 @@ function Header() {
                 </Nav.Link>
               </Nav.Item>
             ) : (
-              <NavDropdown title={<ProfileIcon userData={{}} />} id="profile-nav-dropdown" align="end">
-                <NavDropdown.Item onClick={openLoginModal}>Login to Account</NavDropdown.Item>
+              <NavDropdown
+                title={<ProfileIcon userData={{}} />}
+                id="profile-nav-dropdown"
+                align="end"
+              >
+                <NavDropdown.Item onClick={openLoginModal}>
+                  Login to Account
+                </NavDropdown.Item>
               </NavDropdown>
             )}
           </Nav>
@@ -61,14 +78,14 @@ function Header() {
       </Navbar>
 
       {/* Modal for both Login and Sign Up */}
-      <ModelComponent
-        show={modalType !== null}
-        onHide={handleModalClose}
-      >
+      <ModelComponent show={modalType !== null} onHide={handleModalClose}>
         {modalType === "login" ? (
-          <LoginForm switchToSignUp={openSignUpModal} closeModel={handleModalClose}/>
+          <LoginForm
+            switchToSignUp={openSignUpModal}
+            closeModel={handleModalClose}
+          />
         ) : (
-          <SignUpForm switchToLogin={openLoginModal}/>
+          <SignUpForm switchToLogin={openLoginModal} />
         )}
       </ModelComponent>
     </div>

@@ -1,27 +1,24 @@
-import { Modal } from 'react-bootstrap';
+import { Modal } from "react-bootstrap";
 
 function ModelComponent(props) {
-    const { children, onHide, ...restProps } = props;
+  const { children, onHide, ...restProps } = props;
 
-    return (
-        <Modal
-            {...restProps}
-            size="xl"
-            aria-labelledby="contained-modal-title-vcenter"
-            centered
-        >
-            <Modal.Body>
-                <div 
-                    className="back-button"
-                    onClick={onHide}
-                >
-                    <i className='bi bi-arrow-left'></i>
-                    <span>Back</span>
-                </div>
-                {children} {/* Render the passed content dynamically */}
-            </Modal.Body>
-        </Modal>
-    );
+  return (
+    <Modal
+      {...restProps}
+      size="xl"
+      aria-labelledby="contained-modal-title-vcenter"
+      centered
+    >
+      <Modal.Body>
+        <div className="back-button" onClick={onHide}>
+          <i className="bi bi-arrow-left"></i>
+          <span>Back</span>
+        </div>
+        {children} {/* Render the passed content dynamically */}
+      </Modal.Body>
+    </Modal>
+  );
 }
 
 export default ModelComponent;

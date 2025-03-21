@@ -4,24 +4,26 @@ import NavContentLayout from "../../components/NavContentLayout";
 import AdminNavigation, { sidebarItems } from "./AdminNavigation";
 
 function AdminPage() {
-    // State to manage the active tab
-    const [activeTab, setActiveTab] = useState(sidebarItems[0]?.id || "dashboard");
+  // State to manage the active tab
+  const [activeTab, setActiveTab] = useState(
+    sidebarItems[0]?.id || "dashboard"
+  );
 
-    const handleTabChange = (tabId) => {
-        setActiveTab(tabId);
-    };
+  const handleTabChange = (tabId) => {
+    setActiveTab(tabId);
+  };
 
-    return (
-        <NavContentLayout sidebarItems={sidebarItems} mainContentItems={[]}>
-            {/* Admin navigation will be rendered here */}
-            <AdminNavigation activeTab={activeTab} onTabChange={handleTabChange} />
+  return (
+    <NavContentLayout sidebarItems={sidebarItems} mainContentItems={[]}>
+      {/* Admin navigation will be rendered here */}
+      <AdminNavigation activeTab={activeTab} onTabChange={handleTabChange} />
 
-            {/* Render child routes based on active tab */}
-            <div className="col">
-                <Outlet />
-            </div>
-        </NavContentLayout>
-    );
+      {/* Render child routes based on active tab */}
+      <div className="col">
+        <Outlet />
+      </div>
+    </NavContentLayout>
+  );
 }
 
 export default AdminPage;
