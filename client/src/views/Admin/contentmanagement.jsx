@@ -252,18 +252,10 @@ function ContentManagement() {
       <PageTitleBreadcrumb
         title="Content Management"
         path={location.pathname}
+        isAddNew={true}
+        onclickToggle={() => setShowNewModal(true)}
+        btnTitle="Add New Slideshow"
       />
-      <Button
-        variant="success"
-        className="position-fixed bottom-0 end-0 d-flex align-items-center justify-content-center m-3"
-        onClick={() => setShowNewModal(true)}
-        style={{
-          zIndex: 1050,
-          boxShadow: "0 2px 5px rgba(0,0,0,0.2)",
-        }}
-      >
-        <i className="bi bi-plus-lg fs-4"></i> &nbsp; Add New Slideshow
-      </Button>
       <Container>
         <section className="py-3">
           {loading ? (
@@ -333,7 +325,10 @@ function ContentManagement() {
         {/* Add and Edit Image Modals */}
         <ModelComponent
           show={showNewModal || showEditModal}
-          onHide={showNewModal ? handleCloseNewModal : handleCloseEditModal}
+          onHide={() => {
+            setShowNewModal(false);
+            setShowEditModal(false);
+          }}
           title={showNewModal ? "Add New Slideshow" : "Edit Slideshow"}
         >
           <SlideshowForm

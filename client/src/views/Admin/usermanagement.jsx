@@ -1,12 +1,5 @@
 import React, { useState } from "react";
-import {
-  Table,
-  Container,
-  Button,
-  Form,
-  Pagination,
-  FormGroup,
-} from "react-bootstrap";
+import { Table, Container, Button, Form, Pagination } from "react-bootstrap";
 import UserStatusBadge from "../../components/UserStatusBadge";
 import { useLoadingState } from "../../utils/loadingUtils";
 import LoadingSpinner from "../../components/LoadingSpinner";
@@ -179,7 +172,13 @@ function UserManagement() {
 
   return (
     <>
-      <PageTitleBreadcrumb title="User Management" path={location.pathname} />
+      <PageTitleBreadcrumb
+        title="User Management"
+        path={location.pathname}
+        isAddNew="True"
+        onclickToggle={() => null}
+        btnTitle="Add New User"
+      />
       <div className="ms-3 me-3">
         {loading ? (
           <LoadingSpinner text="Loading users..." />

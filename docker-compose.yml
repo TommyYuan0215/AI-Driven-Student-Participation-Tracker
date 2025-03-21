@@ -15,6 +15,7 @@ services:
       - DATABASE_USER=root
       - DATABASE_PASSWORD=root
       - DATABASE_NAME=aispt
+      - FLASK_ENV=development
     networks:
       - mynetwork
 
