@@ -16,6 +16,7 @@ import ContentManagement from "./views/Admin/contentmanagement";
 
 import EducatorPage from "./views/Educator/EducatorPage";
 import EducatorDashboard from "./views/Educator/dashboard";
+import RealTimeMonitoring from "./views/Educator/RealTimeMonitoring";
 import EducatorStatistics from "./views/Educator/statistics";
 import GeneralSettings from "./views/Settings/general";
 import AccountSettings from "./views/Settings/account";
@@ -51,6 +52,7 @@ function App() {
         {/* Educator Protected Routes */}
         <Route path="/views/educator/*" element={<EducatorPage />}>
           <Route path="dashboard" element={<EducatorDashboard />} />
+          <Route path="tracking" element={<RealTimeMonitoring />} />
           <Route path="postanalytics/*">
             <Route path="statistics" element={<EducatorStatistics />} />
           </Route>

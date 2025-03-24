@@ -4,9 +4,15 @@ import SidebarComponent from "../../components/SidebarComponent";
 // Define sidebar items for Educator navigation
 const sidebarItems = [
   {
-    id: "realtime",
-    label: "Real-Time Monitoring",
+    id: "dashboard",
+    label: "Dashboard",
     path: "/views/educator/dashboard",
+    icon: "bi bi-house",
+  },
+  {
+    id: "tracking",
+    label: "Real-Time Monitoring",
+    path: "/views/educator/tracking",
     icon: "bi bi-speedometer2",
   },
   {
