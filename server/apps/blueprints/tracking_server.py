@@ -15,6 +15,9 @@ model_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "mode
 # Load the trained model
 model = tf.keras.models.load_model(model_path, compile=False)
 
+# Load Haar Cascade classifier for face detection
+face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
+
 # Function to preprocess images before passing them to the model
 def preprocess_image(image_data):
     try:
@@ -25,14 +28,29 @@ def preprocess_image(image_data):
         
         if img is None:
             print("Failed to decode image")
-            return None
+            return None, None
 
-        img = cv2.resize(img, (224, 224))  # Ensure size is correct
-        img = img / 255.0  # Normalize pixel values
-        return np.expand_dims(img, axis=0)  # Add batch dimension
+        # Convert image to grayscale for face detection
+        gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+
+        # Detect faces using Haar Cascade
+        faces = face_cascade.detectMultiScale(gray, scaleFactor=1.1, minNeighbors=5, minSize=(30, 30))
+
+        if len(faces) > 0:
+            # Assuming we are interested in the first detected face
+            x, y, w, h = faces[0]
+
+            # Crop the face region for emotion prediction
+            face_crop = img[y:y+h, x:x+w]
+            face_crop = cv2.resize(face_crop, (224, 224))  # Resize to model input size
+            face_crop = face_crop / 255.0  # Normalize pixel values
+            return np.expand_dims(face_crop, axis=0), (x, y, w, h)
+        else:
+            print("No faces detected")
+            return None, None
     except Exception as e:
         print("Error processing image:", str(e))
-        return None
+        return None, None
 
 
 # WebSocket event handlers
@@ -50,8 +68,9 @@ def handle_disconnect():
 def handle_video_frame(data):
     frame_data = data.get("frame")
     if frame_data:
-        img = preprocess_image(frame_data)
-        if img is not None:
+        img, box = preprocess_image(frame_data)
+        if img is not None and box is not None:
+            # Make emotion prediction
             prediction = model.predict(img)
 
             # Assuming softmax output with emotion classes
@@ -59,11 +78,16 @@ def handle_video_frame(data):
             predicted_label = classes[np.argmax(prediction)]
             confidence = float(np.max(prediction))
 
-            # Generate a random bounding box (mock data, replace with actual face detection)
-            box_x, box_y, box_w, box_h = 50, 50, 150, 150  
-
+            # Send back the bounding box and emotion label
             emit("tracking_update", {
                 "label": predicted_label,
                 "confidence": confidence,
-                "box": [box_x, box_y, box_w, box_h]
+                "box": [*box]  # Send bounding box coordinates
+            }, broadcast=True)
+        else:
+            # If no face is detected, send default data
+            emit("tracking_update", {
+                "label": "No face detected",
+                "confidence": 0,
+                "box": [0, 0, 0, 0]
             }, broadcast=True)
