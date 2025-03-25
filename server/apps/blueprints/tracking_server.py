@@ -13,7 +13,7 @@ tracking_route = Blueprint("tracking", __name__)
 model_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "models", "emotion_recognition_model.h5"))
 
 # Load the trained model
-model = tf.keras.models.load_model(model_path)
+model = tf.keras.models.load_model(model_path, compile=False)
 
 # Function to preprocess images before passing them to the model
 def preprocess_image(image_data):

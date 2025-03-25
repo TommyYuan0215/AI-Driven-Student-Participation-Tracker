@@ -7,17 +7,19 @@ WORKDIR /app
 # Copy package.json and package-lock.json first (to cache dependencies)
 COPY package*.json ./
 
-# Install dependencies
+# Install dependencies (clean cache afterward)
 RUN npm install
 
 # Copy the rest of the project
 COPY . .
 
+# Set environment variables for Docker compatibility
+ENV NODE_ENV=development
+ENV CHOKIDAR_USEPOLLING=true
+ENV WATCHPACK_POLLING=true
+
 # Expose the development server port
 EXPOSE 5173
 
-# Set environment variables to enable polling (important for Docker)
-ENV CHOKIDAR_USEPOLLING=true
-
-# Start the Vite server with correct host binding
-CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0"]
+# Start the Vite server with host binding
+CMD ["npm", "run", "dev", "--host", "0.0.0.0"]
