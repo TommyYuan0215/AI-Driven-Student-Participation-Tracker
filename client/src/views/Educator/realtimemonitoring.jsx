@@ -142,22 +142,26 @@ function RealTimeMonitoring() {
     toast.info("Screen sharing stopped");
   };
 
-  // Handle Tracking Toggle
-  const handleTracking = () => {
-    if (!isTracking) {
-      if (!mediaStreamRef.current) {
-        toast.error("No active video stream to track!");
-        return;
-      }
-
+  // Effect to handle tracking state changes
+  useEffect(() => {
+    if (isTracking) {
       toast.success("Tracking started");
       startSendingVideo();
     } else {
-      clearInterval(trackingIntervalRef.current);
-      trackingIntervalRef.current = null;
       toast.info("Tracking stopped");
+      if (trackingIntervalRef.current) {
+        clearInterval(trackingIntervalRef.current);
+        trackingIntervalRef.current = null;
+      }
     }
+  }, [isTracking]);
 
+  // Handle Tracking Toggle
+  const handleTracking = () => {
+    if (!mediaStreamRef.current && !isTracking) {
+      toast.error("No active video stream to track!");
+      return;
+    }
     setIsTracking((prev) => !prev);
   };
 
@@ -195,33 +199,66 @@ function RealTimeMonitoring() {
     const videoElement = isCameraOn ? cameraRef.current : screenRef.current;
 
     if (!videoElement) {
-      console.error("No active video element!");
+      console.error("No video element found!");
+      return;
+    }
+
+    console.log("Media Stream Tracks:", mediaStreamRef.current?.getTracks());
+    console.log("Stream Active:", mediaStreamRef.current?.active);
+
+    // Ensure video metadata is loaded
+    if (videoElement.readyState < 2) {  // `2` means "HAVE_CURRENT_DATA"
+      console.warn("Video not ready yet, waiting for metadata...");
+      videoElement.addEventListener("loadedmetadata", startSendingVideo, { once: true });
+      return;
+    }
+
+    if (!videoElement.videoWidth || !videoElement.videoHeight) {
+      console.error("Video not ready yet. Width/Height not set.");
+      return;
+    }
+
+    if (videoElement.paused) {
+      console.error("Video is paused. Ensure it's playing before capturing.");
       return;
     }
 
     const canvas = document.createElement("canvas");
     const ctx = canvas.getContext("2d");
 
-    trackingIntervalRef.current = setInterval(() => {
-      if (!socketRef.current || !videoElement || !isTracking) return;
+    // Match canvas size to the video feed
+    canvas.width = videoElement.videoWidth;
+    canvas.height = videoElement.videoHeight;
 
-      // Get actual video dimensions
-      canvas.width = 224; // Match model input size
-      canvas.height = 224; // Match model input size
+    trackingIntervalRef.current = setInterval(() => {
+
+      if (!socketRef.current) {
+        console.error("Socket not available!");
+        return;
+      }
+
+      if (!isTracking) {
+        console.error("Tracking is OFF!");
+        return;
+      }
 
       try {
-        // Draw the current video frame to the canvas, resizing to 224x224
+        // Draw video frame to canvas
         ctx.drawImage(videoElement, 0, 0, canvas.width, canvas.height);
 
-        // Convert canvas to data URL (JPEG format for smaller size)
+        // Convert to Base64
         const imageData = canvas.toDataURL("image/jpeg", 0.8);
 
-        // Send to server
+        // Debugging: Log first 50 characters of the Base64 string
+        console.log("Sending frame:", imageData.substring(0, 50));
+
+        // Send to backend
         socketRef.current.emit("video_frame", { frame: imageData });
+
       } catch (error) {
         console.error("Error capturing video frame:", error);
       }
-    }, 100); // Adjust FPS (100ms = 10 FPS)
+    }, 100);
   };
 
   // Cleanup when component unmounts
