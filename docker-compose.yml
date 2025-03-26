@@ -16,6 +16,7 @@ services:
       - DATABASE_PASSWORD=root
       - DATABASE_NAME=aispt
       - FLASK_ENV=development
+      - GUNICORN_CMD_ARGS="--reload"
     networks:
       - mynetwork
 
@@ -28,6 +29,8 @@ services:
       - /app/node_modules  # Prevents overwriting node_modules
     depends_on:
       - backend
+    environment:
+      - CHOKIDAR_USEPOLLING=true
     networks:
       - mynetwork
 
