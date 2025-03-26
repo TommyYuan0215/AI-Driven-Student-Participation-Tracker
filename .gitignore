@@ -15,7 +15,6 @@ client/*.local
 
 # Ignore server dependencies & builds
 server/.venv/
-server/apps/models/*
 server/apps/__pycache__/
 
 # Ignore Flask session files
