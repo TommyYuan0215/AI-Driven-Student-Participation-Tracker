@@ -10,7 +10,7 @@ function RealTimeMonitoring() {
   const [isTracking, setIsTracking] = useState(false);
   const [isShareScreen, setIsShareScreen] = useState(false);
   const [isCameraOn, setIsCameraOn] = useState(false);
-  const [trackingData, setTrackingData] = useState(null);
+  const [trackingData, setTrackingData] = useState({});
   const [studentStats, setStudentStats] = useState({});
 
   const cameraRef = useRef(null);
@@ -18,48 +18,55 @@ function RealTimeMonitoring() {
   const videoContainerRef = useRef(null);
   const mediaStreamRef = useRef(null);
   const socketRef = useRef(null);
+  const boxRef = useRef(null);
   const trackingIntervalRef = useRef(null);
+  const hasStoppedTracking = useRef(false);
 
-  // Initialize WebSocket Connection
+  // Initialize WebSocket Connection while start tracking
   useEffect(() => {
-    // Connect to the WebSocket server
-    socketRef.current = io(SOCKET_URL);
-
-    socketRef.current.on("connect", () => {
-      console.log("Connected to WebSocket");
-      toast.success("Connected to tracking server");
-    });
-
-    socketRef.current.on("tracking_update", (data) => {
-      console.log("Tracking update:", data);
-      setTrackingData(data);
-
-      // Update statistics (for demonstration)
-      setStudentStats((prev) => {
-        const emotion = data.label;
-        return {
-          ...prev,
-          [emotion]: (prev[emotion] || 0) + 1,
-        };
+    if (isTracking) {
+      // Connect to the WebSocket server only if tracking is enabled
+      socketRef.current = io(SOCKET_URL);
+  
+      socketRef.current.on("connect", () => {
+        console.log("Connected to WebSocket");
+        toast.success("Connected to tracking server");
       });
-    });
-
-    socketRef.current.on("connect_error", (error) => {
-      console.error("WebSocket connection error:", error);
-      toast.error("Failed to connect to tracking server");
-    });
-
-    socketRef.current.on("disconnect", () => {
-      console.log("WebSocket Disconnected");
-      toast.warn("Disconnected from tracking server");
-    });
-
-    return () => {
+  
+      socketRef.current.on("tracking_update", (data) => {
+        console.log("Tracking update:", data);
+        setTrackingData(data);
+  
+        // Update statistics
+        setStudentStats((prev) => ({
+          ...prev,
+          [data.label]: (prev[data.label] || 0) + 1,
+        }));
+      });
+  
+      socketRef.current.on("connect_error", (error) => {
+        console.error("WebSocket connection error:", error);
+        toast.error("Failed to connect to tracking server");
+      });
+  
+      socketRef.current.on("disconnect", () => {
+        console.log("WebSocket Disconnected");
+        toast.warn("Disconnected from tracking server");
+      });
+  
+      return () => {
+        if (socketRef.current) {
+          socketRef.current.disconnect();
+        }
+      };
+    } else {
+      // If tracking is disabled, make sure to disconnect
       if (socketRef.current) {
         socketRef.current.disconnect();
+        console.log("Tracking stopped, WebSocket disconnected");
       }
-    };
-  }, []);
+    }
+  }, [isTracking]);
 
   // Handle Camera Start/Stop
   const handleCamera = async () => {
@@ -142,18 +149,22 @@ function RealTimeMonitoring() {
     toast.info("Screen sharing stopped");
   };
 
-  // Effect to handle tracking state changes
+  // Tracking Handlers
   useEffect(() => {
-    if (isTracking) {
-      toast.success("Tracking started");
-      startSendingVideo();
-    } else {
-      toast.info("Tracking stopped");
-      if (trackingIntervalRef.current) {
-        clearInterval(trackingIntervalRef.current);
-        trackingIntervalRef.current = null;
+    if (!isTracking) return;
+  
+    hasStoppedTracking.current = false;
+    toast.success("Tracking started");
+    startSendingVideo();
+  
+    return () => {
+      if (!hasStoppedTracking.current) {
+        toast.info("Tracking stopped");
+        hasStoppedTracking.current = true;
       }
-    }
+      clearInterval(trackingIntervalRef.current);
+      trackingIntervalRef.current = null;
+    };
   }, [isTracking]);
 
   // Handle Tracking Toggle
@@ -165,113 +176,93 @@ function RealTimeMonitoring() {
     setIsTracking((prev) => !prev);
   };
 
-  // Calculate bounding box position relative to video display
-  const calculateBoundingBoxPosition = () => {
-    if (!trackingData?.box || !videoContainerRef.current) return null;
-
-    const videoElement = isCameraOn ? cameraRef.current : screenRef.current;
-    if (!videoElement) return null;
-
-    const containerRect = videoContainerRef.current.getBoundingClientRect();
-    const videoRect = videoElement.getBoundingClientRect();
-
-    // Get the actual display dimensions of the video within the container
-    const displayWidth = videoRect.width;
-    const displayHeight = videoRect.height;
-
-    // Original box coordinates from backend
-    const [x, y, width, height] = trackingData.box;
-
-    // Scale factors (assuming backend processed a 224x224 image)
-    const scaleX = displayWidth / 224;
-    const scaleY = displayHeight / 224;
-
-    return {
-      left: x * scaleX,
-      top: y * scaleY,
-      width: width * scaleX,
-      height: height * scaleY,
-    };
-  };
-
   // Send Video Frames to Backend
   const startSendingVideo = () => {
     const videoElement = isCameraOn ? cameraRef.current : screenRef.current;
 
     if (!videoElement) {
-      console.error("No video element found!");
-      return;
-    }
-
-    console.log("Media Stream Tracks:", mediaStreamRef.current?.getTracks());
-    console.log("Stream Active:", mediaStreamRef.current?.active);
-
-    // Ensure video metadata is loaded
-    if (videoElement.readyState < 2) {  // `2` means "HAVE_CURRENT_DATA"
-      console.warn("Video not ready yet, waiting for metadata...");
-      videoElement.addEventListener("loadedmetadata", startSendingVideo, { once: true });
-      return;
-    }
-
-    if (!videoElement.videoWidth || !videoElement.videoHeight) {
-      console.error("Video not ready yet. Width/Height not set.");
-      return;
+        console.error("No video element found!");
+        return;
     }
 
     if (videoElement.paused) {
-      console.error("Video is paused. Ensure it's playing before capturing.");
-      return;
+        console.warn("Video is paused. Ensure it's playing before capturing.");
+        return;
     }
+
+    console.log("Starting video frame capture...");
 
     const canvas = document.createElement("canvas");
     const ctx = canvas.getContext("2d");
-
-    // Match canvas size to the video feed
     canvas.width = videoElement.videoWidth;
     canvas.height = videoElement.videoHeight;
 
+    console.log(`Canvas initialized with size: ${canvas.width}x${canvas.height}`);
+
     trackingIntervalRef.current = setInterval(() => {
+        if (!socketRef.current) {
+            console.error("Socket not available!");
+            return;
+        }
 
-      if (!socketRef.current) {
-        console.error("Socket not available!");
-        return;
-      }
+        if (!isTracking) {
+            console.warn("Tracking is OFF. Stopping video frame capture.");
+            clearInterval(trackingIntervalRef.current);
+            return;
+        }
 
-      if (!isTracking) {
-        console.error("Tracking is OFF!");
-        return;
-      }
+        try {
+            ctx.drawImage(videoElement, 0, 0, canvas.width, canvas.height);
+            const imageData = canvas.toDataURL("image/jpeg", 0.8);
 
-      try {
-        // Draw video frame to canvas
-        ctx.drawImage(videoElement, 0, 0, canvas.width, canvas.height);
+            // Log only the first 50 characters to avoid flooding the console
+            console.log("Sending frame:", imageData.substring(0, 50), "...");
 
-        // Convert to Base64
-        const imageData = canvas.toDataURL("image/jpeg", 0.8);
-
-        // Debugging: Log first 50 characters of the Base64 string
-        console.log("Sending frame:", imageData.substring(0, 50));
-
-        // Send to backend
-        socketRef.current.emit("video_frame", { frame: imageData });
-
-      } catch (error) {
-        console.error("Error capturing video frame:", error);
-      }
+            socketRef.current.emit("video_frame", { frame: imageData });
+        } catch (error) {
+            console.error("Error capturing video frame:", error);
+        }
     }, 100);
   };
 
-  // Cleanup when component unmounts
-  useEffect(() => {
-    return () => {
-      stopMediaStream();
-      clearInterval(trackingIntervalRef.current);
-      if (socketRef.current) socketRef.current.disconnect();
+  const updateBoundingBox = () => {
+    if (!trackingData?.box || !videoContainerRef.current) return;
+  
+    const videoElement = isCameraOn ? cameraRef.current : screenRef.current;
+    if (!videoElement) return;
+  
+    const containerRect = videoContainerRef.current.getBoundingClientRect();
+    const videoRect = videoElement.getBoundingClientRect();
+  
+    const [x, y, width, height] = trackingData.box;
+    const originalVideoWidth = videoElement.videoWidth;
+    const originalVideoHeight = videoElement.videoHeight;
+  
+    if (!originalVideoWidth || !originalVideoHeight) return;
+  
+    const scaleX = videoRect.width / originalVideoWidth;
+    const scaleY = videoRect.height / originalVideoHeight;
+  
+    const newBoxPosition = {
+      left: videoRect.left + x * scaleX - containerRect.left,
+      top: videoRect.top + y * scaleY - containerRect.top,
+      width: width * scaleX,
+      height: height * scaleY,
     };
-  }, []);
+  
+    if (boxRef.current) {
+      boxRef.current.style.left = `${newBoxPosition.left}px`;
+      boxRef.current.style.top = `${newBoxPosition.top}px`;
+      boxRef.current.style.width = `${newBoxPosition.width}px`;
+      boxRef.current.style.height = `${newBoxPosition.height}px`;
+    }
+  
+    requestAnimationFrame(updateBoundingBox); // Continuous update for smooth tracking
+  };
 
-  // Calculate box position
-  const boxPosition = trackingData?.box ? calculateBoundingBoxPosition() : null;
+  useEffect(() => {
+    requestAnimationFrame(updateBoundingBox);
+  }, [trackingData]);
 
   return (
     <Container fluid className="d-flex flex-column p-0 vh-85">
@@ -307,17 +298,14 @@ function RealTimeMonitoring() {
             />
 
             {/* Emotion Detection Bounding Box */}
-            {boxPosition && isTracking && trackingData?.confidence > 0.5 && (
+            {isTracking && trackingData?.confidence > 0.5 && (
               <div
-                className="position-relative"
+                ref={boxRef}
+                className="position-absolute"
                 style={{
-                  position: "absolute",
                   border: "3px solid red",
-                  top: boxPosition.top,
-                  left: boxPosition.left,
-                  width: boxPosition.width,
-                  height: boxPosition.height,
                   zIndex: 100,
+                  pointerEvents: "none", // Prevents blocking interactions
                 }}
               >
                 {/* Emotion Label */}
@@ -333,25 +321,8 @@ function RealTimeMonitoring() {
                     borderRadius: "4px",
                   }}
                 >
-                  {trackingData.label} (
-                  {Math.round(trackingData.confidence * 100)}%)
+                  {trackingData?.label} ({Math.round(trackingData?.confidence * 100 || 0)}%)
                 </div>
-              </div>
-            )}
-
-            {/* Tracking Data Display */}
-            {trackingData && isTracking && (
-              <div
-                className="position-absolute text-white bg-dark p-2 rounded"
-                style={{ top: 20, left: 20, opacity: 0.8 }}
-              >
-                <p className="mb-1">
-                  <strong>Emotion:</strong> {trackingData.label}
-                </p>
-                <p className="mb-0">
-                  <strong>Confidence:</strong>{" "}
-                  {(trackingData.confidence * 100).toFixed(2)}%
-                </p>
               </div>
             )}
 

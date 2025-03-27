@@ -27,4 +27,4 @@ ENV FLASK_RUN_HOST=0.0.0.0
 ENV FLASK_ENV=development 
 
 # Run the Flask app
-CMD ["gunicorn", "-k", "eventlet", "-w", "2", "-b", "0.0.0.0:5000", "--reload", "server:app"]
+CMD ["gunicorn", "-k", "eventlet", "-w", "1", "-b", "0.0.0.0:5000", "--reload", "server:app"]
