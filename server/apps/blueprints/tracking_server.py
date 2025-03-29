@@ -15,14 +15,31 @@ face_detector = mp_face_detection.FaceDetection(min_detection_confidence=0.5)
 model_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "models", "emotion_recognition_model.h5"))
 model = tf.keras.models.load_model(model_path, compile=False)
 
+# Global tracking variable for smoothing
+previous_box = None  
+
+def smooth_box(new_box, alpha=0.2):
+    """
+    Apply exponential smoothing to stabilize the bounding box.
+    """
+    global previous_box
+    
+    if previous_box is None:
+        previous_box = new_box  # First frame, no smoothing needed
+        return new_box
+
+    # Apply Exponential Moving Average (EMA) smoothing
+    smoothed_box = [
+        alpha * new + (1 - alpha) * old
+        for new, old in zip(new_box, previous_box)
+    ]
+
+    previous_box = smoothed_box  # Update previous box
+    return [int(coord) for coord in smoothed_box]  # Convert back to integers
+
 def create_tracking_server(socketio):
     tracking_route = Blueprint("tracking", __name__)
 
-    @tracking_route.route("/test")
-    def test_route():
-        return "Tracking route is working!"
-
-    # ✅ Use `socketio` directly
     @socketio.on("connect")
     def handle_connect():
         print("✅ Client connected", flush=True)
@@ -38,22 +55,21 @@ def create_tracking_server(socketio):
         frame_data = data.get("frame")
         if frame_data:
             img, box = preprocess_image(frame_data)
-            print(f"🔍 Box received from preprocess_image: {box}", flush=True)
             
             if img is not None and box is not None:
-                x, y, box_w, box_h = box  # Unpack bounding box properly
+                x, y, box_w, box_h = smooth_box(box)  # Apply smoothing
 
                 prediction = model.predict(img)
                 classes = ["Interested", "Bored", "Lacking_Focus"]
                 predicted_label = classes[np.argmax(prediction)]
                 confidence = float(np.max(prediction))
 
-                print(f"📦 Emitting: Label={predicted_label}, Confidence={confidence}, Box={[x, y, box_w, box_h]}", flush=True)
+                print(f"📦 Emitting: Label={predicted_label}, Confidence={confidence}, Smoothed Box={[x, y, box_w, box_h]}", flush=True)
 
                 emit("tracking_update", {
                     "label": predicted_label,
                     "confidence": confidence,
-                    "box": [int(x), int(y), int(box_w), int(box_h)] 
+                    "box": [int(x), int(y), int(box_w), int(box_h)]
                 }, broadcast=True)
 
     return tracking_route
@@ -91,18 +107,18 @@ def preprocess_image(image_data):
         box_w = int(bboxC.width * w_img)
         box_h = int(bboxC.height * h_img)
 
-        # Ensure bounding box is within image bounds
+        # Ensure bounding box is valid
         x = max(0, x)
         y = max(0, y)
         box_w = min(box_w, w_img - x)
         box_h = min(box_h, h_img - y)
 
-        # Ensure bounding box is valid
-        if x < 0 or y < 0 or box_w <= 0 or box_h <= 0:
-            print("❌ Error: Invalid face bounding box")
-            return None, None
+        # Apply smoothing
+        smoothed_box = smooth_box([x, y, box_w, box_h])
 
-        face_crop = img[y:y+box_h, x:x+box_w]
+        # Crop and preprocess face
+        face_crop = img[smoothed_box[1]:smoothed_box[1]+smoothed_box[3], 
+                        smoothed_box[0]:smoothed_box[0]+smoothed_box[2]]
 
         if face_crop.size == 0:
             print("❌ Error: Face crop is empty!")
@@ -112,7 +128,7 @@ def preprocess_image(image_data):
         face_crop = cv2.resize(face_crop, (224, 224))
         face_crop = face_crop.astype("float32") / 255.0
 
-        return np.expand_dims(face_crop, axis=0), (x, y, box_w, box_h)
+        return np.expand_dims(face_crop, axis=0), smoothed_box  # Return smoothed bounding box
 
     except Exception as e:
         print("❌ Error processing image:", str(e))
