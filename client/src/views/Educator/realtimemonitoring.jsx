@@ -21,6 +21,7 @@ function RealTimeMonitoring() {
   const boxRef = useRef(null);
   const trackingIntervalRef = useRef(null);
   const hasStoppedTracking = useRef(false);
+  const animationFrameRef = useRef(null);
 
   // Initialize WebSocket Connection while start tracking
   useEffect(() => {
@@ -34,7 +35,7 @@ function RealTimeMonitoring() {
       });
   
       socketRef.current.on("tracking_update", (data) => {
-        console.log("Tracking update:", data);
+        console.log("Tracking update received:", data);
         setTrackingData(data);
   
         // Update statistics
@@ -86,7 +87,7 @@ function RealTimeMonitoring() {
 
         if (cameraRef.current) {
           cameraRef.current.srcObject = stream;
-          cameraRef.current.play();
+          await cameraRef.current.play().catch(err => console.error("Play error:", err));
         }
 
         setIsCameraOn(true);
@@ -112,7 +113,7 @@ function RealTimeMonitoring() {
 
         if (screenRef.current) {
           screenRef.current.srcObject = stream;
-          screenRef.current.play();
+          await screenRef.current.play().catch(err => console.error("Play error:", err));
         }
 
         stream.getVideoTracks()[0].onended = () => stopScreenShare();
@@ -151,21 +152,64 @@ function RealTimeMonitoring() {
 
   // Tracking Handlers
   useEffect(() => {
-    if (!isTracking) return;
+    if (!isTracking) {
+      if (trackingIntervalRef.current) {
+        clearInterval(trackingIntervalRef.current);
+        trackingIntervalRef.current = null;
+      }
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+        animationFrameRef.current = null;
+      }
+      if (!hasStoppedTracking.current) {
+        toast.info("Tracking stopped");
+        hasStoppedTracking.current = true;
+      }
+      // Hide the bounding box when tracking stops
+      if (boxRef.current) {
+        boxRef.current.style.display = 'none';
+      }
+      return;
+    }
   
     hasStoppedTracking.current = false;
     toast.success("Tracking started");
     startSendingVideo();
+    
+    // Start the bounding box update animation
+    updateBoundingBox();
   
     return () => {
       if (!hasStoppedTracking.current) {
         toast.info("Tracking stopped");
         hasStoppedTracking.current = true;
       }
-      clearInterval(trackingIntervalRef.current);
-      trackingIntervalRef.current = null;
+      if (trackingIntervalRef.current) {
+        clearInterval(trackingIntervalRef.current);
+        trackingIntervalRef.current = null;
+      }
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+        animationFrameRef.current = null;
+      }
     };
   }, [isTracking]);
+
+  // Clean up when component unmounts
+  useEffect(() => {
+    return () => {
+      stopMediaStream();
+      if (trackingIntervalRef.current) {
+        clearInterval(trackingIntervalRef.current);
+      }
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
+      if (socketRef.current) {
+        socketRef.current.disconnect();
+      }
+    };
+  }, []);
 
   // Handle Tracking Toggle
   const handleTracking = () => {
@@ -176,93 +220,194 @@ function RealTimeMonitoring() {
     setIsTracking((prev) => !prev);
   };
 
+  // Log tracking data changes for debugging
+  useEffect(() => {
+    console.log("TrackingData updated:", trackingData);
+  }, [trackingData]);
+
   // Send Video Frames to Backend
   const startSendingVideo = () => {
     const videoElement = isCameraOn ? cameraRef.current : screenRef.current;
 
     if (!videoElement) {
-        console.error("No video element found!");
-        return;
+      console.error("No video element found!");
+      return;
     }
 
+    // Wait for video to have dimensions
+    const checkVideoReady = () => {
+      if (videoElement.videoWidth > 0 && videoElement.videoHeight > 0) {
+        initializeCapturing(videoElement);
+      } else {
+        setTimeout(checkVideoReady, 100);
+      }
+    };
+
+    checkVideoReady();
+  };
+
+  const initializeCapturing = (videoElement) => {
     if (videoElement.paused) {
-        console.warn("Video is paused. Ensure it's playing before capturing.");
-        return;
+      console.warn("Video is paused. Attempting to play...");
+      videoElement.play().catch(e => console.error("Couldn't play video:", e));
     }
 
     console.log("Starting video frame capture...");
 
     const canvas = document.createElement("canvas");
     const ctx = canvas.getContext("2d");
+    
+    // Set canvas dimensions to match video dimensions
     canvas.width = videoElement.videoWidth;
     canvas.height = videoElement.videoHeight;
 
     console.log(`Canvas initialized with size: ${canvas.width}x${canvas.height}`);
 
-    trackingIntervalRef.current = setInterval(() => {
-        if (!socketRef.current) {
-            console.error("Socket not available!");
-            return;
-        }
-
-        if (!isTracking) {
-            console.warn("Tracking is OFF. Stopping video frame capture.");
-            clearInterval(trackingIntervalRef.current);
-            return;
-        }
-
-        try {
-            ctx.drawImage(videoElement, 0, 0, canvas.width, canvas.height);
-            const imageData = canvas.toDataURL("image/jpeg", 0.8);
-
-            // Log only the first 50 characters to avoid flooding the console
-            console.log("Sending frame:", imageData.substring(0, 50), "...");
-
-            socketRef.current.emit("video_frame", { frame: imageData });
-        } catch (error) {
-            console.error("Error capturing video frame:", error);
-        }
-    }, 100);
-  };
-
-  const updateBoundingBox = () => {
-    if (!trackingData?.box || !videoContainerRef.current) return;
-  
-    const videoElement = isCameraOn ? cameraRef.current : screenRef.current;
-    if (!videoElement) return;
-  
-    const containerRect = videoContainerRef.current.getBoundingClientRect();
-    const videoRect = videoElement.getBoundingClientRect();
-  
-    const [x, y, width, height] = trackingData.box;
-    const originalVideoWidth = videoElement.videoWidth;
-    const originalVideoHeight = videoElement.videoHeight;
-  
-    if (!originalVideoWidth || !originalVideoHeight) return;
-  
-    const scaleX = videoRect.width / originalVideoWidth;
-    const scaleY = videoRect.height / originalVideoHeight;
-  
-    const newBoxPosition = {
-      left: videoRect.left + x * scaleX - containerRect.left,
-      top: videoRect.top + y * scaleY - containerRect.top,
-      width: width * scaleX,
-      height: height * scaleY,
-    };
-  
-    if (boxRef.current) {
-      boxRef.current.style.left = `${newBoxPosition.left}px`;
-      boxRef.current.style.top = `${newBoxPosition.top}px`;
-      boxRef.current.style.width = `${newBoxPosition.width}px`;
-      boxRef.current.style.height = `${newBoxPosition.height}px`;
+    // Clear any existing interval
+    if (trackingIntervalRef.current) {
+      clearInterval(trackingIntervalRef.current);
     }
-  
-    requestAnimationFrame(updateBoundingBox); // Continuous update for smooth tracking
+
+    trackingIntervalRef.current = setInterval(() => {
+      if (!socketRef.current || !socketRef.current.connected) {
+        console.error("Socket not available or not connected!");
+        return;
+      }
+
+      if (!isTracking) {
+        console.warn("Tracking is OFF. Stopping video frame capture.");
+        clearInterval(trackingIntervalRef.current);
+        trackingIntervalRef.current = null;
+        return;
+      }
+
+      try {
+        // Check if video dimensions have changed
+        if (canvas.width !== videoElement.videoWidth || 
+            canvas.height !== videoElement.videoHeight) {
+          canvas.width = videoElement.videoWidth;
+          canvas.height = videoElement.videoHeight;
+        }
+        
+        ctx.drawImage(videoElement, 0, 0, canvas.width, canvas.height);
+        const imageData = canvas.toDataURL("image/jpeg", 0.7); // Reduced quality for better performance
+
+        // Log only the first 50 characters to avoid flooding the console
+        console.log("Sending frame:", imageData.substring(0, 50), "...");
+
+        socketRef.current.emit("video_frame", { 
+          frame: imageData,
+          dimensions: {
+            width: canvas.width,
+            height: canvas.height
+          }
+        });
+      } catch (error) {
+        console.error("Error capturing video frame:", error);
+      }
+    }, 200); // Reduced frequency to 5 frames per second for better performance
   };
 
+  // This function updates the position of the bounding box based on tracking data
+  const updateBoundingBox = () => {
+    if (!isTracking) return;
+    
+    const videoElement = isCameraOn ? cameraRef.current : screenRef.current;
+    if (!videoElement || !videoContainerRef.current || !boxRef.current) return;
+    
+    // Debug log to see if this function is being called
+    console.log("Updating bounding box...");
+    
+    // If we have tracking data with a box property
+    if (trackingData && trackingData.box) {
+      console.log("Using tracking data box:", trackingData.box);
+      
+      // Get the current video dimensions
+      const videoWidth = videoElement.videoWidth || 640;  // Fallback to common sizes
+      const videoHeight = videoElement.videoHeight || 480;
+      
+      // Get the bounding box from tracking data
+      const [x, y, width, height] = trackingData.box;
+      
+      // Get the display dimensions
+      const videoRect = videoElement.getBoundingClientRect();
+      const containerRect = videoContainerRef.current.getBoundingClientRect();
+      
+      console.log("Video element size:", videoRect.width, "x", videoRect.height);
+      console.log("Original video size:", videoWidth, "x", videoHeight);
+      
+      // Calculate the scaling factors based on object-fit: contain
+      const scaleX = videoRect.width / videoWidth;
+      const scaleY = videoRect.height / videoHeight;
+      const scale = Math.min(scaleX, scaleY);
+      
+      // Calculate offsets for centering
+      const offsetX = (videoRect.width - videoWidth * scale) / 2;
+      const offsetY = (videoRect.height - videoHeight * scale) / 2;
+      
+      // Calculate the position of the bounding box in the displayed video
+      const boxLeft = videoRect.left + (x * scale) + offsetX - containerRect.left;
+      const boxTop = videoRect.top + (y * scale) + offsetY - containerRect.top;
+      const boxWidth = width * scale;
+      const boxHeight = height * scale;
+      
+      console.log("Calculated box position:", 
+        { left: boxLeft, top: boxTop, width: boxWidth, height: boxHeight });
+      
+      // Update the bounding box position with fixed values (debugging step)
+      boxRef.current.style.position = 'absolute';
+      boxRef.current.style.left = `${boxLeft}px`;
+      boxRef.current.style.top = `${boxTop}px`;
+      boxRef.current.style.width = `${boxWidth}px`;
+      boxRef.current.style.height = `${boxHeight}px`;
+      boxRef.current.style.display = 'block';
+      boxRef.current.style.border = '3px solid red';
+      boxRef.current.style.zIndex = '9999';
+    } else {
+      console.log("No valid tracking data box available");
+      // Show a default box for debugging purposes
+      if (isTracking) {
+        boxRef.current.style.position = 'absolute';
+        boxRef.current.style.left = '25%';
+        boxRef.current.style.top = '25%';
+        boxRef.current.style.width = '100px';
+        boxRef.current.style.height = '100px';
+        boxRef.current.style.display = 'block';
+        boxRef.current.style.border = '3px solid yellow'; // Different color to indicate default box
+        boxRef.current.style.zIndex = '9999';
+      } else {
+        boxRef.current.style.display = 'none';
+      }
+    }
+    
+    // Continue the animation loop
+    animationFrameRef.current = requestAnimationFrame(updateBoundingBox);
+  };
+
+  // Handle window resize for box position updates
   useEffect(() => {
-    requestAnimationFrame(updateBoundingBox);
-  }, [trackingData]);
+    const handleResize = () => {
+      console.log("Window resize detected");
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
+      updateBoundingBox();
+    };
+    
+    window.addEventListener('resize', handleResize);
+    return () => {
+      window.removeEventListener('resize', handleResize);
+    };
+  }, []);
+
+  // Update box position whenever tracking data changes
+  useEffect(() => {
+    console.log("Tracking data changed, updating box");
+    if (animationFrameRef.current) {
+      cancelAnimationFrame(animationFrameRef.current);
+    }
+    updateBoundingBox();
+  }, [trackingData, isCameraOn, isShareScreen]);
 
   return (
     <Container fluid className="d-flex flex-column p-0 vh-85">
@@ -298,36 +443,35 @@ function RealTimeMonitoring() {
             />
 
             {/* Emotion Detection Bounding Box */}
-            {isTracking && trackingData?.confidence > 0.5 && (
+            <div
+              ref={boxRef}
+              className="position-absolute"
+              style={{
+                border: "3px solid red",
+                zIndex: 9999,
+                pointerEvents: "none", // Prevents blocking interactions
+              }}
+            >
+              {/* Emotion Label */}
               <div
-                ref={boxRef}
-                className="position-absolute"
+                className="position-absolute px-2 py-1"
                 style={{
-                  border: "3px solid red",
-                  zIndex: 100,
-                  pointerEvents: "none", // Prevents blocking interactions
+                  top: "-25px",
+                  left: "0",
+                  backgroundColor: "red",
+                  color: "white",
+                  fontSize: "12px",
+                  fontWeight: "bold",
+                  borderRadius: "4px",
                 }}
               >
-                {/* Emotion Label */}
-                <div
-                  className="position-absolute px-2 py-1"
-                  style={{
-                    top: "-25px",
-                    left: "0",
-                    backgroundColor: "red",
-                    color: "white",
-                    fontSize: "12px",
-                    fontWeight: "bold",
-                    borderRadius: "4px",
-                  }}
-                >
-                  {trackingData?.label} ({Math.round(trackingData?.confidence * 100 || 0)}%)
-                </div>
+                {trackingData?.label || "Detecting..."} 
+                {trackingData?.confidence ? `(${Math.round(trackingData.confidence * 100)}%)` : ""}
               </div>
-            )}
+            </div>
 
             {!isCameraOn && !isShareScreen && (
-              <div className="text-center text-mute">
+              <div className="text-center text-muted">
                 <span className="d-flex justify-content-center align-items-center">
                   <i className="bi bi-cast fs-1"></i>
                   &emsp;
@@ -414,7 +558,7 @@ function RealTimeMonitoring() {
             onClick={handleTracking}
           >
             <i
-              className={`bi bi-${isTracking ? "stop-fill" : "play-fill"}`}
+              className={`bi bi-${isTracking ? "stop-btn" : "person-bounding-box"}`}
             ></i>
             &nbsp;{isTracking ? "Stop Tracking" : "Start Tracking"}
           </Button>
