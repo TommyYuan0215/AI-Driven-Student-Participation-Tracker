@@ -45,72 +45,64 @@ def update_account():
     new_password = data.get('newPassword')
     confirm_password = data.get('confirmPassword')
     profile_image = request.files.get('profileImage')
-    
-    # Validate again all the mandatory field first
+
+    # Validate required fields
     if not all([user_id, user_name, user_email, current_password]):
         return jsonify({"success": False, "message": "Missing required fields"}), 400
-    
+
     # Verify new password match if provided
     if new_password:
         if not confirm_password:
             return jsonify({"success": False, "message": "Please confirm your new password"}), 400
         if new_password != confirm_password:
             return jsonify({"success": False, "message": "New password and confirm password do not match"}), 400
-    
-    # Verify password first
+
+    # Verify current password
     is_valid, message = verify_password(user_id, current_password)
     if not is_valid:
         return jsonify({"success": False, "message": message}), 400
-    
+
     connection = get_db_connection()
     cursor = connection.cursor(dictionary=True)
-    
+
     try:
-        if new_password and profile_image:
-            # Update all fields
-            cursor.execute(
-                "UPDATE USER_ACCOUNT SET userName = %s, userEmail = %s, userPassword = %s, userPhoto = %s WHERE userID = %s",
-                (user_name, user_email, generate_password_hash(new_password), profile_image.read(), user_id)
-            )
+        profile_photo_data = None
+        if profile_image:
+            profile_photo_data = profile_image.read()  # Read only once
+
+        # Update SQL query based on provided data
+        if new_password and profile_photo_data:
+            query = "UPDATE USER_ACCOUNT SET userName = %s, userEmail = %s, userPassword = %s, userPhoto = %s WHERE userID = %s"
+            values = (user_name, user_email, generate_password_hash(new_password), profile_photo_data, user_id)
         elif new_password:
-            # Update with new password
-            cursor.execute(
-                "UPDATE USER_ACCOUNT SET userName = %s, userEmail = %s, userPassword = %s WHERE userID = %s",
-                (user_name, user_email, generate_password_hash(new_password), user_id)
-            )
-        elif profile_image:
-            # Update with new image
-            cursor.execute(
-                "UPDATE USER_ACCOUNT SET userName = %s, userEmail = %s, userPhoto = %s WHERE userID = %s",
-                (user_name, user_email, profile_image.read(), user_id)
-            )
+            query = "UPDATE USER_ACCOUNT SET userName = %s, userEmail = %s, userPassword = %s WHERE userID = %s"
+            values = (user_name, user_email, generate_password_hash(new_password), user_id)
+        elif profile_photo_data:
+            query = "UPDATE USER_ACCOUNT SET userName = %s, userEmail = %s, userPhoto = %s WHERE userID = %s"
+            values = (user_name, user_email, profile_photo_data, user_id)
         else:
-            # Update basic info only
-            cursor.execute(
-                "UPDATE USER_ACCOUNT SET userName = %s, userEmail = %s WHERE userID = %s",
-                (user_name, user_email, user_id)
-            )
-            
+            query = "UPDATE USER_ACCOUNT SET userName = %s, userEmail = %s WHERE userID = %s"
+            values = (user_name, user_email, user_id)
+
+        cursor.execute(query, values)
         connection.commit()
-        
-        # After successful update, refresh session data
+
+        # ✅ Update session values
         session['user_name'] = user_name
         session['user_email'] = user_email
-        if profile_image:
-            session['user_photo'] = profile_image.read()
+        if profile_photo_data:
+            session['user_photo'] = profile_photo_data
 
-        # Fetch the latest user data for response
-        cursor.execute(
-            "SELECT * FROM USER_ACCOUNT WHERE userID = %s",
-            (user_id,)
-        )
+        session.modified = True  # ✅ Ensure Flask updates the session
+
+        # Fetch latest user data for response
+        cursor.execute("SELECT * FROM USER_ACCOUNT WHERE userID = %s", (user_id,))
         latest_user = cursor.fetchone()
-        
-        # Convert photo to base64 if it exists
-        user_photo = latest_user.get('userPhoto')
+
+        # Convert image to Base64 if it exists
         user_photo_base64 = None
-        if user_photo:
-            user_photo_base64 = base64.b64encode(user_photo).decode('utf-8')
+        if latest_user.get('userPhoto'):
+            user_photo_base64 = base64.b64encode(latest_user['userPhoto']).decode('utf-8')
 
         return jsonify({
             "success": True,
@@ -122,14 +114,15 @@ def update_account():
                 'userPhoto': user_photo_base64
             }
         })
-        
+
     except Exception as e:
         connection.rollback()
         return jsonify({"success": False, "message": f"Error updating account: {str(e)}"}), 500
-        
+
     finally:
         cursor.close()
         connection.close()
+
         
 @settings_route.route('reset_account_photo', methods=['POST'])
 def reset_account_photo():

@@ -11,15 +11,14 @@ function ProfileIcon({ userData, showName = true }) {
   return (
     <span>
       <img
-        className="rounded-circle userprofile me-1 img-thumbnail"
+        className="rounded-circle userprofile me-1 img"
         src={
           userData.userPhoto
             ? `data:image/jpeg;base64,${userData.userPhoto}`
             : "/profile.jpg"
         }
         alt="profile-pic"
-        width="40"
-        height="40"
+        style={{ width: "40px", height: "40px", objectFit: "cover" }}
       />
       &nbsp;
       {showName && userData.userName && <span>{userData.userName}</span>}
@@ -30,7 +29,7 @@ function ProfileIcon({ userData, showName = true }) {
 function Header() {
   const [modalType, setModalType] = useState(null); // "login" or "signup"
   const navigate = useNavigate(); // Use navigate here
-  const { userData, isLoggedIn, refetch } = useSession(navigate);
+  const { userData, isLoggedIn } = useSession(navigate);
   const handleModalClose = () => setModalType(null); // Close modal
   const openLoginModal = () => setModalType("login"); // Open login modal
   const openSignUpModal = () => setModalType("signup"); // Open signup modal
@@ -48,7 +47,7 @@ function Header() {
             alt="brand-icon"
             style={{ width: "30px", height: "30px" }}
           ></img>{" "}
-          &nbsp; AI-Driven Student Participant Tracker
+          &nbsp; AI-Driven Student Participantion Tracker
         </Navbar.Brand>
 
         {/* Navbar toggle for smaller screens */}
