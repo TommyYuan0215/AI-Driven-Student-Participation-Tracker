@@ -32,8 +32,13 @@ const sidebarItems = [
         icon: "bi bi-bar-chart-line",
       },
       {
-        label: "Trend Analysis",
-        path: "/views/admin/datamanagement/2",
+        label: "User Trending Analysis",
+        path: "/views/admin/datamanagement/usertrend",
+        icon: "bi bi-graph-up-arrow",
+      },
+      {
+        label: "Engagement Data Trending Analysis",
+        path: "/views/admin/datamanagement/datatrend",
         icon: "bi bi-graph-up-arrow",
       },
     ],

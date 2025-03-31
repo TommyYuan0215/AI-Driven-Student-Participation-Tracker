@@ -3,32 +3,20 @@ import { Form, Button, Alert } from "react-bootstrap";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import axios from "../../utils/axios_configure"; // Import the configured axios instance
+import useSession from "../../utils/sessionUtils";
 
 function LoginForm({ switchToSignUp, closeModel }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const navigate = useNavigate();
+  const { login } = useSession(navigate);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    const success = await login(email, password); // ✅ Uses login correctly
 
-    try {
-      const response = await axios.post("/credential/login", {
-        email,
-        password,
-      });
-
-      const result = response.data;
-      navigate(result.redirect); // Redirect to the specified page
+    if (success) {
       closeModel();
-      // toast.success(result.message);
-      window.location.reload();
-    } catch (error) {
-      console.error("Login Error:", error);
-      const errorMessage =
-        error.response?.data?.message ||
-        "An error occurred. Please try again later.";
-      toast.error(errorMessage);
     }
   };
 

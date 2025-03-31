@@ -28,33 +28,40 @@ function RealTimeMonitoring() {
     if (isTracking) {
       // Connect to the WebSocket server only if tracking is enabled
       socketRef.current = io(SOCKET_URL);
-  
+
       socketRef.current.on("connect", () => {
         console.log("Connected to WebSocket");
         toast.success("Connected to tracking server");
       });
-  
+
       socketRef.current.on("tracking_update", (data) => {
         console.log("Tracking update received:", data);
+        // Now data might be an array of face objects
         setTrackingData(data);
-  
-        // Update statistics
-        setStudentStats((prev) => ({
-          ...prev,
-          [data.label]: (prev[data.label] || 0) + 1,
-        }));
+
+        // Update statistics for each detected face/emotion
+        if (Array.isArray(data)) {
+          data.forEach((face) => {
+            if (face.label) {
+              setStudentStats((prev) => ({
+                ...prev,
+                [face.label]: (prev[face.label] || 0) + 1,
+              }));
+            }
+          });
+        }
       });
-  
+
       socketRef.current.on("connect_error", (error) => {
         console.error("WebSocket connection error:", error);
         toast.error("Failed to connect to tracking server");
       });
-  
+
       socketRef.current.on("disconnect", () => {
         console.log("WebSocket Disconnected");
         toast.warn("Disconnected from tracking server");
       });
-  
+
       return () => {
         if (socketRef.current) {
           socketRef.current.disconnect();
@@ -87,7 +94,9 @@ function RealTimeMonitoring() {
 
         if (cameraRef.current) {
           cameraRef.current.srcObject = stream;
-          await cameraRef.current.play().catch(err => console.error("Play error:", err));
+          await cameraRef.current
+            .play()
+            .catch((err) => console.error("Play error:", err));
         }
 
         setIsCameraOn(true);
@@ -113,7 +122,9 @@ function RealTimeMonitoring() {
 
         if (screenRef.current) {
           screenRef.current.srcObject = stream;
-          await screenRef.current.play().catch(err => console.error("Play error:", err));
+          await screenRef.current
+            .play()
+            .catch((err) => console.error("Play error:", err));
         }
 
         stream.getVideoTracks()[0].onended = () => stopScreenShare();
@@ -165,20 +176,31 @@ function RealTimeMonitoring() {
         toast.info("Tracking stopped");
         hasStoppedTracking.current = true;
       }
-      // Hide the bounding box when tracking stops
+
+      // Hide the main bounding box when tracking stops
       if (boxRef.current) {
-        boxRef.current.style.display = 'none';
+        boxRef.current.style.display = "none";
       }
+
+      // Hide all face boxes
+      if (videoContainerRef.current) {
+        const existingBoxes =
+          videoContainerRef.current.querySelectorAll('[id^="face-box-"]');
+        existingBoxes.forEach((box) => {
+          box.style.display = "none";
+        });
+      }
+
       return;
     }
-  
+
     hasStoppedTracking.current = false;
     toast.success("Tracking started");
     startSendingVideo();
-    
+
     // Start the bounding box update animation
     updateBoundingBox();
-  
+
     return () => {
       if (!hasStoppedTracking.current) {
         toast.info("Tracking stopped");
@@ -217,6 +239,24 @@ function RealTimeMonitoring() {
       toast.error("No active video stream to track!");
       return;
     }
+
+    // If we're turning off tracking, immediately hide all boxes
+    if (isTracking) {
+      // Hide the main box if it exists
+      if (boxRef.current) {
+        boxRef.current.style.display = "none";
+      }
+
+      // Hide all face boxes
+      if (videoContainerRef.current) {
+        const existingBoxes =
+          videoContainerRef.current.querySelectorAll('[id^="face-box-"]');
+        existingBoxes.forEach((box) => {
+          box.style.display = "none";
+        });
+      }
+    }
+
     setIsTracking((prev) => !prev);
   };
 
@@ -249,19 +289,23 @@ function RealTimeMonitoring() {
   const initializeCapturing = (videoElement) => {
     if (videoElement.paused) {
       console.warn("Video is paused. Attempting to play...");
-      videoElement.play().catch(e => console.error("Couldn't play video:", e));
+      videoElement
+        .play()
+        .catch((e) => console.error("Couldn't play video:", e));
     }
 
     console.log("Starting video frame capture...");
 
     const canvas = document.createElement("canvas");
     const ctx = canvas.getContext("2d");
-    
+
     // Set canvas dimensions to match video dimensions
     canvas.width = videoElement.videoWidth;
     canvas.height = videoElement.videoHeight;
 
-    console.log(`Canvas initialized with size: ${canvas.width}x${canvas.height}`);
+    console.log(
+      `Canvas initialized with size: ${canvas.width}x${canvas.height}`
+    );
 
     // Clear any existing interval
     if (trackingIntervalRef.current) {
@@ -283,24 +327,27 @@ function RealTimeMonitoring() {
 
       try {
         // Check if video dimensions have changed
-        if (canvas.width !== videoElement.videoWidth || 
-            canvas.height !== videoElement.videoHeight) {
+        if (
+          canvas.width !== videoElement.videoWidth ||
+          canvas.height !== videoElement.videoHeight
+        ) {
           canvas.width = videoElement.videoWidth;
           canvas.height = videoElement.videoHeight;
         }
-        
+
         ctx.drawImage(videoElement, 0, 0, canvas.width, canvas.height);
         const imageData = canvas.toDataURL("image/jpeg", 0.7); // Reduced quality for better performance
 
         // Log only the first 50 characters to avoid flooding the console
         console.log("Sending frame:", imageData.substring(0, 50), "...");
 
-        socketRef.current.emit("video_frame", { 
+        socketRef.current.emit("video_frame", {
           frame: imageData,
           dimensions: {
             width: canvas.width,
-            height: canvas.height
-          }
+            height: canvas.height,
+          },
+          detectMultiple: true,
         });
       } catch (error) {
         console.error("Error capturing video frame:", error);
@@ -309,77 +356,188 @@ function RealTimeMonitoring() {
   };
 
   // This function updates the position of the bounding box based on tracking data
+  const calculateBoxPosition = (box, videoElement) => {
+    if (!box || !videoElement) return { left: 0, top: 0, width: 0, height: 0 };
+
+    const [x, y, width, height] = box;
+    const videoWidth = videoElement.videoWidth || 640;
+    const videoHeight = videoElement.videoHeight || 480;
+
+    const videoRect = videoElement.getBoundingClientRect();
+    const containerRect = videoContainerRef.current.getBoundingClientRect();
+
+    const scaleX = videoRect.width / videoWidth;
+    const scaleY = videoRect.height / videoHeight;
+    const scale = Math.min(scaleX, scaleY);
+
+    const offsetX = (videoRect.width - videoWidth * scale) / 2;
+    const offsetY = (videoRect.height - videoHeight * scale) / 2;
+
+    return {
+      left: videoRect.left + x * scale + offsetX - containerRect.left,
+      top: videoRect.top + y * scale + offsetY - containerRect.top,
+      width: width * scale,
+      height: height * scale,
+    };
+  };
+
+  // This function updates the positions of all bounding boxes based on tracking data
   const updateBoundingBox = () => {
-    if (!isTracking) return;
-    
+    if (!isTracking) {
+      // Hide all boxes when tracking is off
+      if (boxRef.current) {
+        boxRef.current.style.display = "none";
+      }
+
+      if (videoContainerRef.current) {
+        const existingBoxes =
+          videoContainerRef.current.querySelectorAll('[id^="face-box-"]');
+        existingBoxes.forEach((box) => {
+          box.style.display = "none";
+        });
+      }
+
+      // No need to continue animation loop when tracking is off
+      return;
+    }
+
     const videoElement = isCameraOn ? cameraRef.current : screenRef.current;
-    if (!videoElement || !videoContainerRef.current || !boxRef.current) return;
-    
+    if (!videoElement || !videoContainerRef.current) return;
+
     // Debug log to see if this function is being called
-    console.log("Updating bounding box...");
-    
-    // If we have tracking data with a box property
-    if (trackingData && trackingData.box) {
-      console.log("Using tracking data box:", trackingData.box);
-      
-      // Get the current video dimensions
-      const videoWidth = videoElement.videoWidth || 640;  // Fallback to common sizes
-      const videoHeight = videoElement.videoHeight || 480;
-      
-      // Get the bounding box from tracking data
+    console.log("Updating bounding boxes...");
+
+    // Check if trackingData is an array (multiple faces)
+    if (Array.isArray(trackingData) && trackingData.length > 0) {
+      console.log(`Updating ${trackingData.length} bounding boxes`);
+
+      // Update each face's box using DOM manipulation
+      trackingData.forEach((face, index) => {
+        // Find or create a box element for this face
+        let boxElement = document.getElementById(`face-box-${index}`);
+        if (!boxElement) {
+          boxElement = document.createElement("div");
+          boxElement.id = `face-box-${index}`;
+          boxElement.className = "position-absolute";
+          boxElement.style.border = "3px solid red";
+          boxElement.style.zIndex = "9999";
+          boxElement.style.pointerEvents = "none";
+
+          // Add a label element for this face
+          const labelElement = document.createElement("div");
+          labelElement.className = "position-absolute px-2 py-1";
+          labelElement.style.top = "-25px";
+          labelElement.style.left = "0";
+          labelElement.style.backgroundColor = "red";
+          labelElement.style.color = "white";
+          labelElement.style.fontSize = "12px";
+          labelElement.style.fontWeight = "bold";
+          labelElement.style.borderRadius = "4px";
+          labelElement.id = `face-label-${index}`;
+
+          boxElement.appendChild(labelElement);
+          videoContainerRef.current.appendChild(boxElement);
+        }
+
+        if (face.box) {
+          // Get the bounding box from tracking data
+          const [x, y, width, height] = face.box;
+
+          // Get the current video dimensions
+          const videoWidth = videoElement.videoWidth || 640;
+          const videoHeight = videoElement.videoHeight || 480;
+
+          // Get the display dimensions
+          const videoRect = videoElement.getBoundingClientRect();
+          const containerRect =
+            videoContainerRef.current.getBoundingClientRect();
+
+          // Calculate the scaling factors based on object-fit: contain
+          const scaleX = videoRect.width / videoWidth;
+          const scaleY = videoRect.height / videoHeight;
+          const scale = Math.min(scaleX, scaleY);
+
+          // Calculate offsets for centering
+          const offsetX = (videoRect.width - videoWidth * scale) / 2;
+          const offsetY = (videoRect.height - videoHeight * scale) / 2;
+
+          // Calculate the position of the bounding box in the displayed video
+          const boxLeft =
+            videoRect.left + x * scale + offsetX - containerRect.left;
+          const boxTop =
+            videoRect.top + y * scale + offsetY - containerRect.top;
+          const boxWidth = width * scale;
+          const boxHeight = height * scale;
+
+          // Update the bounding box position
+          boxElement.style.left = `${boxLeft}px`;
+          boxElement.style.top = `${boxTop}px`;
+          boxElement.style.width = `${boxWidth}px`;
+          boxElement.style.height = `${boxHeight}px`;
+          boxElement.style.display = "block";
+
+          // Update the label
+          const labelElement = document.getElementById(`face-label-${index}`);
+          if (labelElement) {
+            labelElement.textContent = `${face.label || "Detecting..."} ${
+              face.confidence ? `(${Math.round(face.confidence * 100)}%)` : ""
+            }`;
+          }
+        } else {
+          boxElement.style.display = "none";
+        }
+      });
+
+      // Remove any extra boxes that aren't needed anymore
+      const existingBoxes =
+        videoContainerRef.current.querySelectorAll('[id^="face-box-"]');
+      existingBoxes.forEach((box) => {
+        const boxIndex = parseInt(box.id.split("-")[2]);
+        if (boxIndex >= trackingData.length) {
+          videoContainerRef.current.removeChild(box);
+        }
+      });
+    }
+    // If trackingData is a single object (backward compatibility)
+    else if (trackingData && trackingData.box && boxRef.current) {
+      console.log("Using single tracking data box:", trackingData.box);
+
+      // Original single box update code
       const [x, y, width, height] = trackingData.box;
-      
-      // Get the display dimensions
+      const videoWidth = videoElement.videoWidth || 640;
+      const videoHeight = videoElement.videoHeight || 480;
       const videoRect = videoElement.getBoundingClientRect();
       const containerRect = videoContainerRef.current.getBoundingClientRect();
-      
-      console.log("Video element size:", videoRect.width, "x", videoRect.height);
-      console.log("Original video size:", videoWidth, "x", videoHeight);
-      
-      // Calculate the scaling factors based on object-fit: contain
       const scaleX = videoRect.width / videoWidth;
       const scaleY = videoRect.height / videoHeight;
       const scale = Math.min(scaleX, scaleY);
-      
-      // Calculate offsets for centering
       const offsetX = (videoRect.width - videoWidth * scale) / 2;
       const offsetY = (videoRect.height - videoHeight * scale) / 2;
-      
-      // Calculate the position of the bounding box in the displayed video
-      const boxLeft = videoRect.left + (x * scale) + offsetX - containerRect.left;
-      const boxTop = videoRect.top + (y * scale) + offsetY - containerRect.top;
+      const boxLeft = videoRect.left + x * scale + offsetX - containerRect.left;
+      const boxTop = videoRect.top + y * scale + offsetY - containerRect.top;
       const boxWidth = width * scale;
       const boxHeight = height * scale;
-      
-      console.log("Calculated box position:", 
-        { left: boxLeft, top: boxTop, width: boxWidth, height: boxHeight });
-      
-      // Update the bounding box position with fixed values (debugging step)
-      boxRef.current.style.position = 'absolute';
+
       boxRef.current.style.left = `${boxLeft}px`;
       boxRef.current.style.top = `${boxTop}px`;
       boxRef.current.style.width = `${boxWidth}px`;
       boxRef.current.style.height = `${boxHeight}px`;
-      boxRef.current.style.display = 'block';
-      boxRef.current.style.border = '3px solid red';
-      boxRef.current.style.zIndex = '9999';
+      boxRef.current.style.display = "block";
     } else {
       console.log("No valid tracking data box available");
-      // Show a default box for debugging purposes
-      if (isTracking) {
-        boxRef.current.style.position = 'absolute';
-        boxRef.current.style.left = '25%';
-        boxRef.current.style.top = '25%';
-        boxRef.current.style.width = '100px';
-        boxRef.current.style.height = '100px';
-        boxRef.current.style.display = 'block';
-        boxRef.current.style.border = '3px solid yellow'; // Different color to indicate default box
-        boxRef.current.style.zIndex = '9999';
-      } else {
-        boxRef.current.style.display = 'none';
+
+      // Hide all boxes when no tracking data
+      if (boxRef.current) {
+        boxRef.current.style.display = "none";
       }
+
+      const existingBoxes =
+        videoContainerRef.current.querySelectorAll('[id^="face-box-"]');
+      existingBoxes.forEach((box) => {
+        box.style.display = "none";
+      });
     }
-    
+
     // Continue the animation loop
     animationFrameRef.current = requestAnimationFrame(updateBoundingBox);
   };
@@ -393,10 +551,10 @@ function RealTimeMonitoring() {
       }
       updateBoundingBox();
     };
-    
-    window.addEventListener('resize', handleResize);
+
+    window.addEventListener("resize", handleResize);
     return () => {
-      window.removeEventListener('resize', handleResize);
+      window.removeEventListener("resize", handleResize);
     };
   }, []);
 
@@ -443,32 +601,60 @@ function RealTimeMonitoring() {
             />
 
             {/* Emotion Detection Bounding Box */}
-            <div
-              ref={boxRef}
-              className="position-absolute"
-              style={{
-                border: "3px solid red",
-                zIndex: 9999,
-                pointerEvents: "none", // Prevents blocking interactions
-              }}
-            >
-              {/* Emotion Label */}
-              <div
-                className="position-absolute px-2 py-1"
-                style={{
-                  top: "-25px",
-                  left: "0",
-                  backgroundColor: "red",
-                  color: "white",
-                  fontSize: "12px",
-                  fontWeight: "bold",
-                  borderRadius: "4px",
-                }}
-              >
-                {trackingData?.label || "Detecting..."} 
-                {trackingData?.confidence ? `(${Math.round(trackingData.confidence * 100)}%)` : ""}
-              </div>
-            </div>
+            {isTracking &&
+              Array.isArray(trackingData) &&
+              trackingData.map((face, index) => {
+                // Determine which video element is active
+                const activeVideoElement = isCameraOn
+                  ? cameraRef.current
+                  : screenRef.current;
+
+                // Only proceed if we have a valid video element and face box
+                if (activeVideoElement && face.box) {
+                  const boxPos = calculateBoxPosition(
+                    face.box,
+                    activeVideoElement
+                  );
+
+                  return (
+                    <div
+                      key={index}
+                      className="position-absolute"
+                      style={{
+                        border: "3px solid red",
+                        zIndex: 9999,
+                        pointerEvents: "none",
+                        position: "absolute",
+                        left: `${boxPos.left}px`,
+                        top: `${boxPos.top}px`,
+                        width: `${boxPos.width}px`,
+                        height: `${boxPos.height}px`,
+                        display: face.box ? "block" : "none",
+                      }}
+                    >
+                      {/* Emotion Label */}
+                      <div
+                        className="position-absolute px-2 py-1"
+                        style={{
+                          top: "-25px",
+                          left: "0",
+                          backgroundColor: "red",
+                          color: "white",
+                          fontSize: "12px",
+                          fontWeight: "bold",
+                          borderRadius: "4px",
+                        }}
+                      >
+                        {face.label || "Detecting..."}
+                        {face.confidence
+                          ? `(${Math.round(face.confidence * 100)}%)`
+                          : ""}
+                      </div>
+                    </div>
+                  );
+                }
+                return null; // Return null if no valid video element or face box
+              })}
 
             {!isCameraOn && !isShareScreen && (
               <div className="text-center text-muted">
@@ -558,7 +744,9 @@ function RealTimeMonitoring() {
             onClick={handleTracking}
           >
             <i
-              className={`bi bi-${isTracking ? "stop-btn" : "person-bounding-box"}`}
+              className={`bi bi-${
+                isTracking ? "stop-btn" : "person-bounding-box"
+              }`}
             ></i>
             &nbsp;{isTracking ? "Stop Tracking" : "Start Tracking"}
           </Button>

@@ -71,6 +71,23 @@
   font-size: 1rem;
 }
 
+/* Dropdown menu */
+.custom-nav-dropdown .dropdown-menu {
+  background-color: #fff;
+  border-radius: 8px;
+  box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+  padding: 8px 0;
+  min-width: 200px;
+}
+
+/* Dropdown item */
+.custom-nav-dropdown .dropdown-item {
+  padding: 4px 14px;
+  font-size: 16px;
+  transition: background-color 0.2s ease-in-out;
+  border-radius: 8px;
+}
+
 [data-bs-theme="dark"] .back-button {
   color: #dee2e6;
 }
@@ -230,6 +247,10 @@ input:checked + .slider:before {
 /* ==========================================================================
      5. Index Feature Cards
      ========================================================================== */
+.card {
+  box-shadow: 4px 4px 10px rgba(0, 0, 0, 0.2);
+}
+
 .feature-card {
   background: white;
   border-radius: 10px;

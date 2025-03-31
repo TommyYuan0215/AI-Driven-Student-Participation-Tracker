@@ -3,6 +3,8 @@ import re
 from werkzeug.security import generate_password_hash, check_password_hash
 import base64
 from apps.services.db_helper import get_db_connection
+from datetime import datetime
+from apps import SESSION_TIMEOUT
 
 # Create a Blueprint for the routes
 userCredential_route = Blueprint('credential', __name__)
@@ -10,18 +12,18 @@ userCredential_route = Blueprint('credential', __name__)
 @userCredential_route.route('/get_user_session')
 def get_user_session():
     if 'logged_in' in session:
-        user_photo = session.get('user_photo') 
+        # Check if session expired
+        if "last_activity" in session:
+            last_active = datetime.fromisoformat(session["last_activity"])
+            if datetime.utcnow() - last_active > SESSION_TIMEOUT:
+                session.clear()
+                return jsonify({"logged_in": False, "message": "Session expired"}), 401
 
-        # Convert blob (bytes) to base64 string if it exists
-        if user_photo:
-            user_photo_base64 = base64.b64encode(user_photo).decode('utf-8')
-            print(f"Base64 Encoded Photo: {user_photo_base64[:100]}...")
-        else:
-            user_photo_base64 = None
-        
-        # Return session data as JSON
+        user_photo = session.get('user_photo')
+        user_photo_base64 = base64.b64encode(user_photo).decode('utf-8') if user_photo else None
+
         return jsonify({
-            'logged_in': session['logged_in'],
+            'logged_in': True,
             'userID': session['user_id'],
             'userType': session['user_type'],
             'userName': session['user_name'],
@@ -30,7 +32,6 @@ def get_user_session():
             'redirect': session['redirect']
         })
     else:
-        # User is not logged in, return false status
         return jsonify({'logged_in': False})
 
 @userCredential_route.route('/login', methods=['POST'])
@@ -87,6 +88,8 @@ def signup():
     email = data.get('email')
     password = data.get('password')
     confirm_password = data.get('confirmPassword')
+    # Get the current timestamp
+    current_timestamp = datetime.now()
     
     # Check if image was uploaded
     image = request.files.get('image')  # `image` is expected as a file field
@@ -123,14 +126,14 @@ def signup():
             
             # Insert with image data
             cursor.execute(
-                "INSERT INTO USER_ACCOUNT (userName, userEmail, userPassword, userPhoto) VALUES (%s, %s, %s, %s)",
-                (name, email, hashed_password, image_data)
+                "INSERT INTO USER_ACCOUNT (userName, userEmail, userPassword, userPhoto, createAt) VALUES (%s, %s, %s, %s, %s)",
+                (name, email, hashed_password, image_data, current_timestamp)
             )
         else:
             # Insert without image data
             cursor.execute(
-                "INSERT INTO USER_ACCOUNT (userName, userEmail, userPassword) VALUES (%s, %s, %s)",
-                (name, email, hashed_password)
+                "INSERT INTO USER_ACCOUNT (userName, userEmail, userPassword, createAt) VALUES (%s, %s, %s, %s)",
+                (name, email, hashed_password, current_timestamp)
             )
 
         connection.commit()

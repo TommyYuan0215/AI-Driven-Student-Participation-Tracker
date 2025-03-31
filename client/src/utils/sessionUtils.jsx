@@ -56,8 +56,10 @@ const useSession = (navigate) => {
         return false;
       }
     } catch (error) {
-      console.error("Session refresh error:", error);
-      clearSession();
+      if (error.response && error.response.status === 401) {
+        clearSession();
+        toast.info("Session expired. Please log in again.");
+      }
       return false;
     }
   };

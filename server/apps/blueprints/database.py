@@ -67,6 +67,7 @@ def create_table_if_not_exists():
             userPassword VARCHAR(255),
             userPhoto LONGBLOB,
             userStatus INT(2) DEFAULT 0,
+            createAt DATETIME,
             PRIMARY KEY (userID),
             UNIQUE (userEmail)
         )

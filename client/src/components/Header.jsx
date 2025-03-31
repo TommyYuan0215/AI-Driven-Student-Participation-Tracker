@@ -30,6 +30,7 @@ function Header() {
   const [modalType, setModalType] = useState(null); // "login" or "signup"
   const navigate = useNavigate(); // Use navigate here
   const { userData, isLoggedIn } = useSession(navigate);
+  const { logout } = useSession(navigate);
   const handleModalClose = () => setModalType(null); // Close modal
   const openLoginModal = () => setModalType("login"); // Open login modal
   const openSignUpModal = () => setModalType("signup"); // Open signup modal
@@ -56,18 +57,30 @@ function Header() {
         <Navbar.Collapse id="navbar-nav" className="justify-content-end">
           <Nav>
             {isLoggedIn ? (
-              <Nav.Item>
-                <Nav.Link className="px-3">
-                  <ProfileIcon userData={userData} />
-                </Nav.Link>
-              </Nav.Item>
+              <NavDropdown
+                title={<ProfileIcon userData={userData} />}
+                id="profile-nav-dropdown"
+                align="end"
+                className="custom-nav-dropdown"
+              >
+                <NavDropdown.Item
+                  onClick={() =>
+                    confirm("Are you sure you want to log out?") && logout()
+                  }
+                  className="logout-item d-flex align-items-center"
+                >
+                  <i className="bi bi-box-arrow-right me-2"></i> Logout System
+                </NavDropdown.Item>
+              </NavDropdown>
             ) : (
               <NavDropdown
                 title={<ProfileIcon userData={{}} />}
                 id="profile-nav-dropdown"
                 align="end"
+                className="custom-nav-dropdown"
               >
                 <NavDropdown.Item onClick={openLoginModal}>
+                  <i className="bi bi-box-arrow-in-right me-2"></i>
                   Login to Account
                 </NavDropdown.Item>
               </NavDropdown>

@@ -1,16 +1,21 @@
 
-from flask import Flask
+from flask import Flask, session, jsonify
 from flask_socketio import SocketIO
 from flask_session import Session
 from flask_cors import CORS
+from datetime import datetime, timedelta
+
 
 # Create a Global SocketIO to passing the values to other blueprints
 socketio = SocketIO(cors_allowed_origins=["http://localhost:5173"], allow_credentials=True)
+SESSION_TIMEOUT = timedelta(hours=3)
 
 def create_app():
     app = Flask(__name__)
     app.config["SECRET_KEY"] = 'mysecret'
     app.config['SESSION_TYPE'] = 'filesystem'
+    app.config['PERMANENT_SESSION_LIFETIME'] = SESSION_TIMEOUT
+    app.config['SESSION_REFRESH_EACH_REQUEST'] = False  # Prevent auto-refresh
 
     # Allow all origins
     CORS(app, resources={r"/*": {"origins": ["http://localhost:5173"]}}, supports_credentials=True)
@@ -18,6 +23,18 @@ def create_app():
     # Initialize extensions
     socketio.init_app(app)
     Session(app)
+    
+    # Enfore session timeout before every request
+    @app.before_request
+    def enforce_session_timeout():
+        if "last_activity" in session:
+            last_active = datetime.fromisoformat(session["last_activity"])
+            if datetime.utcnow() - last_active > SESSION_TIMEOUT:
+                session.clear()  # Expire session
+                return jsonify({"status": "error", "message": "Session expired. Please log in again."}), 401
+
+        # 🔥 Update session activity timestamp
+        session["last_activity"] = datetime.utcnow().isoformat()
     
     # Register blueprints (import AFTER app creation to avoid circular import)
     from apps.blueprints.database import databases_route

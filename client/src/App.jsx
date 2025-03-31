@@ -11,7 +11,9 @@ import Home from "./views/home";
 import AdminPage from "./views/Admin/AdminPage";
 import AdminDashboard from "./views/Admin/dashboard";
 import UserManagement from "./views/Admin/usermanagement";
-import AdminStatistics from "./views/Admin/statistics";
+import StatisticsAdmin from "./views/Admin/statistics";
+import UserTrendingAdmin from "./views/Admin/usertrending";
+import DataTrendingAdmin from "./views/Admin/datatrending";
 import ContentManagement from "./views/Admin/contentmanagement";
 
 import EducatorPage from "./views/Educator/EducatorPage";
@@ -39,7 +41,9 @@ function App() {
           <Route path="dashboard" element={<AdminDashboard />} />
           <Route path="usermanagement" element={<UserManagement />} />
           <Route path="datamanagement/*">
-            <Route path="statistics" element={<AdminStatistics />} />
+            <Route path="statistics" element={<StatisticsAdmin />} />
+            <Route path="usertrend" element={<UserTrendingAdmin />} />
+            <Route path="datatrend" element={<DataTrendingAdmin />} />
             <Route path="account" element={<AccountSettings />} />
           </Route>
           <Route path="contentmanagement" element={<ContentManagement />} />

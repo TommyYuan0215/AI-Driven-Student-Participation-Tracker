@@ -5,6 +5,7 @@ import { useNavigate } from "react-router-dom";
 import { useLoadingState } from "../../utils/loadingUtils";
 import LoadingSpinner from "../../components/LoadingSpinner";
 import { PieChart, Pie, Cell, Tooltip, Legend } from "recharts";
+import PageTitleBreadcrumb from "../../components/PageTitleBreadcrumb";
 
 function AdminDashboard() {
   const navigate = useNavigate();
@@ -52,114 +53,144 @@ function AdminDashboard() {
     { name: "Unauthorized", value: userStats.inactive },
   ];
 
-  const COLORS = ["#3b2ee2", "#de1e82"]; 
+  const COLORS = ["#3b2ee2", "#de1e82"];
 
   return (
-    <Container>
-      {loading ? (
-        <LoadingSpinner text="Loading dashboard..." />
-      ) : (
-        <>
-          <div className="p-4">
-            <h4 className="ps-3">Hello, {userData.userName} 👋</h4>
-          </div>
-
-          {/* Notification Area  */}
-          <div className="row">
-            <div className="col-md-12">
-              <div className="card">
-                <div className="card-header">
-                  <h6>Notifications</h6>
-                </div>
-                <div
-                  className="card-body"
-                  style={{
-                    maxHeight: "250px",
-                    overflowY: "auto",
-                  }}
-                >
-                  {notifications.length > 0 ? (
-                    notifications.map((notif) => (
-                      <Alert key={notif.id} variant={notif.type}>
-                        {notif.message}
-                      </Alert>
-                    ))
-                  ) : (
-                    <div className="d-flex justify-content-center align-content-center">
-                      <p className="text-muted">No new notifications</p>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <br />
-
-          <div className="row">
-            {/* User Account Status  */}
-            <div className="col-md-3">
-              <div className="card">
-                <div className="card-header text-center">
-                  <h6>User Account Status</h6>
-                </div>
-                <div className="card-body d-flex justify-content-center">
-                  <PieChart
-                    width={250}
-                    height={200}
-                    onClick={handlePieChartClick}
-                  >
-                    <Pie
-                      data={data}
-                      cx="50%"
-                      cy="50%"
-                      labelLine={false}
-                      label={false}
-                      innerRadius={40}
-                      outerRadius={80}
-                      dataKey="value"
+    <>
+      <PageTitleBreadcrumb
+        title={`Welcome back, ${userData.userName} 👋`}
+        path={location.pathname}
+      />
+      <div className="px-3">
+        <section className="px-1">
+          {loading ? (
+            <LoadingSpinner text="Loading dashboard..." />
+          ) : (
+            <>
+              {/* Notification Area  */}
+              <div className="row">
+                <div className="col-md-12">
+                  <div className="card">
+                    <div
+                      className="card-header"
+                      style={{ backgroundColor: "#3B3486", color: "#ffffff" }}
                     >
-                      {data.map((entry, index) => (
-                        <Cell
-                          key={`cell-${index}`}
-                          fill={COLORS[index % COLORS.length]}
-                        />
-                      ))}
-                    </Pie>
-                    <Tooltip />
-                    <Legend verticalAlign="top" height={36} />
-                  </PieChart>
+                      <span className="ms-3">
+                        <b>Notifications Center</b>
+                      </span>
+                    </div>
+                    <div
+                      className="card-body d-flex flex-column justify-content-center"
+                      style={{
+                        height: "250px",
+                        maxHeight: "250px",
+                        overflowY: "auto",
+                      }}
+                    >
+                      {notifications.length > 0 ? (
+                        notifications.map((notif) => (
+                          <Alert key={notif.id} variant={notif.type}>
+                            {notif.message}
+                          </Alert>
+                        ))
+                      ) : (
+                        <div className="text-center">
+                          <p className="text-muted">No new notifications</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
                 </div>
               </div>
-            </div>
 
-            <div className="col-md-3">
-              <div className="card">
-                <div className="card-header text-center">
-                  <h6>B</h6>
-                </div>
-              </div>
-            </div>
+              <br />
 
-            <div className="col-md-3">
-              <div className="card">
-                <div className="card-header text-center">
-                  <h6>C</h6>
+              <div className="row">
+                {/* User Account Status  */}
+                <div className="col-md-3">
+                  <div className="card">
+                    <div
+                      className="card-header"
+                      style={{ backgroundColor: "#3B3486", color: "#ffffff" }}
+                    >
+                      <span className="ms-3">
+                        <b>User Account Status</b>
+                      </span>
+                    </div>
+                    <div className="card-body d-flex justify-content-center">
+                      <PieChart
+                        width={250}
+                        height={200}
+                        onClick={handlePieChartClick}
+                      >
+                        <Pie
+                          data={data}
+                          cx="50%"
+                          cy="50%"
+                          labelLine={false}
+                          label={false}
+                          innerRadius={40}
+                          outerRadius={80}
+                          dataKey="value"
+                        >
+                          {data.map((entry, index) => (
+                            <Cell
+                              key={`cell-${index}`}
+                              fill={COLORS[index % COLORS.length]}
+                            />
+                          ))}
+                        </Pie>
+                        <Tooltip />
+                        <Legend verticalAlign="top" height={36} />
+                      </PieChart>
+                    </div>
+                  </div>
                 </div>
-              </div>
-            </div>
 
-            <div className="col-md-3">
-              <div className="card">
-                <div className="card-header text-center">
-                  <h6>D</h6>
+                <div className="col-md-3">
+                  <div className="card">
+                    <div
+                      className="card-header"
+                      style={{ backgroundColor: "#3B3486", color: "#ffffff" }}
+                    >
+                      <span className="ms-3">
+                        <b>B</b>
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="col-md-3">
+                  <div className="card">
+                    <div
+                      className="card-header"
+                      style={{ backgroundColor: "#3B3486", color: "#ffffff" }}
+                    >
+                      <span className="ms-3">
+                        <b>C</b>
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="col-md-3">
+                  <div className="card">
+                    <div
+                      className="card-header"
+                      style={{ backgroundColor: "#3B3486", color: "#ffffff" }}
+                    >
+                      <span className="ms-3">
+                        <b>D</b>
+                      </span>
+                    </div>
+                  </div>
                 </div>
               </div>
-            </div>
-          </div>
-        </>
-      )}
-    </Container>
+            </>
+          )}
+        </section>
+      </div>
+    </>
   );
 }
 

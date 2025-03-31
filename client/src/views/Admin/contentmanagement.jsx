@@ -256,15 +256,15 @@ function ContentManagement() {
         onclickToggle={() => setShowNewModal(true)}
         btnTitle="Add New Slideshow"
       />
-      <Container>
-        <section className="py-3">
+      <div className="m-4 card px-3">
+        <section className="px-1 py-4">
           {loading ? (
             <LoadingSpinner text="Loading slideshows..." />
           ) : (
             <Row>
               {slideshowData && slideshowData.length > 0 ? (
                 slideshowData.map((slideshow) => (
-                  <Col key={slideshow.slideshowID} md={4} className="mb-4">
+                  <Col key={slideshow.slideshowID} md={3} className="mb-3">
                     <Card>
                       <Card.Img
                         variant="top"
@@ -342,7 +342,7 @@ function ContentManagement() {
             isEdit={!showNewModal}
           />
         </ModelComponent>
-      </Container>
+      </div>
     </>
   );
 }
