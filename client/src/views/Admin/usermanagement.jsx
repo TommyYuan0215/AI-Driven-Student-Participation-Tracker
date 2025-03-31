@@ -3,9 +3,9 @@ import { Table, Container, Button, Form, Pagination } from "react-bootstrap";
 import UserStatusBadge from "../../components/UserStatusBadge";
 import { useLoadingState } from "../../utils/loadingUtils";
 import LoadingSpinner from "../../components/LoadingSpinner";
-import SmallModelComponent from "../../components/SmallModelComponent";
-import LargeModelComponent from "../../components/LargeModelComponent";
-import PageTitleBreadcrumb from "../../components/PageTitleBreadcrumb";
+import SmallModelComponent from "../../components/modal/SmallModelComponent";
+import LargeModelComponent from "../../components/modal/LargeModelComponent";
+import PageTitleBreadcrumb from "../../components/layout/PageTitleBreadcrumb";
 import { toast } from "react-toastify";
 import axios from "../../utils/axios_configure";
 
@@ -194,13 +194,7 @@ function UserManagement() {
 
   return (
     <>
-      <PageTitleBreadcrumb
-        title="User Management"
-        path={location.pathname}
-        isAddNew="True"
-        onclickToggle={() => null}
-        btnTitle="Add New User"
-      />
+      <PageTitleBreadcrumb title="User Management" path={location.pathname} />
       <div className="m-4 card px-3">
         <section className="px-1 py-4">
           {loading ? (

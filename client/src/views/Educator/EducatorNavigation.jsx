@@ -1,5 +1,5 @@
 import React from "react";
-import SidebarComponent from "../../components/SidebarComponent";
+import SidebarComponent from "../../components/layout/SidebarComponent";
 
 // Define sidebar items for Educator navigation
 const sidebarItems = [

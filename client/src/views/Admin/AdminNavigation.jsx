@@ -1,5 +1,5 @@
 import React from "react";
-import SidebarComponent from "../../components/SidebarComponent";
+import SidebarComponent from "../../components/layout/SidebarComponent";
 
 // Define sidebar items for Admin navigation
 const sidebarItems = [
@@ -19,7 +19,19 @@ const sidebarItems = [
     id: "contentmanagement",
     label: "Content Management",
     path: "/views/admin/contentmanagement",
-    icon: "bi bi-images",
+    icon: "bi bi-file-earmark-text",
+    subItems: [
+      {
+        label: "Slideshow Management",
+        path: "/views/admin/contentmanagement/slideshow",
+        icon: "bi bi-images",
+      },
+      {
+        label: "Announcement Management",
+        path: "/views/admin/contentmanagement/announcement",
+        icon: "bi bi-megaphone",
+      },
+    ],
   },
   {
     id: "datamanagement",

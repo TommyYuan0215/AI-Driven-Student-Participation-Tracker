@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import useSession from "../../utils/sessionUtils";
 import { toast } from "react-toastify";
 import axios from "../../utils/axios_configure";
-import PageTitleBreadcrumb from "../../components/PageTitleBreadcrumb";
+import PageTitleBreadcrumb from "../../components/layout/PageTitleBreadcrumb";
 
 function AccountSettings() {
   const navigate = useNavigate();

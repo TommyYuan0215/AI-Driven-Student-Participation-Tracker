@@ -84,7 +84,20 @@ const useSession = (navigate) => {
         return false;
       }
     } catch (error) {
-      toast.error(`Error during login: ${error.message}`);
+      if (error.response) {
+        // Handle different response status codes
+        if (error.response.status === 401) {
+          toast.error(error.response.data.message); // Show the message from the backend
+        } else {
+          toast.error(
+            `Error: ${error.response.data.message || "Something went wrong"}`
+          );
+        }
+      } else if (error.request) {
+        toast.error("No response from server. Please check your connection.");
+      } else {
+        toast.error(`Error during login: ${error.message}`);
+      }
       return false;
     }
   };

@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from "react";
-import { Container, Alert } from "react-bootstrap";
+import { Alert, Table } from "react-bootstrap";
 import useSession from "../../utils/sessionUtils";
 import { useNavigate } from "react-router-dom";
 import { useLoadingState } from "../../utils/loadingUtils";
 import LoadingSpinner from "../../components/LoadingSpinner";
 import { PieChart, Pie, Cell, Tooltip, Legend } from "recharts";
-import PageTitleBreadcrumb from "../../components/PageTitleBreadcrumb";
+import PageTitleBreadcrumb from "../../components/layout/PageTitleBreadcrumb";
+import ProfileCard from "../../components/card/ProfileCard";
+import AnnouncementCard from "../../components/card/AnnouncementCard";
 
 function AdminDashboard() {
   const navigate = useNavigate();
@@ -16,14 +18,6 @@ function AdminDashboard() {
     refetch,
   } = useLoadingState("/usermanagement/get_user_data", []);
   const [userStats, setUserStats] = useState({ active: 0, inactive: 0 });
-
-  // const [notifications, setNotifications] = useState([
-  //   { id: 1, type: "success", message: "New user registered successfully!" },
-  //   { id: 2, type: "warning", message: "Pending approval: 2 user accounts." },
-  //   { id: 3, type: "danger", message: "System error detected in logs!" },
-  // ]);
-
-  const [notifications, setNotifications] = useState("");
 
   const handlePieChartClick = () => {
     navigate("/views/admin/usermanagement");
@@ -67,39 +61,14 @@ function AdminDashboard() {
             <LoadingSpinner text="Loading dashboard..." />
           ) : (
             <>
-              {/* Notification Area  */}
               <div className="row">
-                <div className="col-md-12">
-                  <div className="card">
-                    <div
-                      className="card-header"
-                      style={{ backgroundColor: "#3B3486", color: "#ffffff" }}
-                    >
-                      <span className="ms-3">
-                        <b>Notifications Center</b>
-                      </span>
-                    </div>
-                    <div
-                      className="card-body d-flex flex-column justify-content-center"
-                      style={{
-                        height: "250px",
-                        maxHeight: "250px",
-                        overflowY: "auto",
-                      }}
-                    >
-                      {notifications.length > 0 ? (
-                        notifications.map((notif) => (
-                          <Alert key={notif.id} variant={notif.type}>
-                            {notif.message}
-                          </Alert>
-                        ))
-                      ) : (
-                        <div className="text-center">
-                          <p className="text-muted">No new notifications</p>
-                        </div>
-                      )}
-                    </div>
-                  </div>
+                {/* User Profile Area  */}
+                <div className="col-md-4">
+                  <ProfileCard userData={userData} />
+                </div>
+                {/* Announcement Area  */}
+                <div className="col-md-8">
+                  <AnnouncementCard />
                 </div>
               </div>
 
@@ -114,7 +83,7 @@ function AdminDashboard() {
                       style={{ backgroundColor: "#3B3486", color: "#ffffff" }}
                     >
                       <span className="ms-3">
-                        <b>User Account Status</b>
+                        <b>User Account Authorization Status</b>
                       </span>
                     </div>
                     <div className="card-body d-flex justify-content-center">

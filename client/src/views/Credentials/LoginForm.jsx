@@ -2,7 +2,6 @@ import React, { useState } from "react";
 import { Form, Button, Alert } from "react-bootstrap";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
-import axios from "../../utils/axios_configure"; // Import the configured axios instance
 import useSession from "../../utils/sessionUtils";
 
 function LoginForm({ switchToSignUp, closeModel }) {

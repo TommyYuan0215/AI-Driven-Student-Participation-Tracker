@@ -1,7 +1,7 @@
 import React from "react";
-import PageTitleBreadcrumb from "../../components/PageTitleBreadcrumb";
+import PageTitleBreadcrumb from "../../../components/layout/PageTitleBreadcrumb";
 import { toast } from "react-toastify";
-import axios from "../../utils/axios_configure";
+import axios from "../../../utils/axios_configure";
 
 function EducatorStatistics() {
   return (

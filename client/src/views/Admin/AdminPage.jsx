@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Outlet } from "react-router-dom";
-import NavContentLayout from "../../components/NavContentLayout";
+import NavContentLayout from "../../components/layout/NavContentLayout";
 import AdminNavigation, { sidebarItems } from "./AdminNavigation";
 
 function AdminPage() {

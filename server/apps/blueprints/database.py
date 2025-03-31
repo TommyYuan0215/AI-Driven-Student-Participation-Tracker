@@ -131,7 +131,7 @@ def create_table_if_not_exists():
             FOR EACH ROW
             BEGIN
                 INSERT INTO `{schemaName}`.CONTENT_SLIDESHOW_SEQ VALUES (NULL);
-                SET NEW.slideshowID = CONCAT('S-', LPAD(LAST_INSERT_ID(), 5, '0'));
+                SET NEW.slideshowID = CONCAT('CS-', LPAD(LAST_INSERT_ID(), 5, '0'));
             END
         '''
         try:
@@ -139,10 +139,56 @@ def create_table_if_not_exists():
             connection.commit()
         except mysql.connector.Error as err:
             print(f"Error creating trigger: {err}")
+            
+    def create_content_announcement():
+        # Create Sequence Table for Announcement
+        create_content_announcement_seq = f'''
+        CREATE TABLE IF NOT EXISTS `{schemaName}`.CONTENT_ANNOUNCEMENT_SEQ (
+            announcementID INT NOT NULL AUTO_INCREMENT PRIMARY KEY
+        )
+        '''
+        try:
+            cursor.execute(create_content_announcement_seq)
+            connection.commit()
+        except mysql.connector.Error as err:
+            print(f"Error creating CONTENT_ANNOUNCEMENT_SEQ table: {err}")
+        
+        # SQL query to create the content_slideshow table if it doesn't exist
+        create_content_announcement_table = '''
+        CREATE TABLE IF NOT EXISTS CONTENT_ANNOUNCEMENT (
+            announcementID VARCHAR(12) NOT NULL,
+            announcementDescription TEXT,
+            announcementStatus INT(2) DEFAULT 1,
+            createAt DATETIME,
+            PRIMARY KEY (announcementID)
+        )
+        '''
+        try:
+            cursor.execute(create_content_announcement_table)
+            connection.commit()
+        except mysql.connector.Error as err:
+            print(f"Error creating CONTENT_ANNOUNCEMENT table: {err}")
+            
+        # Create Trigger for Content Slideshow Table
+        create_content_announcement_trigger = f'''
+            CREATE TRIGGER IF NOT EXISTS CONTENT_ANNOUNCEMENT_TRIGGER
+            BEFORE INSERT ON CONTENT_ANNOUNCEMENT
+            FOR EACH ROW
+            BEGIN
+                INSERT INTO `{schemaName}`.CONTENT_ANNOUNCEMENT_SEQ VALUES (NULL);
+                SET NEW.announcementID = CONCAT('CA-', LPAD(LAST_INSERT_ID(), 5, '0'));
+            END
+        '''
+        try:
+            cursor.execute(create_content_announcement_trigger)
+            connection.commit()
+        except mysql.connector.Error as err:
+            print(f"Error creating trigger: {err}")
     
     # Calling function for creating sub module table.      
     create_user_account()
     create_content_slideshow()
+    create_content_announcement()
 
     cursor.close()
     connection.close()

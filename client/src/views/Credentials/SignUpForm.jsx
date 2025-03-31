@@ -58,7 +58,7 @@ function SignUpForm({ switchToLogin }) {
     }
 
     if (validationErrors.length > 0) {
-      toast.error(validationErrors);
+      toast.error(validationErrors.join("\n"));
       return;
     }
 
@@ -78,7 +78,7 @@ function SignUpForm({ switchToLogin }) {
         },
       });
 
-      if (response.status === 200) {
+      if (response.data.status === "success") {
         toast.success(response.data.message);
         // Optionally switch to login form after successful signup
         setTimeout(() => switchToLogin(), 2000);

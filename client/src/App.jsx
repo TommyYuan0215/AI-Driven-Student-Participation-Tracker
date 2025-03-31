@@ -1,8 +1,8 @@
 import "./App.css";
 import React, { useEffect } from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
-import Header from "./components/Header";
-import Footer from "./components/Footer";
+import Header from "./components/layout/Header";
+import Footer from "./components/layout/Footer";
 import Cookies from "js-cookie";
 import { ToastContainer } from "react-toastify";
 
@@ -11,15 +11,16 @@ import Home from "./views/home";
 import AdminPage from "./views/Admin/AdminPage";
 import AdminDashboard from "./views/Admin/dashboard";
 import UserManagement from "./views/Admin/usermanagement";
-import StatisticsAdmin from "./views/Admin/statistics";
-import UserTrendingAdmin from "./views/Admin/usertrending";
-import DataTrendingAdmin from "./views/Admin/datatrending";
-import ContentManagement from "./views/Admin/contentmanagement";
+import StatisticsAdmin from "./views/Admin/datamanagement/statistics";
+import UserTrendingAdmin from "./views/Admin/datamanagement/usertrending";
+import DataTrendingAdmin from "./views/Admin/datamanagement/datatrending";
+import SlideshowManagement from "./views/Admin/contentmanagement/slideshowmanagement";
+import AnnouncementManagement from "./views/Admin/contentmanagement/annoucementmanagement";
 
 import EducatorPage from "./views/Educator/EducatorPage";
 import EducatorDashboard from "./views/Educator/dashboard";
 import RealTimeMonitoring from "./views/Educator/realtimemonitoring";
-import EducatorStatistics from "./views/Educator/statistics";
+import EducatorStatistics from "./views/Educator/postanalytics/statistics";
 import GeneralSettings from "./views/Settings/general";
 import AccountSettings from "./views/Settings/account";
 
@@ -46,7 +47,10 @@ function App() {
             <Route path="datatrend" element={<DataTrendingAdmin />} />
             <Route path="account" element={<AccountSettings />} />
           </Route>
-          <Route path="contentmanagement" element={<ContentManagement />} />
+          <Route path="contentmanagement/*">
+            <Route path="slideshow" element={<SlideshowManagement />} />
+            <Route path="announcement" element={<AnnouncementManagement />} />
+          </Route>
           <Route path="settings/*">
             <Route path="general" element={<GeneralSettings />} />
             <Route path="account" element={<AccountSettings />} />

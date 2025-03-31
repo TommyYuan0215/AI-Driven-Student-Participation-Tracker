@@ -1,7 +1,7 @@
 import React from "react";
 import { Breadcrumb, Button } from "react-bootstrap";
 import { Link } from "react-router-dom";
-import { getBreadcrumbItems } from "../utils/navigationUtils";
+import { getBreadcrumbItems } from "../../utils/navigationUtils";
 
 function PageTitleBreadcrumb({
   title,

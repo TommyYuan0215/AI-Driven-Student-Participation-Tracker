@@ -25,7 +25,8 @@ export const getBreadcrumbItems = (currentPath) => {
       const isDisabled =
         (item.id === "settings" ||
           item.id === "datamanagement" ||
-          item.id === "postanalytics") &&
+          item.id === "postanalytics" ||
+          item.id === "contentmanagement") &&
         item.subItems;
 
       if (itemPath === path) {

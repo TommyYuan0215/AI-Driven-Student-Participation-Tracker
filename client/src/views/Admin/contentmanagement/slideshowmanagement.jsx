@@ -8,15 +8,15 @@ import {
   Form,
   Spinner,
 } from "react-bootstrap";
-import ModelComponent from "../../components/XLargeModelComponent";
-import LoadingSpinner from "../../components/LoadingSpinner";
-import SlideshowForm from "../../components/SlideshowFormComponent";
-import PageTitleBreadcrumb from "../../components/PageTitleBreadcrumb";
-import axios from "../../utils/axios_configure";
+import ModelComponent from "../../../components/modal/XLargeModelComponent";
+import LoadingSpinner from "../../../components/LoadingSpinner";
+import SlideshowForm from "../../../components/form/SlideshowFormComponent";
+import PageTitleBreadcrumb from "../../../components/layout/PageTitleBreadcrumb";
+import axios from "../../../utils/axios_configure";
 import { toast } from "react-toastify";
-import { useLoadingState } from "../../utils/loadingUtils";
+import { useLoadingState } from "../../../utils/loadingUtils";
 
-function ContentManagement() {
+function SlideshowManagement() {
   const {
     data: slideshowData,
     loading,
@@ -250,7 +250,7 @@ function ContentManagement() {
   return (
     <>
       <PageTitleBreadcrumb
-        title="Content Management"
+        title="Slideshow Management"
         path={location.pathname}
         isAddNew={true}
         onclickToggle={() => setShowNewModal(true)}
@@ -303,10 +303,10 @@ function ContentManagement() {
               ) : (
                 <Col className="md-12">
                   <div
-                    className="card text-center"
+                    className="d-flex justify-content-center align-items-center"
                     style={{ minHeight: "calc(100vh - 250px)" }}
                   >
-                    <div className="card-body py-5 d-flex flex-column justify-content-center align-items-center">
+                    <div className="text-center">
                       <i className="bi bi-calendar-x text-muted fs-1"></i>
                       <h3 className="text-muted mt-3">
                         No slideshows available
@@ -326,8 +326,8 @@ function ContentManagement() {
         <ModelComponent
           show={showNewModal || showEditModal}
           onHide={() => {
-            setShowNewModal(false);
-            setShowEditModal(false);
+            handleCloseNewModal();
+            handleCloseEditModal();
           }}
           title={showNewModal ? "Add New Slideshow" : "Edit Slideshow"}
         >
@@ -347,4 +347,4 @@ function ContentManagement() {
   );
 }
 
-export default ContentManagement;
+export default SlideshowManagement;

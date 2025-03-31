@@ -195,3 +195,100 @@ def delete_slideshow():
         cursor.close()
         connection.close()
         
+# --------------------------------------------------------------------
+@contentManagement_route.route('/get_announcement_data')
+def get_announcement():
+    connection = get_db_connection()
+    cursor = connection.cursor(dictionary=True)
+    
+    try:
+        # Fetch all slideshows from database
+        cursor.execute("SELECT * FROM CONTENT_ANNOUNCEMENT")
+        
+        announcement = cursor.fetchall()        
+
+        return jsonify({
+            "status": "success",
+            "data": announcement,
+            "message": "Slideshows fetched successfully"
+        }), 200
+
+    except Exception as e:
+        return jsonify({
+            "status": "error",
+            "message": f"Error fetching annoucement: {str(e)}"
+        }), 500
+
+    finally:
+        cursor.close()
+        connection.close()
+        
+@contentManagement_route.route('/update_announcement_status', methods=['POST'])
+def update_announcement_status():
+    data = request.get_json()
+    announcementId = data.get('announcementId')
+    announcementStatus = data.get('announcementStatus')
+
+    if announcementId is None or announcementStatus is None:
+        return jsonify({"success": False, "message": "Announcement ID and status are required"}), 400
+
+    connection = get_db_connection()
+    cursor = connection.cursor(dictionary=True)
+
+    try:
+        cursor.execute(
+            "UPDATE CONTENT_ANNOUNCEMENT SET announcementStatus = %s WHERE announcementID = %s",
+            (announcementStatus, announcementId)
+        )
+        connection.commit()
+
+        return jsonify({"success": True, "message": "Announcement status updated successfully."})
+    except Exception as e:
+        connection.rollback()
+        return jsonify({"success": False, "message": f"Error: {e}"}), 500
+    finally:
+        cursor.close()
+        connection.close()
+        
+@contentManagement_route.route('/add_announcement', methods=['POST'])
+def add_announcement():
+    data = request.form
+    
+    announcementDesc = data.get('announcementDesc')
+    
+    errors = []
+    
+    # Validate inputs
+    if not announcementDesc:
+        errors.append("Slideshow description is required.")
+            
+    if errors:
+        return jsonify({"status": "error", "message": " ".join(errors)}), 400
+    
+    connection = get_db_connection()
+    cursor = connection.cursor(dictionary=True)
+    
+    try:
+        # Insert into database
+        cursor.execute(
+            "INSERT INTO CONTENT_ANNOUNCEMENT (announcementDescription) VALUES (%s)",
+            (announcementDesc,) 
+        )
+        
+        connection.commit()
+        return jsonify({
+            "status": "success",
+            "message": "Announcement added successfully."
+        }), 200
+    
+    except Exception as e:
+        connection.rollback()
+        return jsonify({
+            "status": "error",
+            "message": f"Error adding announcement: {str(e)}"
+        }), 500
+    
+    finally:
+        cursor.close()
+        connection.close()
+        

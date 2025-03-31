@@ -111,10 +111,7 @@ def signup():
     existing_user = cursor.fetchone()
 
     if existing_user:
-        errors.append('Email already registered.')
-
-    if errors:
-        return jsonify({"status": "error", "message": errors}), 400
+        return jsonify({"status": "error", "message": "This email is already registered. Please use a different email."}), 409
 
     # Hash password before saving
     hashed_password = generate_password_hash(password)

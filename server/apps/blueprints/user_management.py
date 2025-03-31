@@ -1,5 +1,7 @@
 from flask import Blueprint, request, jsonify, session
 from apps.services.db_helper import get_db_connection
+from werkzeug.security import generate_password_hash
+from datetime import datetime
 
 userManagement_route = Blueprint('usermanagement', __name__)
 
@@ -43,6 +45,58 @@ def authorized_user():
         cursor.close()
         connection.close()
         
+# @userManagement_route.route('/add_user', methods=['POST'])
+# def add_user():
+#     data = request.form
+    
+#     userName = data.get('userName')
+#     userEmail = data.get('userEmail')
+#     userPassword = data.get('userPassword')  # Ensure the password is included
+#     userType = data.get('userType', 1)  # Default userType to 1 (Educator)
+#     userStatus = data.get('userStatus', 0)  # Default status to 0 (Not Authorized)
+#     current_timestamp = datetime.now()
+
+#     errors = []
+    
+#     if not userName:
+#         errors.append("User name is required.")
+#     if not userEmail:
+#         errors.append("User email is required.")
+#     if not userPassword:
+#         errors.append("User password is required.")
+        
+#     if errors:
+#         return jsonify({"success": False, "message": " ".join(errors)}), 400
+
+#     connection = get_db_connection()
+#     cursor = connection.cursor(dictionary=True)
+
+#     # Check if email already exists
+#     cursor.execute("SELECT * FROM USER_ACCOUNT WHERE userEmail = %s", (userEmail,))
+#     existing_user = cursor.fetchone()
+
+#     if existing_user:
+#         return jsonify({"success": False, "message": "This email is already registered."}), 409
+
+#     # Hash the password before storing it
+#     hashed_password = generate_password_hash(userPassword)
+
+#     try:
+#         cursor.execute(
+#             "INSERT INTO USER_ACCOUNT (userName, userEmail, userPassword, userType, userStatus, createAt) VALUES (%s, %s, %s, %s, %s, %s)", 
+#             (userName, userEmail, hashed_password, userType, userStatus, current_timestamp)
+#         )
+#         connection.commit()
+
+#         return jsonify({"success": True, "message": "User account created successfully."}), 201
+#     except Exception as e:
+#         connection.rollback()
+#         return jsonify({"success": False, "message": f"Error: {e}"}), 500
+#     finally:
+#         cursor.close()
+#         connection.close()
+
+        
 @userManagement_route.route('/update_user', methods=['POST'])
 def update_user():
     data = request.form
@@ -73,7 +127,7 @@ def update_user():
         )
         connection.commit()
 
-        return jsonify({"success": True, "message": "User account updated successfully."})
+        return jsonify({"success": True, "message": "User account updated successfully."}), 200
     except Exception as e:
         connection.rollback()
         return jsonify({"success": False, "message": f"Error: {e}"}), 500
