@@ -8,9 +8,12 @@ import { PieChart, Pie, Cell, Tooltip, Legend } from "recharts";
 import PageTitleBreadcrumb from "../../components/layout/PageTitleBreadcrumb";
 import ProfileCard from "../../components/card/ProfileCard";
 import AnnouncementCard from "../../components/card/AnnouncementCard";
+import { toast } from "react-toastify";
+import { v4 as uuidv4 } from "uuid";
 
 function EducatorDashboard() {
   const navigate = useNavigate();
+
   const { userData, isLoggedIn } = useSession(navigate);
   const {
     data: userList,
@@ -37,6 +40,23 @@ function EducatorDashboard() {
     return null;
   }
 
+  // Handle Start a new session
+  const handleNewSession = () => {
+    const userConfirmed = window.confirm(
+      "Are you sure you want to create a new session?"
+    );
+
+    if (userConfirmed) {
+      const sessionId = uuidv4();
+
+      toast.success("New session created successful.");
+
+      setTimeout(() => {
+        navigate(`/views/educator/tracking/${sessionId}`);
+      }, 1000);
+    }
+  };
+
   // Pie chart data
   const data = [
     { name: "Authorized", value: userStats.active },
@@ -46,7 +66,7 @@ function EducatorDashboard() {
   const COLORS = ["#3b2ee2", "#de1e82"];
 
   return (
-    <>
+    <Container>
       <PageTitleBreadcrumb
         title={`Hello, ${userData.userName}👋, ready to analyze student participation today? `}
         path={location.pathname}
@@ -121,8 +141,11 @@ function EducatorDashboard() {
                           </p>
                         </div>
                         <div className="d-flex gap-3 justify-content-center mt-3">
-                          <Button className="btn btn-primary w-auto">
-                            <i className="bi bi-eye mr-2" onClick></i>
+                          <Button
+                            className="btn btn-primary w-auto"
+                            onClick={handleNewSession}
+                          >
+                            <i className="bi bi-eye mr-2"></i>
                             &nbsp; Create A New Session
                           </Button>
                         </div>
@@ -135,7 +158,7 @@ function EducatorDashboard() {
           )}
         </section>
       </div>
-    </>
+    </Container>
   );
 }
 

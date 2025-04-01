@@ -15,7 +15,8 @@
     "bootstrap": "^5.3.3",
     "bootstrap-icons": "^1.11.3",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "react-dom": "^19.0.0",
+    "uuid": "^8.3.2"
   },
   "devDependencies": {
     "@eslint/js": "^9.21.0",

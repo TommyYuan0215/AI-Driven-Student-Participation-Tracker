@@ -1,13 +1,22 @@
 import React, { useState, useRef, useEffect } from "react";
 import { Container, Row, Col, Card, Button } from "react-bootstrap";
+import { useLocation, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import { io } from "socket.io-client";
 import EmotionStatistics from "../../components/EmotionCharts";
+import { useParams } from "react-router-dom";
 
 // WebSocket URL (Update if needed)
 const SOCKET_URL = "http://localhost:5000";
 
 function RealTimeMonitoring() {
+  // Use useParams to get sessionID from the url
+  const { sessionId } = useParams();
+
+  // Function to navigate to other page
+  const location = useLocation();
+  const navigate = useNavigate();
+
   const [isTracking, setIsTracking] = useState(false);
   const [isShareScreen, setIsShareScreen] = useState(false);
   const [isCameraOn, setIsCameraOn] = useState(false);
@@ -173,10 +182,6 @@ function RealTimeMonitoring() {
         cancelAnimationFrame(animationFrameRef.current);
         animationFrameRef.current = null;
       }
-      if (!hasStoppedTracking.current) {
-        toast.info("Tracking stopped");
-        hasStoppedTracking.current = true;
-      }
 
       // Hide the main bounding box when tracking stops
       if (boxRef.current) {
@@ -195,8 +200,10 @@ function RealTimeMonitoring() {
       return;
     }
 
+    // Reset tracking state
     hasStoppedTracking.current = false;
     toast.success("Tracking started");
+
     startSendingVideo();
 
     // Start the bounding box update animation
@@ -260,11 +267,6 @@ function RealTimeMonitoring() {
 
     setIsTracking((prev) => !prev);
   };
-
-  // Log tracking data changes for debugging
-  useEffect(() => {
-    console.log("TrackingData updated:", trackingData);
-  }, [trackingData]);
 
   // Send Video Frames to Backend
   const startSendingVideo = () => {
@@ -568,6 +570,24 @@ function RealTimeMonitoring() {
     updateBoundingBox();
   }, [trackingData, isCameraOn, isShareScreen]);
 
+  const handleEndSession = () => {
+    const userConfirmed = window.confirm(
+      "Are you sure you want to end this session? All the data that has been tracked will be saved into databases for future references."
+    );
+
+    if (userConfirmed) {
+      toast.success("Session ended and data saved.");
+
+      if (location.pathname === `/views/educator/tracking/${sessionId}`) {
+        setTimeout(() => {
+          navigate("/views/educator/dashboard");
+        }, 1000);
+      }
+    } else {
+      toast.info("Session not ended.");
+    }
+  };
+
   return (
     <Container fluid className="d-flex flex-column p-0 vh-85">
       <Row className="g-0 flex-grow-1">
@@ -722,7 +742,9 @@ function RealTimeMonitoring() {
             &nbsp;{isTracking ? "Stop Tracking" : "Start Tracking"}
           </Button>
 
-          <Button variant="danger">End this Session</Button>
+          <Button variant="danger" onClick={handleEndSession}>
+            <i class="bi bi-door-open"></i> &nbsp;End Session
+          </Button>
         </Col>
       </Row>
     </Container>

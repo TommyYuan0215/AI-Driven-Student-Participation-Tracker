@@ -1,6 +1,7 @@
 import React, { useState } from "react";
-import { Outlet } from "react-router-dom";
+import { Outlet, useLocation } from "react-router-dom";
 import NavContentLayout from "../../components/layout/NavContentLayout";
+import ContentLayout from "../../components/layout/ContentLayout";
 import EducationNavigation, { sidebarItems } from "./EducatorNavigation";
 
 function EducatorPage() {
@@ -13,9 +14,21 @@ function EducatorPage() {
     setActiveTab(tabId);
   };
 
-  return (
+  // Check condition, if is realtimemonitoring.jsx, change layout
+  const location = useLocation();
+  const isTrackingPage = location.pathname.startsWith(
+    "/views/educator/tracking"
+  );
+
+  return isTrackingPage ? (
+    <ContentLayout>
+      {/* Render child routes */}
+      <div className="col">
+        <Outlet />
+      </div>
+    </ContentLayout>
+  ) : (
     <NavContentLayout sidebarItems={sidebarItems} mainContentItems={[]}>
-      {/* Admin navigation will be rendered here */}
       <EducationNavigation
         activeTab={activeTab}
         onTabChange={handleTabChange}

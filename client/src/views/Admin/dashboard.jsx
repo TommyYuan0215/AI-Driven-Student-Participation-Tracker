@@ -50,7 +50,7 @@ function AdminDashboard() {
   const COLORS = ["#3b2ee2", "#de1e82"];
 
   return (
-    <>
+    <Container>
       <PageTitleBreadcrumb
         title={`Welcome back, ${userData.userName} 👋`}
         path={location.pathname}
@@ -159,7 +159,7 @@ function AdminDashboard() {
           )}
         </section>
       </div>
-    </>
+    </Container>
   );
 }
 

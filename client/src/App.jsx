@@ -60,7 +60,7 @@ function App() {
         {/* Educator Protected Routes */}
         <Route path="/views/educator/*" element={<EducatorPage />}>
           <Route path="dashboard" element={<EducatorDashboard />} />
-          <Route path="tracking" element={<RealTimeMonitoring />} />
+          <Route path="tracking/:sessionId" element={<RealTimeMonitoring />} />
           <Route path="postanalytics/*">
             <Route path="statistics" element={<EducatorStatistics />} />
           </Route>
