@@ -62,12 +62,11 @@ function AnnouncementManagement() {
   const [showNewModal, setShowNewModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
 
-  const handleOpenModalEdit = (slideshow) => {
+  const handleOpenModalEdit = (announcement) => {
     setFormData({
-      slideshowID: slideshow.slideshowID,
-      slideshowImage: slideshow.slideshowImage,
-      slideshowTitle: slideshow.slideshowTitle,
-      slideshowDesc: slideshow.slideshowDescription,
+      announcementId: announcement.announcementID,
+      announcementTitle: announcement.announcementTitle,
+      announcementDesc: announcement.announcementDescription,
     });
     setShowEditModal(true);
   };
@@ -75,23 +74,19 @@ function AnnouncementManagement() {
   // To ensure clear all the data after closing the modal
   const handleCloseNewModal = () => {
     setShowNewModal(false);
-    setPreviewImage("");
     setFormData({
-      slideshowID: "",
-      slideshowImage: "",
-      slideshowTitle: "",
-      slideshowDesc: "",
+      announcementId: "",
+      announcementTitle: "",
+      announcementDesc: "",
     });
   };
 
   const handleCloseEditModal = () => {
     setShowEditModal(false);
-    setPreviewImage("");
     setFormData({
-      slideshowID: "",
-      slideshowImage: "",
-      slideshowTitle: "",
-      slideshowDesc: "",
+      announcementId: "",
+      announcementTitle: "",
+      announcementDesc: "",
     });
   };
 
@@ -127,15 +122,21 @@ function AnnouncementManagement() {
   // Handle New and Edit Submit Function
   const handleNewAnnouncement = async (e) => {
     e.preventDefault();
-    const { announcementDesc } = formData;
+    const { announcementTitle, announcementDesc } = formData;
 
     // Validate input
+    if (!announcementTitle.trim()) {
+      toast.error("Announcement title is required.");
+      return;
+    }
+
     if (!announcementDesc.trim()) {
       toast.error("Announcement description is required.");
       return;
     }
 
     const formDataToSend = new FormData();
+    formDataToSend.append("announcementTitle", announcementTitle);
     formDataToSend.append("announcementDesc", announcementDesc);
 
     try {
@@ -152,13 +153,14 @@ function AnnouncementManagement() {
       if (response.status === 200) {
         // Reset the form
         setFormData({
+          announcementTitle: "",
           announcementDesc: "",
         });
 
         toast.success(
           response.data.message || "Announcement added successfully!"
         );
-        handleCloseModalAddAnnouncement();
+        handleCloseNewModal();
 
         // Refresh the announcements list
         await refetch();
@@ -176,8 +178,97 @@ function AnnouncementManagement() {
     }
   };
 
+  // Handle Edit Announcement (Update)
   const handleEditAnnouncement = async (e) => {
     e.preventDefault();
+    const { announcementId, announcementTitle, announcementDesc } = formData;
+
+    // Validate input
+    if (!announcementTitle.trim()) {
+      toast.error("Announcement title is required.");
+      return;
+    }
+
+    if (!announcementDesc.trim()) {
+      toast.error("Announcement description is required.");
+      return;
+    }
+
+    const formDataToSend = new FormData();
+    formDataToSend.append("announcementId", announcementId);
+    formDataToSend.append("announcementTitle", announcementTitle);
+    formDataToSend.append("announcementDesc", announcementDesc);
+
+    try {
+      const response = await axios.post(
+        "/contentmanagement/edit_announcement", // API for editing an existing announcement
+        formDataToSend,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        }
+      );
+
+      if (response.status === 200) {
+        // Reset the form after successful edit
+        setFormData({
+          announcementId: "",
+          announcementTitle: "",
+          announcementDesc: "",
+        });
+
+        toast.success(
+          response.data.message || "Announcement updated successfully!"
+        );
+        handleCloseEditModal(); // Close modal
+
+        // Refresh the announcements list
+        await refetch();
+      } else {
+        toast.error(
+          response.data.message ||
+            "Failed to update announcement. Please try again."
+        );
+      }
+    } catch (error) {
+      console.error("Edit announcement error:", error);
+      toast.error(
+        error.response?.data?.message || "Failed to update announcement"
+      );
+    }
+  };
+
+  // Handle delete announcement
+  const handleDeleteAnnouncement = async (id) => {
+    if (
+      !window.confirm(`Are you sure you want to delete announcement: ${id}?`)
+    ) {
+      return;
+    }
+
+    try {
+      const response = await axios.post(
+        "/contentmanagement/delete_announcement",
+        {
+          announcementId: id,
+        }
+      );
+
+      if (response.data.success) {
+        toast.success(
+          response.data.message || "Announcement deleted successfully!"
+        );
+        await refetch();
+      } else {
+        toast.error(response.data.message || "Failed to delete announcement");
+      }
+    } catch (error) {
+      console.error("Delete announcement error:", error);
+      toast.error(
+        error.response?.data?.message || "Failed to delete announcement"
+      );
+    }
   };
 
   return (
@@ -201,18 +292,29 @@ function AnnouncementManagement() {
                     <th style={{ width: "50px" }}>#</th>
                     <th
                       onClick={() => handleSort("announcementID")}
-                      style={{ width: "180px", cursor: "pointer" }}
+                      style={{ width: "100px", cursor: "pointer" }}
                     >
-                      AnnouncementID{" "}
+                      ID{" "}
                       {sortConfig.key === "announcementID"
                         ? sortConfig.direction === "asc"
                           ? "🔼"
                           : "🔽"
                         : ""}
                     </th>
-                    <th style={{ cursor: "pointer" }}>Description </th>
                     <th
-                      style={{ width: "200px", cursor: "pointer" }}
+                      onClick={() => handleSort("announcementTitle")}
+                      style={{ width: "180px", cursor: "pointer" }}
+                    >
+                      Title{" "}
+                      {sortConfig.key === "announcementTitle"
+                        ? sortConfig.direction === "asc"
+                          ? "🔼"
+                          : "🔽"
+                        : ""}
+                    </th>
+                    <th>Description </th>
+                    <th
+                      style={{ width: "120px", cursor: "pointer" }}
                       onClick={() => handleSort("announcementStatus")}
                     >
                       Status{" "}
@@ -222,7 +324,7 @@ function AnnouncementManagement() {
                           : "🔽"
                         : ""}
                     </th>
-                    <th style={{ width: "320px" }}>Action</th>
+                    <th style={{ width: "300px" }}>Action</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -230,6 +332,7 @@ function AnnouncementManagement() {
                     <tr key={announcement.announcementID}>
                       <td>{index + 1}</td>
                       <td>{announcement.announcementID}</td>
+                      <td>{announcement.announcementTitle}</td>
                       <td>{announcement.announcementDescription}</td>
                       <td className="text-center">
                         <AnnouncementStatusBadge
@@ -240,7 +343,7 @@ function AnnouncementManagement() {
                         <Button
                           variant={
                             announcement.announcementStatus === 1
-                              ? "danger"
+                              ? "secondary"
                               : "success"
                           } // Red for active, green for inactive
                           size="sm"
@@ -260,7 +363,7 @@ function AnnouncementManagement() {
                           ></i>
                           &nbsp;
                           {announcement.announcementStatus === 1
-                            ? "Deactivate"
+                            ? "Archived"
                             : "Activate"}
                         </Button>{" "}
                         &nbsp;
@@ -272,7 +375,15 @@ function AnnouncementManagement() {
                           <i className="bi bi-pencil"></i>&nbsp; Edit
                         </Button>{" "}
                         &nbsp;
-                        <Button variant="danger" size="sm" onClick={() => null}>
+                        <Button
+                          variant="danger"
+                          size="sm"
+                          onClick={() =>
+                            handleDeleteAnnouncement(
+                              announcement.announcementID
+                            )
+                          }
+                        >
                           <i className="bi bi-trash"></i>&nbsp; Delete
                         </Button>
                       </td>

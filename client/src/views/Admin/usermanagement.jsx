@@ -6,6 +6,7 @@ import LoadingSpinner from "../../components/LoadingSpinner";
 import SmallModelComponent from "../../components/modal/SmallModelComponent";
 import LargeModelComponent from "../../components/modal/LargeModelComponent";
 import PageTitleBreadcrumb from "../../components/layout/PageTitleBreadcrumb";
+import UserFormModal from "../../components/form/UserFormComponent";
 import { toast } from "react-toastify";
 import axios from "../../utils/axios_configure";
 
@@ -61,6 +62,13 @@ function UserManagement() {
   };
   const handleCloseModalAuthorized = () => setModalShowAuthorized(false);
 
+  // Handle add modal
+  const [modalShowAdd, setModalShowAdd] = useState(false);
+  const handleOpenModalAdd = (user) => {
+    setModalShowEdit(true);
+  };
+  const handleCloseModalAdd = () => setModalShowAdd(false);
+
   // Handle edit modal
   const [modalShowEdit, setModalShowEdit] = useState(false);
   const handleOpenModalEdit = (user) => {
@@ -110,7 +118,12 @@ function UserManagement() {
     }
   };
 
-  // Modify handleUpdateUser to use refetch
+  // Add new user form submission
+  const handleAddUser = async (e) => {
+    e.preventDefault();
+  };
+
+  // Edit exist user form submission
   const handleUpdateUser = async (e) => {
     e.preventDefault();
     const { userId, userName, userEmail } = formData;
@@ -206,6 +219,17 @@ function UserManagement() {
                   <tr className="text-center">
                     <th style={{ width: "50px" }}>#</th>
                     <th
+                      onClick={() => handleSort("userId")}
+                      style={{ width: "100px", cursor: "pointer" }}
+                    >
+                      ID{" "}
+                      {sortConfig.key === "userId"
+                        ? sortConfig.direction === "asc"
+                          ? "🔼"
+                          : "🔽"
+                        : ""}
+                    </th>
+                    <th
                       onClick={() => handleSort("userName")}
                       style={{ cursor: "pointer" }}
                     >
@@ -228,11 +252,22 @@ function UserManagement() {
                         : ""}
                     </th>
                     <th
-                      style={{ width: "200px", cursor: "pointer" }}
+                      style={{ width: "150px", cursor: "pointer" }}
                       onClick={() => handleSort("userStatus")}
                     >
                       Account Status{" "}
                       {sortConfig.key === "userStatus"
+                        ? sortConfig.direction === "asc"
+                          ? "🔼"
+                          : "🔽"
+                        : ""}
+                    </th>
+                    <th
+                      style={{ width: "250px", cursor: "pointer" }}
+                      onClick={() => handleSort("createAt")}
+                    >
+                      Created Date{""}
+                      {sortConfig.key === "createAt"
                         ? sortConfig.direction === "asc"
                           ? "🔼"
                           : "🔽"
@@ -245,11 +280,13 @@ function UserManagement() {
                   {registeredUsers.map((user, index) => (
                     <tr key={user.userID}>
                       <td>{index + 1}</td>
+                      <td>{user.userID}</td>
                       <td>{user.userName}</td>
                       <td>{user.userEmail}</td>
                       <td className="text-center">
                         <UserStatusBadge userStatus={user.userStatus} />
                       </td>
+                      <td>{user.createAt}</td>
                       <td>
                         <Button
                           variant="primary"
@@ -285,6 +322,7 @@ function UserManagement() {
                 </tbody>
               </Table>
               <br />
+
               <Pagination className="d-flex justify-content-end">
                 <Pagination.First
                   onClick={() => setCurrentPage(1)}
@@ -374,69 +412,16 @@ function UserManagement() {
         </SmallModelComponent>
 
         <LargeModelComponent
-          show={modalShowEdit}
-          onHide={handleCloseModalEdit}
-          title="Edit User Profile"
+          show={modalShowEdit || modalShowAdd}
+          onHide={modalShowEdit ? handleCloseModalEdit : handleCloseModalAdd}
+          title={modalShowEdit ? "Edit User Profile" : "Add New User Profile"}
         >
-          <Container>
-            <Form onSubmit={handleUpdateUser}>
-              <Form.Group className="mb-3">
-                <Form.Label>User ID</Form.Label>
-                <Form.Control
-                  type="text"
-                  name="userId"
-                  value={formData.userId}
-                  disabled
-                />
-              </Form.Group>
-              <Form.Group className="mb-3">
-                <Form.Label>Name</Form.Label>
-                <Form.Control
-                  type="text"
-                  name="userName"
-                  value={formData.userName}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      userName: e.target.value.trim(),
-                    })
-                  }
-                  required
-                />
-              </Form.Group>
-              <Form.Group className="mb-3">
-                <Form.Label>Email</Form.Label>
-                <Form.Control
-                  type="email"
-                  name="userEmail"
-                  value={formData.userEmail}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      userEmail: e.target.value.trim(),
-                    })
-                  }
-                  required
-                />
-              </Form.Group>
-              <Form.Group className="mb-3 d-flex justify-content-around">
-                <Button
-                  variant="success"
-                  type="submit"
-                  disabled={!formData.userName || !formData.userEmail}
-                >
-                  <i className="bi bi-save"></i> &nbsp; Save Changes
-                </Button>
-                <Button
-                  variant="secondary"
-                  onClick={handleClearForm}
-                  type="button"
-                >
-                  <i className="bi bi-arrow-counterclockwise"></i> &nbsp; Reset
-                </Button>
-              </Form.Group>
-            </Form>
-          </Container>
+          <UserFormModal
+            formData={formData}
+            setFormData={setFormData}
+            handleSubmit={modalShowEdit ? handleUpdateUser : handleAddUser}
+            handleClearForm={handleClearForm}
+          />
         </LargeModelComponent>
       </div>
     </>

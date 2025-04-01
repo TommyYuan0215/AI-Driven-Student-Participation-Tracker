@@ -7,18 +7,24 @@ function SlideshowForm({
   handleInputChange,
   handleImageChange,
   handleSubmit,
+  handleClearForm,
   isEdit,
 }) {
   return (
     <Form onSubmit={handleSubmit}>
       {/* Add hidden input for ID when editing */}
-      {isEdit && (
+      <Form.Group
+        className="mb-3"
+        style={{ display: isEdit ? "block" : "none" }}
+      >
+        <Form.Label>User ID</Form.Label>
         <Form.Control
-          type="hidden"
+          type="text"
           name="slideshowId"
           value={formData.slideshowId}
+          disabled
         />
-      )}
+      </Form.Group>
 
       <Form.Group className="mb-3 card">
         {previewImage ? (
@@ -79,12 +85,18 @@ function SlideshowForm({
           onChange={handleInputChange}
         />
       </Form.Group>
+      <br />
       <Form.Group className="mb-3 d-flex justify-content-around">
         <Button className="ms-5 me-3" variant="success" type="submit">
           <i className="bi bi-save"></i> &nbsp;
           {isEdit ? "Update Slideshow" : "Upload Slideshow"}
         </Button>
-        <Button className="ms-3 me-5" variant="secondary" type="button">
+        <Button
+          className="ms-3 me-5"
+          variant="secondary"
+          onClick={handleClearForm}
+          type="button"
+        >
           <i className="bi bi-arrow-counterclockwise"></i> &nbsp; Reset Form
         </Button>
       </Form.Group>

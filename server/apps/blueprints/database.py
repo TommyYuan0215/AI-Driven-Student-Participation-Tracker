@@ -67,7 +67,7 @@ def create_table_if_not_exists():
             userPassword VARCHAR(255),
             userPhoto LONGBLOB,
             userStatus INT(2) DEFAULT 0,
-            createAt DATETIME,
+            createAt DATETIME DEFAULT CURRENT_TIMESTAMP,
             PRIMARY KEY (userID),
             UNIQUE (userEmail)
         )
@@ -157,9 +157,10 @@ def create_table_if_not_exists():
         create_content_announcement_table = '''
         CREATE TABLE IF NOT EXISTS CONTENT_ANNOUNCEMENT (
             announcementID VARCHAR(12) NOT NULL,
+            announcementTitle VARCHAR(255),
             announcementDescription TEXT,
             announcementStatus INT(2) DEFAULT 1,
-            createAt DATETIME,
+            createAt DATETIME DEFAULT CURRENT_TIMESTAMP,
             PRIMARY KEY (announcementID)
         )
         '''

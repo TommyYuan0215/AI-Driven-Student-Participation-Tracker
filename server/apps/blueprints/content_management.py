@@ -1,6 +1,7 @@
 from flask import Blueprint, request, jsonify, session
 from apps.services.db_helper import get_db_connection
 import base64
+from datetime import datetime
 
 contentManagement_route = Blueprint('contentmanagement', __name__)
 
@@ -100,7 +101,7 @@ def add_slideshow():
 def edit_slideshow():
     data = request.form
     
-    slideshowID = data.get('slideshowID')
+    slideshowId = data.get('slideshowId')
     slideshowTitle = data.get('slideshowTitle')
     slideshowDesc = data.get('slideshowDesc')
     slideshowImage = request.files.get('slideshowImage')
@@ -108,7 +109,7 @@ def edit_slideshow():
     errors = []
     
     # Validate inputs
-    if not slideshowID:
+    if not slideshowId:
         errors.append("Slideshow ID is required.")
     if not slideshowTitle:
         errors.append("Slideshow title is required.")
@@ -134,13 +135,13 @@ def edit_slideshow():
             slideshowImage_data = slideshowImage.read()
             cursor.execute(
                 "UPDATE CONTENT_SLIDESHOW SET slideshowTitle = %s, slideshowDescription = %s, slideshowImage = %s WHERE slideshowID = %s", 
-                (slideshowTitle, slideshowDesc, slideshowImage_data, slideshowID)
+                (slideshowTitle, slideshowDesc, slideshowImage_data, slideshowId)
             )
         else:
             # Update without changing image
             cursor.execute(
                 "UPDATE CONTENT_SLIDESHOW SET slideshowTitle = %s, slideshowDescription = %s WHERE slideshowID = %s", 
-                (slideshowTitle, slideshowDesc, slideshowID)
+                (slideshowTitle, slideshowDesc, slideshowId)
             )
         
         if cursor.rowcount == 0:
@@ -254,13 +255,16 @@ def update_announcement_status():
 def add_announcement():
     data = request.form
     
+    announcementTitle = data.get('announcementTitle')
     announcementDesc = data.get('announcementDesc')
     
     errors = []
     
     # Validate inputs
+    if not announcementTitle:
+        errors.append("Announcement title is required.")
     if not announcementDesc:
-        errors.append("Slideshow description is required.")
+        errors.append("Announcement description is required.")
             
     if errors:
         return jsonify({"status": "error", "message": " ".join(errors)}), 400
@@ -269,10 +273,11 @@ def add_announcement():
     cursor = connection.cursor(dictionary=True)
     
     try:
+        
         # Insert into database
         cursor.execute(
-            "INSERT INTO CONTENT_ANNOUNCEMENT (announcementDescription) VALUES (%s)",
-            (announcementDesc,) 
+            "INSERT INTO CONTENT_ANNOUNCEMENT (announcementTitle, announcementDescription) VALUES (%s, %s)",
+            (announcementTitle, announcementDesc) 
         )
         
         connection.commit()
@@ -288,6 +293,90 @@ def add_announcement():
             "message": f"Error adding announcement: {str(e)}"
         }), 500
     
+    finally:
+        cursor.close()
+        connection.close()
+        
+@contentManagement_route.route('/edit_announcement', methods=['POST'])
+def edit_announcement():
+    data = request.form
+    
+    # Get the announcement ID, title, and description
+    announcementId = data.get('announcementId')
+    announcementTitle = data.get('announcementTitle')
+    announcementDesc = data.get('announcementDesc')
+    
+    errors = []
+    
+    # Validate inputs
+    if not announcementId:
+        errors.append("Announcement ID is required.")
+    if not announcementTitle:
+        errors.append("Announcement title is required.")
+    if not announcementDesc:
+        errors.append("Announcement description is required.")
+            
+    if errors:
+        return jsonify({"status": "error", "message": " ".join(errors)}), 400
+    
+    connection = get_db_connection()
+    cursor = connection.cursor(dictionary=True)
+    
+    try:
+        # Update the announcement in the database
+        cursor.execute(
+            """
+            UPDATE CONTENT_ANNOUNCEMENT
+            SET announcementTitle = %s, announcementDescription = %s
+            WHERE announcementID = %s
+            """,
+            (announcementTitle, announcementDesc, announcementId)
+        )
+        
+        connection.commit()
+        
+        # Check if any rows were updated (in case the ID doesn't exist)
+        if cursor.rowcount > 0:
+            return jsonify({
+                "status": "success",
+                "message": "Announcement updated successfully."
+            }), 200
+        else:
+            return jsonify({
+                "status": "error",
+                "message": "Announcement not found."
+            }), 404
+    
+    except Exception as e:
+        connection.rollback()
+        return jsonify({
+            "status": "error",
+            "message": f"Error updating announcement: {str(e)}"
+        }), 500
+    
+    finally:
+        cursor.close()
+        connection.close()
+        
+@contentManagement_route.route('/delete_announcement', methods=['POST'])
+def delete_announcement():
+    data = request.get_json()
+    announcementId = data.get('announcementId')
+    
+    connection = get_db_connection()
+    cursor = connection.cursor(dictionary=True)
+    
+    try:
+        cursor.execute(
+            "DELETE FROM CONTENT_ANNOUNCEMENT WHERE announcementID = %s",
+            (announcementId,)
+        )
+        connection.commit()
+
+        return jsonify({"success": True, "message": "Announcement deleted successfully."})
+    except Exception as e:
+        connection.rollback()
+        return jsonify({"success": False, "message": f"Error: {e}"}), 500
     finally:
         cursor.close()
         connection.close()

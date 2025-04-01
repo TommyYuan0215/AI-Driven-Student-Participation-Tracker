@@ -53,6 +53,7 @@ function UserFormModal({
             required
           />
         </Form.Group>
+        <br />
         <Form.Group className="mb-3 d-flex justify-content-around">
           <Button
             variant="success"

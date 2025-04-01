@@ -9,8 +9,8 @@ function AnnouncementStatusBadge({ announcementStatus }) {
           text: "Activated",
         }
       : {
-          color: "badge bg-danger text-white",
-          text: "Deactivated",
+          color: "badge bg-secondary text-white",
+          text: "Archived",
         };
 
   return (

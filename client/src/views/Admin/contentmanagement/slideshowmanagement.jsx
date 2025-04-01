@@ -1,13 +1,5 @@
 import React, { useState } from "react";
-import {
-  Container,
-  Row,
-  Col,
-  Card,
-  Button,
-  Form,
-  Spinner,
-} from "react-bootstrap";
+import { Row, Col, Card, Button, Pagination } from "react-bootstrap";
 import ModelComponent from "../../../components/modal/XLargeModelComponent";
 import LoadingSpinner from "../../../components/LoadingSpinner";
 import SlideshowForm from "../../../components/form/SlideshowFormComponent";
@@ -34,6 +26,10 @@ function SlideshowManagement() {
   const [showNewModal, setShowNewModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
 
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 8;
+
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
@@ -41,7 +37,7 @@ function SlideshowManagement() {
 
   const handleOpenModalEdit = (slideshow) => {
     setFormData({
-      slideshowID: slideshow.slideshowID,
+      slideshowId: slideshow.slideshowID,
       slideshowImage: slideshow.slideshowImage,
       slideshowTitle: slideshow.slideshowTitle,
       slideshowDesc: slideshow.slideshowDescription,
@@ -55,7 +51,7 @@ function SlideshowManagement() {
     setShowNewModal(false);
     setPreviewImage("");
     setFormData({
-      slideshowID: "",
+      slideshowId: "",
       slideshowImage: "",
       slideshowTitle: "",
       slideshowDesc: "",
@@ -66,7 +62,7 @@ function SlideshowManagement() {
     setShowEditModal(false);
     setPreviewImage("");
     setFormData({
-      slideshowID: "",
+      slideshowId: "",
       slideshowImage: "",
       slideshowTitle: "",
       slideshowDesc: "",
@@ -94,6 +90,17 @@ function SlideshowManagement() {
       reader.onload = (e) => setPreviewImage(e.target.result);
       reader.readAsDataURL(file);
     }
+  };
+
+  // Add clear form handler
+  const handleClearForm = (e) => {
+    e.preventDefault();
+    setFormData({
+      slideshowImage: "",
+      slideshowTitle: "",
+      slideshowDesc: "",
+    });
+    toast.info("Form has been reset to original values");
   };
 
   const handleNewSlideshow = async (e) => {
@@ -163,7 +170,7 @@ function SlideshowManagement() {
   const handleEditSlideshow = async (e) => {
     e.preventDefault();
 
-    const { slideshowID, slideshowImage, slideshowTitle, slideshowDesc } =
+    const { slideshowId, slideshowImage, slideshowTitle, slideshowDesc } =
       formData;
 
     // Enhanced validation
@@ -179,7 +186,7 @@ function SlideshowManagement() {
     }
 
     const formDataToSend = new FormData();
-    formDataToSend.append("slideshowID", slideshowID);
+    formDataToSend.append("slideshowId", slideshowId);
     formDataToSend.append("slideshowTitle", slideshowTitle);
     formDataToSend.append("slideshowDesc", slideshowDesc);
     formDataToSend.append("slideshowImage", slideshowImage);
@@ -230,7 +237,7 @@ function SlideshowManagement() {
 
     try {
       const response = await axios.post("/contentmanagement/delete_slideshow", {
-        slideshowID: id,
+        slideshowId: id,
       });
 
       if (response.status === 200) {
@@ -245,6 +252,18 @@ function SlideshowManagement() {
         "An error occurred. Please try again later.";
       toast.error(errorMessage);
     }
+  };
+
+  // Pagination logic
+  const totalPages = Math.ceil(slideshowData.length / itemsPerPage);
+
+  // Pagination controls
+  const getPaginationItems = () => {
+    const pageNumbers = [];
+    for (let i = 1; i <= totalPages; i++) {
+      pageNumbers.push(i);
+    }
+    return pageNumbers;
   };
 
   return (
@@ -262,44 +281,49 @@ function SlideshowManagement() {
             <LoadingSpinner text="Loading slideshows..." />
           ) : (
             <Row>
-              {slideshowData && slideshowData.length > 0 ? (
-                slideshowData.map((slideshow) => (
-                  <Col key={slideshow.slideshowID} md={3} className="mb-3">
-                    <Card>
-                      <Card.Img
-                        variant="top"
-                        src={`data:image/*;base64,${slideshow.slideshowImage}`}
-                        style={{ height: "200px", objectFit: "cover" }}
-                      />
-                      <Card.Body>
-                        <Card.Title className="text-center">
-                          {slideshow.slideshowTitle}
-                        </Card.Title>
-                        <Card.Text className="card">
-                          {slideshow.slideshowDescription}
-                        </Card.Text>
-                        <div className="d-flex justify-content-between">
-                          <Button
-                            variant="info"
-                            onClick={() => handleOpenModalEdit(slideshow)}
-                          >
-                            <i className="bi bi-pencil"></i>
-                            &nbsp; Edit
-                          </Button>
-                          <Button
-                            variant="danger"
-                            onClick={() =>
-                              handleDeleteSlideshow(slideshow.slideshowID)
-                            }
-                          >
-                            <i className="bi bi-trash"></i>
-                            &nbsp; Delete
-                          </Button>
-                        </div>
-                      </Card.Body>
-                    </Card>
-                  </Col>
-                ))
+              {slideshowData.length > 0 ? (
+                slideshowData
+                  .slice(
+                    (currentPage - 1) * itemsPerPage,
+                    currentPage * itemsPerPage
+                  )
+                  .map((slideshow) => (
+                    <Col key={slideshow.slideshowId} md={3} className="mb-3">
+                      <Card>
+                        <Card.Img
+                          variant="top"
+                          src={`data:image/*;base64,${slideshow.slideshowImage}`}
+                          style={{ height: "200px", objectFit: "cover" }}
+                        />
+                        <Card.Body>
+                          <Card.Title className="text-center">
+                            {slideshow.slideshowTitle}
+                          </Card.Title>
+                          <Card.Text className="card">
+                            {slideshow.slideshowDescription}
+                          </Card.Text>
+                          <div className="d-flex justify-content-between">
+                            <Button
+                              variant="info"
+                              onClick={() => handleOpenModalEdit(slideshow)}
+                            >
+                              <i className="bi bi-pencil"></i>
+                              &nbsp; Edit
+                            </Button>
+                            <Button
+                              variant="danger"
+                              onClick={() =>
+                                handleDeleteSlideshow(slideshow.slideshowId)
+                              }
+                            >
+                              <i className="bi bi-trash"></i>
+                              &nbsp; Delete
+                            </Button>
+                          </div>
+                        </Card.Body>
+                      </Card>
+                    </Col>
+                  ))
               ) : (
                 <Col className="md-12">
                   <div
@@ -322,6 +346,44 @@ function SlideshowManagement() {
           )}
         </section>
 
+        <Pagination className="d-flex justify-content-end">
+          <Pagination.First
+            onClick={() => setCurrentPage(1)}
+            disabled={currentPage === 1}
+          />
+          <Pagination.Prev
+            onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+            disabled={currentPage === 1}
+          />
+
+          {/* Conditionally display ellipsis */}
+          {currentPage > 3 && <Pagination.Ellipsis disabled />}
+
+          {/* Loop through page numbers to display pagination items */}
+          {getPaginationItems().map((pageIndex) => (
+            <Pagination.Item
+              key={pageIndex}
+              active={pageIndex === currentPage}
+              onClick={() => setCurrentPage(pageIndex)}
+            >
+              {pageIndex}
+            </Pagination.Item>
+          ))}
+
+          {currentPage < totalPages - 2 && <Pagination.Ellipsis disabled />}
+
+          <Pagination.Next
+            onClick={() =>
+              setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+            }
+            disabled={currentPage === totalPages}
+          />
+          <Pagination.Last
+            onClick={() => setCurrentPage(totalPages)}
+            disabled={currentPage === totalPages}
+          />
+        </Pagination>
+
         {/* Add and Edit Image Modals */}
         <ModelComponent
           show={showNewModal || showEditModal}
@@ -339,6 +401,7 @@ function SlideshowManagement() {
             handleSubmit={
               showNewModal ? handleNewSlideshow : handleEditSlideshow
             }
+            handleClearForm={handleClearForm}
             isEdit={!showNewModal}
           />
         </ModelComponent>

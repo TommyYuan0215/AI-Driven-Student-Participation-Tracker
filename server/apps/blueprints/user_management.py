@@ -12,7 +12,7 @@ def get_userData():
     cursor = connection.cursor(dictionary=True)
     
     cursor.execute(
-        "SELECT userID, userName, userEmail, userStatus FROM USER_ACCOUNT WHERE userType NOT IN ('0')"
+        "SELECT userID, userName, userEmail, userStatus, createAt FROM USER_ACCOUNT WHERE userType NOT IN ('0')"
     )
     user = cursor.fetchall()
     
