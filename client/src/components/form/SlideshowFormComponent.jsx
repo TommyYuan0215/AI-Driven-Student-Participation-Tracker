@@ -17,7 +17,7 @@ function SlideshowForm({
         className="mb-3"
         style={{ display: isEdit ? "block" : "none" }}
       >
-        <Form.Label>User ID</Form.Label>
+        <Form.Label>Slideshow ID</Form.Label>
         <Form.Control
           type="text"
           name="slideshowId"

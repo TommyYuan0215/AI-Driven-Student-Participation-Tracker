@@ -167,7 +167,7 @@ def edit_slideshow():
 @contentManagement_route.route('/delete_slideshow', methods=['POST'])
 def delete_slideshow():
     data = request.get_json()
-    slideshowID = data.get('slideshowID')
+    slideshowId = data.get('slideshowId')
     
     connection = get_db_connection()
     cursor = connection.cursor(dictionary=True)
@@ -176,7 +176,7 @@ def delete_slideshow():
         # Delete slideshow from database
         cursor.execute(
             "DELETE FROM CONTENT_SLIDESHOW WHERE slideshowID = %s", 
-            (slideshowID,)
+            (slideshowId,)
         )
         
         connection.commit()

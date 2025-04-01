@@ -232,8 +232,9 @@ function SlideshowManagement() {
   };
 
   const handleDeleteSlideshow = async (id) => {
-    if (!window.confirm("Are you sure you want to delete this slideshow?"))
+    if (!window.confirm(`Are you sure you want to delete ${id} slideshow?`)) {
       return;
+    }
 
     try {
       const response = await axios.post("/contentmanagement/delete_slideshow", {
@@ -288,7 +289,7 @@ function SlideshowManagement() {
                     currentPage * itemsPerPage
                   )
                   .map((slideshow) => (
-                    <Col key={slideshow.slideshowId} md={3} className="mb-3">
+                    <Col key={slideshow.slideshowID} md={3} className="mb-3">
                       <Card>
                         <Card.Img
                           variant="top"
@@ -313,7 +314,7 @@ function SlideshowManagement() {
                             <Button
                               variant="danger"
                               onClick={() =>
-                                handleDeleteSlideshow(slideshow.slideshowId)
+                                handleDeleteSlideshow(slideshow.slideshowID)
                               }
                             >
                               <i className="bi bi-trash"></i>

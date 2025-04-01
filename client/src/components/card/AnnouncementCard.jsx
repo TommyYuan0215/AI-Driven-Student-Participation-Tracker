@@ -92,7 +92,12 @@ const AnnouncementCard = ({
         }}
       >
         {notifications.length > 0 ? (
-          <Carousel className="bg-light" style={{ height: "100%" }}>
+          <Carousel
+            style={{
+              height: "100%",
+              backgroundColor: "#cfe5ff",
+            }}
+          >
             {notifications.map((notif) => (
               <Carousel.Item
                 key={notif.id}
@@ -116,7 +121,7 @@ const AnnouncementCard = ({
 
                   {/* Description */}
                   <p
-                    className="lead text-muted mb-4"
+                    className="text-muted mb-4"
                     style={{
                       display: "-webkit-box", // Enable multi-line truncation
                       WebkitBoxOrient: "vertical", // Set the box's orientation to vertical
@@ -163,7 +168,7 @@ const AnnouncementCard = ({
                   overflowY: "auto", // Enable vertical scrolling if content exceeds the height
                 }}
               >
-                <p className="lead text-muted">
+                <p className="text-muted">
                   {selectedAnnouncement.announcementDescription}
                 </p>
               </div>

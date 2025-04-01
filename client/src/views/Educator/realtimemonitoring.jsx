@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from "react";
 import { Container, Row, Col, Card, Button } from "react-bootstrap";
 import { toast } from "react-toastify";
 import { io } from "socket.io-client";
+import EmotionStatistics from "../../components/EmotionCharts";
 
 // WebSocket URL (Update if needed)
 const SOCKET_URL = "http://localhost:5000";
@@ -672,40 +673,10 @@ function RealTimeMonitoring() {
         </Col>
 
         <Col xs={2} className="vh-85" style={{ backgroundColor: "#2A2A2A" }}>
-          <Card
-            className="h-100 border-0"
-            style={{ backgroundColor: "#2A2A2A" }}
-          >
-            <Card.Body className="p-3 text-white">
-              <Card.Title className="text-center">
-                Emotion Statistics
-              </Card.Title>
-
-              {Object.keys(studentStats).length > 0 ? (
-                <div className="mt-3">
-                  {Object.entries(studentStats).map(([emotion, count]) => (
-                    <div
-                      key={emotion}
-                      className="d-flex justify-content-between my-2"
-                    >
-                      <span>{emotion}:</span>
-                      <span className="badge bg-primary">{count}</span>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <Card.Text className="text-muted mt-3">
-                  Start tracking to see statistics
-                </Card.Text>
-              )}
-
-              {isTracking && (
-                <div className="mt-4 p-2 bg-success text-center rounded">
-                  Tracking Active
-                </div>
-              )}
-            </Card.Body>
-          </Card>
+          <EmotionStatistics
+            studentStats={studentStats}
+            isTracking={isTracking}
+          />
         </Col>
       </Row>
 
@@ -750,6 +721,8 @@ function RealTimeMonitoring() {
             ></i>
             &nbsp;{isTracking ? "Stop Tracking" : "Start Tracking"}
           </Button>
+
+          <Button variant="danger">End this Session</Button>
         </Col>
       </Row>
     </Container>

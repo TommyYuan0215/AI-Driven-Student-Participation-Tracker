@@ -10,12 +10,6 @@ const sidebarItems = [
     icon: "bi bi-house",
   },
   {
-    id: "tracking",
-    label: "Real-Time Monitoring",
-    path: "/views/educator/tracking",
-    icon: "bi bi-speedometer2",
-  },
-  {
     id: "postanalytics",
     label: "Post Class Analytics & Report",
     icon: "bi bi-kanban",
