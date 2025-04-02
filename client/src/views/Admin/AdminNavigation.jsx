@@ -6,7 +6,7 @@ const sidebarItems = [
   {
     id: "dashboard",
     label: "Dashboard",
-    path: "/views/admin/dashboard",
+    path: "/views/admin",
     icon: "bi bi-house",
   },
   {
