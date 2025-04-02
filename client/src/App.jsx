@@ -39,7 +39,7 @@ function App() {
 
         {/* Admin Protected Routes */}
         <Route path="/views/admin/*" element={<AdminPage />}>
-          <Route path="" element={<AdminDashboard />} />
+          <Route path="dashboard" element={<AdminDashboard />} />
           <Route path="usermanagement" element={<UserManagement />} />
           <Route path="datamanagement/*">
             <Route path="statistics" element={<StatisticsAdmin />} />
@@ -59,7 +59,7 @@ function App() {
 
         {/* Educator Protected Routes */}
         <Route path="/views/educator/*" element={<EducatorPage />}>
-          <Route path="" element={<EducatorDashboard />} />
+          <Route path="dashboard" element={<EducatorDashboard />} />
           <Route path="tracking/:sessionId" element={<RealTimeMonitoring />} />
           <Route path="postanalytics/*">
             <Route path="statistics" element={<EducatorStatistics />} />
