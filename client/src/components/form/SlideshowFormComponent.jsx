@@ -83,6 +83,7 @@ function SlideshowForm({
           name="slideshowDesc"
           value={formData.slideshowDesc}
           onChange={handleInputChange}
+          rows={10}
         />
       </Form.Group>
       <br />

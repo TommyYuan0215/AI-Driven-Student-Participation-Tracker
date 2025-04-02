@@ -2,8 +2,24 @@ from flask import Blueprint, request, jsonify, session
 from apps.services.db_helper import get_db_connection
 from werkzeug.security import generate_password_hash
 from datetime import datetime
+import pytz
 
 userManagement_route = Blueprint('usermanagement', __name__)
+
+# Change default timestamp (GMT+0) to Asia/Kuala_Lumpur
+def convert_to_timezone(mysql_timestamp, timezone="Asia/Kuala_Lumpur"):
+    if not mysql_timestamp:
+        return None
+
+    # If already a datetime object, use it directly
+    if isinstance(mysql_timestamp, datetime):
+        utc_time = mysql_timestamp
+    else:
+        utc_time = datetime.strptime(mysql_timestamp, "%Y-%m-%d %H:%M:%S")
+
+    target_timezone = pytz.timezone(timezone)
+
+    return utc_time.replace(tzinfo=pytz.utc).astimezone(target_timezone).strftime("%Y-%M-%d, %I:%M %p")
 
 @userManagement_route.route('/get_user_data')
 def get_userData():
@@ -14,10 +30,13 @@ def get_userData():
     cursor.execute(
         "SELECT userID, userName, userEmail, userStatus, createAt FROM USER_ACCOUNT WHERE userType NOT IN ('0')"
     )
-    user = cursor.fetchall()
+    users = cursor.fetchall()
+    
+    for user in users:
+        user["createAt"] = convert_to_timezone(user["createAt"])
     
     # Return user data as JSON response
-    return jsonify(user), 200
+    return jsonify(users), 200
 
 @userManagement_route.route('/authorized_user', methods=['POST'])
 def authorized_user():

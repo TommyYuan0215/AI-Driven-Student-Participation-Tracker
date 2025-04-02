@@ -40,6 +40,7 @@ function AnnouncementForm({
           name="announcementDesc"
           value={formData.announcementDesc}
           onChange={handleInputChange}
+          rows={15}
         />
       </Form.Group>
       <br />

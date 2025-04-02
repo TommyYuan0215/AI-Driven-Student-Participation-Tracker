@@ -166,6 +166,8 @@ const AnnouncementCard = ({
                 style={{
                   maxHeight: "300px", // Set a fixed max height for the container
                   overflowY: "auto", // Enable vertical scrolling if content exceeds the height
+                  whiteSpace: "pre-line", // Maintains line breaks
+                  wordWrap: "break-word",
                 }}
               >
                 <p className="text-muted">
