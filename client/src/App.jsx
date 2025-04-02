@@ -1,6 +1,7 @@
 import "./App.css";
 import React, { useEffect } from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { Navigate } from "react-router-dom";
 import Header from "./components/layout/Header";
 import Footer from "./components/layout/Footer";
 import Cookies from "js-cookie";
@@ -39,6 +40,7 @@ function App() {
 
         {/* Admin Protected Routes */}
         <Route path="/views/admin/*" element={<AdminPage />}>
+          <Route index element={<Navigate to="dashboard" />} />
           <Route path="dashboard" element={<AdminDashboard />} />
           <Route path="usermanagement" element={<UserManagement />} />
           <Route path="datamanagement/*">
@@ -59,6 +61,7 @@ function App() {
 
         {/* Educator Protected Routes */}
         <Route path="/views/educator/*" element={<EducatorPage />}>
+          <Route index element={<Navigate to="dashboard" />} />
           <Route path="dashboard" element={<EducatorDashboard />} />
           <Route path="tracking/:sessionId" element={<RealTimeMonitoring />} />
           <Route path="postanalytics/*">
