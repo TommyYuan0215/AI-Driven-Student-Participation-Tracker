@@ -2,14 +2,14 @@ import { useState, useEffect } from "react";
 import { toast } from "react-toastify";
 import axios from "./axios_configure";
 
-const useLoadingState = (fetchUrl, initialState = []) => {
+const useLoadingState = (fetchUrl, params = {}, initialState = []) => {
   const [data, setData] = useState(initialState);
   const [loading, setLoading] = useState(true);
 
   const fetchData = async () => {
     try {
       setLoading(true);
-      const response = await axios.get(fetchUrl);
+      const response = await axios.get(fetchUrl, { params });
 
       if (response.status === 200) {
         setData(response.data.data || response.data);

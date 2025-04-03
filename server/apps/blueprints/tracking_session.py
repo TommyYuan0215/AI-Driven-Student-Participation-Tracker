@@ -1,23 +1,67 @@
 import uuid
 from flask import Blueprint, request, jsonify
 from apps.services.db_helper import get_db_connection
+from apps.services.timezone_helper import convert_to_timezone
 
 tracking_session_route = Blueprint("tracking_session", __name__)
 
+@tracking_session_route.route("/get_tracking_session", methods=["GET"])
+def get_tracking_session():
+    user_id = request.args.get("userID")  # Get userID from query params
+    
+    if not user_id:
+        return jsonify({"error": "userID is required"}), 400
+
+    connection = get_db_connection()
+    cursor = connection.cursor(dictionary=True)
+
+    try:
+        get_sessions_query = '''
+        SELECT 
+            t.sessionID, 
+            t.educatorID, 
+            t.sessionStart, 
+            t.sessionEnd, 
+            ua.userName
+        FROM 
+            TRACKING_SESSION t
+        INNER JOIN 
+            EDUCATOR e ON t.educatorID = e.educatorID
+        INNER JOIN 
+            USER_ACCOUNT ua ON e.userID = ua.userID
+        WHERE 
+            ua.userID = %s
+        ORDER BY
+            t.sessionStart DESC
+        '''
+        cursor.execute(get_sessions_query, (user_id,))
+        trackingsessions = cursor.fetchall()
+        
+        for session in trackingsessions:
+            session["sessionStart"] = convert_to_timezone(session["sessionStart"])
+            session["sessionEnd"] = convert_to_timezone(session["sessionEnd"])
+
+        return jsonify(trackingsessions), 200
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+    finally:
+        cursor.close()
+        connection.close()
+
+
 @tracking_session_route.route("/create_tracking_session", methods=["POST"])
 def create_tracking_session():
-    # Step 1: Get data from the request (e.g., educatorID)
-    data = request.get_json()  # Assuming JSON body with educatorID
+    data = request.get_json() 
     
     user_id = data.get('userID')
     
     if not user_id:
         return jsonify({"error": "userID is required"}), 400
     
-    # Step 2: Generate a unique sessionID
     session_id = str(uuid.uuid4())  # Create a unique session ID
     
-    # Step 3: Get a DB connection
     connection = get_db_connection()
     cursor = connection.cursor(dictionary=True)
     

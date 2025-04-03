@@ -4,36 +4,20 @@ import { Table, Button, Pagination } from "react-bootstrap";
 import LoadingSpinner from "../../../components/LoadingSpinner";
 import PageTitleBreadcrumb from "../../../components/layout/PageTitleBreadcrumb";
 import UserStatusBadge from "../../../components/UserStatusBadge";
+import { useNavigate } from "react-router-dom";
+import useSession from "../../../utils/sessionUtils";
 import { toast } from "react-toastify";
 import axios from "../../../utils/axios_configure";
 
 function EducatorStatistics() {
+  const navigate = useNavigate();
+  const { userData, isLoggedIn } = useSession(navigate);
   const {
-    data: userList,
+    data: trackingsessionList,
     loading,
     refetch,
-  } = useLoadingState("/usermanagement/get_user_data", []);
-
-  // To handle sort function
-  const [sortConfig, setSortConfig] = useState({ key: null, direction: "asc" });
-
-  const handleSort = (key) => {
-    let direction = "asc";
-    if (sortConfig.key === key && sortConfig.direction === "asc") {
-      direction = "desc";
-    }
-
-    setSortConfig({ key, direction });
-  };
-
-  // Applied sorting dynamically
-  const sortedUsers = [...userList].sort((a, b) => {
-    if (!sortConfig.key) return 0; // No sorting initially
-    if (a[sortConfig.key] < b[sortConfig.key])
-      return sortConfig.direction === "asc" ? -1 : 1;
-    if (a[sortConfig.key] > b[sortConfig.key])
-      return sortConfig.direction === "asc" ? 1 : -1;
-    return 0;
+  } = useLoadingState("/tracking_session/get_tracking_session", {
+    userID: userData?.userID,
   });
 
   // Pagination function
@@ -41,7 +25,10 @@ function EducatorStatistics() {
   const itemsPerPage = 25;
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-  const registeredUsers = sortedUsers.slice(indexOfFirstItem, indexOfLastItem);
+  const trackingsessionListPagination = trackingsessionList.slice(
+    indexOfFirstItem,
+    indexOfLastItem
+  );
 
   return (
     <>
@@ -60,29 +47,20 @@ function EducatorStatistics() {
                 <div className="col-md-3 mb-3">
                   <div className="card text-center shadow-sm p-3 mb-5 bg-body rounded">
                     <h5>Total Session has been created</h5>
-                    <p>{userList.length}</p>
+                    <p>{trackingsessionList.length}</p>
                   </div>
                 </div>
 
                 <div className="col-md-3 mb-3">
-                  <div className="card text-center shadow-sm p-3 mb-5 bg-body rounded">
-                    <h5>Total Session has been created</h5>
-                    <p>{userList.length}</p>
-                  </div>
+                  <div className="card text-center shadow-sm p-3 mb-5 bg-body rounded"></div>
                 </div>
 
                 <div className="col-md-3 mb-3">
-                  <div className="card text-center shadow-sm p-3 mb-5 bg-body rounded">
-                    <h5>Total Session has been created</h5>
-                    <p>{userList.length}</p>
-                  </div>
+                  <div className="card text-center shadow-sm p-3 mb-5 bg-body rounded"></div>
                 </div>
 
                 <div className="col-md-3 mb-3">
-                  <div className="card text-center shadow-sm p-3 mb-5 bg-body rounded">
-                    <h5>Total Session has been created</h5>
-                    <p>{userList.length}</p>
-                  </div>
+                  <div className="card text-center shadow-sm p-3 mb-5 bg-body rounded"></div>
                 </div>
               </div>
             </>
@@ -100,103 +78,22 @@ function EducatorStatistics() {
                 <thead>
                   <tr className="text-center">
                     <th style={{ width: "50px" }}>#</th>
-                    <th
-                      onClick={() => handleSort("userId")}
-                      style={{ width: "100px", cursor: "pointer" }}
-                    >
-                      ID{" "}
-                      {sortConfig.key === "userId"
-                        ? sortConfig.direction === "asc"
-                          ? "🔼"
-                          : "🔽"
-                        : ""}
-                    </th>
-                    <th
-                      onClick={() => handleSort("userName")}
-                      style={{ cursor: "pointer" }}
-                    >
-                      User Name{" "}
-                      {sortConfig.key === "userName"
-                        ? sortConfig.direction === "asc"
-                          ? "🔼"
-                          : "🔽"
-                        : ""}
-                    </th>
-                    <th
-                      onClick={() => handleSort("userEmail")}
-                      style={{ cursor: "pointer" }}
-                    >
-                      User Email{" "}
-                      {sortConfig.key === "userEmail"
-                        ? sortConfig.direction === "asc"
-                          ? "🔼"
-                          : "🔽"
-                        : ""}
-                    </th>
-                    <th
-                      style={{ width: "150px", cursor: "pointer" }}
-                      onClick={() => handleSort("userStatus")}
-                    >
-                      Account Status{" "}
-                      {sortConfig.key === "userStatus"
-                        ? sortConfig.direction === "asc"
-                          ? "🔼"
-                          : "🔽"
-                        : ""}
-                    </th>
-                    <th
-                      style={{ width: "250px", cursor: "pointer" }}
-                      onClick={() => handleSort("createAt")}
-                    >
-                      Created Date{""}
-                      {sortConfig.key === "createAt"
-                        ? sortConfig.direction === "asc"
-                          ? "🔼"
-                          : "🔽"
-                        : ""}
-                    </th>
-                    <th style={{ width: "320px" }}>Action</th>
+                    <th>ID</th>
+                    <th>Session Start</th>
+                    <th>Session End</th>
+                    <th>Action</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {registeredUsers.map((user, index) => (
-                    <tr key={user.userID}>
+                  {trackingsessionListPagination.map((session, index) => (
+                    <tr key={session.sessionID}>
                       <td>{index + 1}</td>
-                      <td>{user.userID}</td>
-                      <td>{user.userName}</td>
-                      <td>{user.userEmail}</td>
-                      <td className="text-center">
-                        <UserStatusBadge userStatus={user.userStatus} />
-                      </td>
-                      <td>{user.createAt}</td>
+                      <td>{session.sessionID}</td>
+                      <td>{session.sessionStart}</td>
+                      <td>{session.sessionEnd}</td>
                       <td>
-                        <Button
-                          variant="primary"
-                          size="sm"
-                          onClick={() =>
-                            handleOpenModalAuthorized(user.userEmail)
-                          }
-                        >
-                          <i className="bi bi-clipboard-check"></i>&nbsp;
-                          Authorized?
-                        </Button>{" "}
-                        &nbsp;
-                        <Button
-                          variant="info"
-                          size="sm"
-                          onClick={() => handleOpenModalEdit(user)}
-                        >
-                          <i className="bi bi-pencil"></i>&nbsp; Edit
-                        </Button>{" "}
-                        &nbsp;
-                        <Button
-                          variant="danger"
-                          size="sm"
-                          onClick={() =>
-                            handleDeleteUser(user.userID, user.userEmail)
-                          }
-                        >
-                          <i className="bi bi-trash"></i>&nbsp; Delete
+                        <Button variant="primary" className="btn-sm">
+                          <i className="bi bi-eye"></i>&nbsp; View Details
                         </Button>
                       </td>
                     </tr>
@@ -220,13 +117,13 @@ function EducatorStatistics() {
                 {currentPage > 3 && <Pagination.Ellipsis disabled />}
 
                 {Array.from({
-                  length: Math.ceil(userList.length / itemsPerPage),
+                  length: Math.ceil(trackingsessionList.length / itemsPerPage),
                 })
                   .slice(
                     Math.max(0, currentPage - 3),
                     Math.min(
                       currentPage + 2,
-                      Math.ceil(userList.length / itemsPerPage)
+                      Math.ceil(trackingsessionList.length / itemsPerPage)
                     )
                   )
                   .map((_, pageIndex) => (
@@ -240,7 +137,7 @@ function EducatorStatistics() {
                   ))}
 
                 {currentPage <
-                  Math.ceil(userList.length / itemsPerPage) - 2 && (
+                  Math.ceil(trackingsessionList.length / itemsPerPage) - 2 && (
                   <Pagination.Ellipsis disabled />
                 )}
 
@@ -249,20 +146,24 @@ function EducatorStatistics() {
                     setCurrentPage((prev) =>
                       Math.min(
                         prev + 1,
-                        Math.ceil(userList.length / itemsPerPage)
+                        Math.ceil(trackingsessionList.length / itemsPerPage)
                       )
                     )
                   }
                   disabled={
-                    currentPage === Math.ceil(userList.length / itemsPerPage)
+                    currentPage ===
+                    Math.ceil(trackingsessionList.length / itemsPerPage)
                   }
                 />
                 <Pagination.Last
                   onClick={() =>
-                    setCurrentPage(Math.ceil(userList.length / itemsPerPage))
+                    setCurrentPage(
+                      Math.ceil(trackingsessionList.length / itemsPerPage)
+                    )
                   }
                   disabled={
-                    currentPage === Math.ceil(userList.length / itemsPerPage)
+                    currentPage ===
+                    Math.ceil(trackingsessionList.length / itemsPerPage)
                   }
                 />
               </Pagination>
