@@ -20,6 +20,11 @@ const sidebarItems = [
         icon: "bi bi-bar-chart-line",
       },
       {
+        label: "Statistics Dashboard (Public)",
+        path: "/views/educator/postanalytics/statisticspublic",
+        icon: "bi bi-bar-chart-line",
+      },
+      {
         label: "Trend Data",
         path: "/views/educator/postanalytics/trend",
         icon: "bi bi-graph-up-arrow",

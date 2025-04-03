@@ -39,6 +39,7 @@ def create_app():
     # Register blueprints (import AFTER app creation to avoid circular import)
     from apps.blueprints.database import databases_route
     from apps.blueprints.tracking_server import create_tracking_server
+    from apps.blueprints.tracking_session import tracking_session_route
     from apps.blueprints.user_credential import userCredential_route
     from apps.blueprints.user_management import userManagement_route
     from apps.blueprints.content_management import contentManagement_route
@@ -47,6 +48,7 @@ def create_app():
     # Register blueprints based on the imported routes
     app.register_blueprint(databases_route, url_prefix='/database')
     app.register_blueprint(create_tracking_server(socketio), url_prefix='/tracking')
+    app.register_blueprint(tracking_session_route, url_prefix='/tracking_session')
     app.register_blueprint(userCredential_route, url_prefix='/credential')
     app.register_blueprint(userManagement_route, url_prefix='/usermanagement')
     app.register_blueprint(contentManagement_route, url_prefix='/contentmanagement')

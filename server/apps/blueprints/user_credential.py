@@ -133,7 +133,19 @@ def signup():
                 (name, email, hashed_password, current_timestamp)
             )
 
+        # Commit the changes for USER_ACCOUNT table first
         connection.commit()
+
+        # Now, insert into the EDUCATOR table
+        # Assuming you want to associate this user with an educator role (userType = 0)
+        cursor.execute(
+            "INSERT INTO EDUCATOR (userID) VALUES ((SELECT userID FROM USER_ACCOUNT WHERE userEmail = %s))",
+            (email,)
+        )
+
+        # Commit the changes for EDUCATOR table
+        connection.commit()
+        
         return jsonify({"status": "success", "message": "Sign up successful!"})
 
     except Exception as e:

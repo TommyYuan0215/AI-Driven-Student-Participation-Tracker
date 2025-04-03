@@ -144,7 +144,7 @@ const AnnouncementCard = ({
           </Carousel>
         ) : (
           <div className="text-center">
-            <p className="text-muted">No new notifications</p>
+            <p className="text-muted">No new announcements</p>
           </div>
         )}
       </div>

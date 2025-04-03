@@ -5,6 +5,7 @@ import { toast } from "react-toastify";
 import { io } from "socket.io-client";
 import EmotionStatistics from "../../components/EmotionCharts";
 import { useParams } from "react-router-dom";
+import axios from "../../utils/axios_configure";
 
 // WebSocket URL (Update if needed)
 const SOCKET_URL = "http://localhost:5000";
@@ -12,6 +13,45 @@ const SOCKET_URL = "http://localhost:5000";
 function RealTimeMonitoring() {
   // Use useParams to get sessionID from the url
   const { sessionId } = useParams();
+
+  // Timer to track elapsed time based on sessionStart
+  const [elapsedTime, setElapsedTime] = useState(0);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setElapsedTime((prevTime) => prevTime + 1); // Increment elapsed time every second
+    }, 1000);
+
+    return () => clearInterval(interval); // Clean up on component unmount
+  }, []);
+
+  const formatElapsedTime = (seconds) => {
+    const hrs = Math.floor(seconds / 3600);
+    const mins = Math.floor((seconds % 3600) / 60);
+    const secs = seconds % 60;
+
+    let formattedTime = "";
+    if (hrs > 0) formattedTime += `${hrs} hr `;
+    if (mins > 0) formattedTime += `${mins} min `;
+    if (secs > 0 || formattedTime === "") formattedTime += `${secs} seconds`;
+
+    return formattedTime.trim();
+  };
+
+  // useEffect hook to prevent refresh page
+  useEffect(() => {
+    const handleBeforeUnload = async (event) => {
+      event.preventDefault();
+      event.returnValue =
+        "Are you sure you want to leave this page? Your session will be ended.";
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+    };
+  }, []);
 
   // Function to navigate to other page
   const location = useLocation();
@@ -570,18 +610,31 @@ function RealTimeMonitoring() {
     updateBoundingBox();
   }, [trackingData, isCameraOn, isShareScreen]);
 
-  const handleEndSession = () => {
+  const handleEndMonitoringSession = async () => {
     const userConfirmed = window.confirm(
       "Are you sure you want to end this session? All the data that has been tracked will be saved into databases for future references."
     );
 
     if (userConfirmed) {
-      toast.success("Session ended and data saved.");
+      const response = await axios.post(
+        "tracking_session/end_tracking_session",
+        {
+          sessionID: sessionId,
+          elapsedTime: elapsedTime,
+        }
+      );
 
-      if (location.pathname === `/views/educator/tracking/${sessionId}`) {
-        setTimeout(() => {
-          navigate("/views/educator/dashboard");
-        }, 1000);
+      if (response.status === 200) {
+        toast.success(response.data.message);
+
+        if (location.pathname === `/views/educator/tracking/${sessionId}`) {
+          setTimeout(() => {
+            navigate("/views/educator/dashboard");
+          }, 1000);
+        }
+      } else {
+        toast.error(response.data.error);
+        return;
       }
     } else {
       toast.info("Session not ended.");
@@ -704,8 +757,14 @@ function RealTimeMonitoring() {
         className="g-0 border-top"
         style={{ height: "7vh", backgroundColor: "#2A2A2A" }}
       >
+        <Col xs={2} className="d-flex align-items-center ps-3">
+          <span className="text-white rounded px-2 py-1 d-flex align-items-center justify-content-start fw-bold">
+            <i className="bi bi-alarm me-2"></i>{" "}
+            {formatElapsedTime(elapsedTime)}
+          </span>
+        </Col>
         <Col
-          xs={12}
+          xs={8}
           className="d-flex align-items-center justify-content-center gap-3"
         >
           <Button
@@ -742,9 +801,17 @@ function RealTimeMonitoring() {
             &nbsp;{isTracking ? "Stop Tracking" : "Start Tracking"}
           </Button>
 
-          <Button variant="danger" onClick={handleEndSession}>
-            <i class="bi bi-door-open"></i> &nbsp;End Session
+          <Button variant="danger" onClick={handleEndMonitoringSession}>
+            <i class="bi bi-door-open"></i> &nbsp;End Monitoring Session
           </Button>
+        </Col>
+        <Col
+          xs={2}
+          className="d-flex align-items-center justify-content-end pe-3"
+        >
+          <span className="text-white rounded px-2 py-1 d-flex align-items-center fw-bold">
+            <i className="bi bi-clock me-2"></i>
+          </span>
         </Col>
       </Row>
     </Container>

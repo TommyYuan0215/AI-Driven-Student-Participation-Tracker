@@ -4,11 +4,32 @@ import Cookies from "js-cookie";
 import { useNavigate } from "react-router-dom";
 import useSession from "../../utils/sessionUtils";
 import PageTitleBreadcrumb from "../../components/layout/PageTitleBreadcrumb";
+import axios from "../../utils/axios_configure";
+import { toast } from "react-toastify";
 
 function GeneralSettings() {
   const [darkMode, setDarkMode] = useState(false);
+  const [privateMode, setPrivateMode] = useState(0);
   const navigate = useNavigate();
   const { userData, isLoggedIn } = useSession(navigate);
+
+  // Fetch privacy status when the component mounts
+  useEffect(() => {
+    const fetchPrivacyStatus = async () => {
+      try {
+        const response = await axios.get("/settings/get_privacy_status");
+        if (response.data.success) {
+          setPrivateMode(response.data.privacyStatus); // Directly set the fetched value (0 or 1)
+        } else {
+          console.error(response.data.message); // Handle error (e.g., not logged in)
+        }
+      } catch (error) {
+        console.error("Error fetching privacy status:", error);
+      }
+    };
+
+    fetchPrivacyStatus();
+  }, []);
 
   // useEffect to save theme cache as cookie
   useEffect(() => {
@@ -28,6 +49,50 @@ function GeneralSettings() {
     document
       .querySelector("html")
       .setAttribute("data-bs-theme", newDarkMode ? "dark" : "light");
+  };
+
+  // Privacy settings toggle logic
+  const togglePrivacy = () => {
+    // Confirm the change with the user
+    const confirmationMessage =
+      privateMode === 0
+        ? "Switching to Public Mode will share your data with all educators for further analysis. Are you sure?"
+        : "Switching to Private Mode will keep your data only within your account for personal analysis. Are you sure?";
+
+    const isConfirmed = window.confirm(confirmationMessage);
+
+    if (!isConfirmed) {
+      return; // If the user cancels, don't proceed
+    }
+
+    const newPrivateMode = privateMode === 0 ? 1 : 0; // Switch between 0 and 1
+    setPrivateMode(newPrivateMode);
+
+    // Send the updated privacy status to the backend
+    const updatePrivacyStatus = async () => {
+      try {
+        const response = await axios.post("/settings/update_privacy_settings", {
+          id: userData.userID, // Send the userID from userData
+          privacyStatus: newPrivateMode, // Send 1 for public, 0 for private
+        });
+
+        if (response.status === 200) {
+          toast.success("Privacy settings updated successfully!");
+        } else {
+          toast.error(
+            response.data.message || "Failed to update privacy settings"
+          );
+        }
+      } catch (error) {
+        console.error("Error updating privacy settings:", error);
+        toast.error(
+          error.response?.data?.message ||
+            "An error occurred while updating privacy settings"
+        );
+      }
+    };
+
+    updatePrivacyStatus();
   };
 
   return (
@@ -56,57 +121,9 @@ function GeneralSettings() {
                 </div>
               </>
               <hr />
-              <>
-                <p>Model Selection</p>
-                <div className="d-flex flex-column gap-3">
-                  <div className="model-toggle d-flex align-items-center">
-                    <label className="toggle-switch mb-0">
-                      <input
-                        type="checkbox"
-                        checked="true"
-                        // checked={modelSettings.emotionModel}
-                        // onChange={() => toggleModel('emotionModel')}
-                      />
-                      <span className="slider"></span>
-                    </label>
-                    <span className="model-label ms-2">
-                      Face Emotional Recognition Model
-                    </span>
-                  </div>
-
-                  <div className="model-toggle d-flex align-items-center">
-                    <label className="toggle-switch mb-0">
-                      <input
-                        type="checkbox"
-                        checked="true"
-                        // checked={modelSettings.attentionModel}
-                        // onChange={() => toggleModel('attentionModel')}
-                      />
-                      <span className="slider"></span>
-                    </label>
-                    <span className="model-label ms-2">
-                      Body Language Analyser Model
-                    </span>
-                  </div>
-
-                  <div className="model-toggle d-flex align-items-center">
-                    <label className="toggle-switch mb-0">
-                      <input
-                        type="checkbox"
-                        checked="true"
-                        // checked={modelSettings.engagementModel}
-                        // onChange={() => toggleModel('engagementModel')}
-                      />
-                      <span className="slider"></span>
-                    </label>
-                    <span className="model-label ms-2">
-                      Gaze Tracking Model
-                    </span>
-                  </div>
-                </div>
-              </>
             </Accordion.Body>
           </Accordion.Item>
+
           {/* Admin Section */}
           {isLoggedIn && userData?.userType === 0 && (
             <Accordion.Item eventKey="1">
@@ -122,7 +139,24 @@ function GeneralSettings() {
             <Accordion.Item eventKey="2">
               <Accordion.Header>Educator Settings</Accordion.Header>
               <Accordion.Body>
-                <p>Educator-specific settings can go here...</p>
+                <>
+                  <p>Privacy Information Settings</p>
+                  <div className="model-toggle d-flex align-items-center">
+                    <label className="toggle-switch mb-0">
+                      <input
+                        type="checkbox"
+                        checked={privateMode === 1} // True when public (1)
+                        onChange={togglePrivacy}
+                      />
+                      <span className="slider"></span>
+                    </label>
+                    <span className="model-label ms-2">
+                      {privateMode === 0
+                        ? "Private Mode: Only you can see your own student participation engagement session data"
+                        : "Public Mode: Everyone can see your student participation session data"}
+                    </span>
+                  </div>
+                </>
               </Accordion.Body>
             </Accordion.Item>
           )}

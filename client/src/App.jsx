@@ -22,6 +22,7 @@ import EducatorPage from "./views/Educator/EducatorPage";
 import EducatorDashboard from "./views/Educator/dashboard";
 import RealTimeMonitoring from "./views/Educator/realtimemonitoring";
 import EducatorStatistics from "./views/Educator/postanalytics/statistics";
+import EducatorPublicStatistics from "./views/Educator/postanalytics/statisticspublic";
 import GeneralSettings from "./views/Settings/general";
 import AccountSettings from "./views/Settings/account";
 
@@ -66,6 +67,10 @@ function App() {
           <Route path="tracking/:sessionId" element={<RealTimeMonitoring />} />
           <Route path="postanalytics/*">
             <Route path="statistics" element={<EducatorStatistics />} />
+            <Route
+              path="statisticspublic"
+              element={<EducatorPublicStatistics />}
+            />
           </Route>
           <Route path="settings/*">
             <Route path="general" element={<GeneralSettings />} />

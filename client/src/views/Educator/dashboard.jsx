@@ -4,36 +4,17 @@ import useSession from "../../utils/sessionUtils";
 import { useNavigate } from "react-router-dom";
 import { useLoadingState } from "../../utils/loadingUtils";
 import LoadingSpinner from "../../components/LoadingSpinner";
-import { PieChart, Pie, Cell, Tooltip, Legend } from "recharts";
 import PageTitleBreadcrumb from "../../components/layout/PageTitleBreadcrumb";
 import ProfileCard from "../../components/card/ProfileCard";
 import AnnouncementCard from "../../components/card/AnnouncementCard";
 import { toast } from "react-toastify";
-import { v4 as uuidv4 } from "uuid";
+import axios from "../../utils/axios_configure";
 
 function EducatorDashboard() {
   const navigate = useNavigate();
 
   const { userData, isLoggedIn } = useSession(navigate);
-  const {
-    data: userList,
-    loading,
-    refetch,
-  } = useLoadingState("/usermanagement/get_user_data", []);
-  const [userStats, setUserStats] = useState({ active: 0, inactive: 0 });
-
-  useEffect(() => {
-    if (userList) {
-      const stats = userList.reduce(
-        (acc, user) => {
-          acc[user.userStatus === 1 ? "active" : "inactive"]++;
-          return acc;
-        },
-        { active: 0, inactive: 0 }
-      );
-      setUserStats(stats);
-    }
-  }, [userList]);
+  const { loading } = useLoadingState("/usermanagement/get_user_data", []);
 
   if (!isLoggedIn) {
     navigate("/");
@@ -41,29 +22,38 @@ function EducatorDashboard() {
   }
 
   // Handle Start a new session
-  const handleNewSession = () => {
+  const handleNewMonitoringSession = async () => {
     const userConfirmed = window.confirm(
       "Are you sure you want to create a new session?"
     );
 
     if (userConfirmed) {
-      const sessionId = uuidv4();
+      try {
+        // Send the userID to your backend
+        const response = await axios.post(
+          "/tracking_session/create_tracking_session",
+          {
+            userID: userData.userID,
+          }
+        );
 
-      toast.success("New session created successful.");
+        // Axios automatically parses JSON responses
+        const sessionId = response.data.sessionID;
 
-      setTimeout(() => {
-        navigate(`/views/educator/tracking/${sessionId}`);
-      }, 1000);
+        toast.success("New session created successfully.");
+
+        setTimeout(() => {
+          navigate(`/views/educator/tracking/${sessionId}`);
+        }, 1000);
+      } catch (error) {
+        // Axios error handling
+        const errorMessage =
+          error.response?.data?.error || "Failed to create session";
+        toast.error("Failed to create new session: " + errorMessage);
+        console.error(error);
+      }
     }
   };
-
-  // Pie chart data
-  const data = [
-    { name: "Authorized", value: userStats.active },
-    { name: "Unauthorized", value: userStats.inactive },
-  ];
-
-  const COLORS = ["#3b2ee2", "#de1e82"];
 
   return (
     <Container>
@@ -143,10 +133,10 @@ function EducatorDashboard() {
                         <div className="d-flex gap-3 justify-content-center mt-3">
                           <Button
                             className="btn btn-primary w-auto"
-                            onClick={handleNewSession}
+                            onClick={handleNewMonitoringSession}
                           >
                             <i className="bi bi-eye mr-2"></i>
-                            &nbsp; Create A New Session
+                            &nbsp; Create A New Monitoring Session
                           </Button>
                         </div>
                       </div>

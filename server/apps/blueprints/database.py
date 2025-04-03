@@ -54,11 +54,12 @@ def create_table_if_not_exists():
         try:
             cursor.execute(create_user_account_seq)
             connection.commit()
+            
         except mysql.connector.Error as err:
             print(f"Error creating USER_ACCOUNT_SEQ table: {err}")
 
         # SQL query to create the user_account_table if it doesn't exist
-        create_user_account_table = '''
+        create_user_account_table = f'''
         CREATE TABLE IF NOT EXISTS USER_ACCOUNT (
             userID VARCHAR(12) NOT NULL,
             userName VARCHAR(255) NOT NULL,
@@ -75,22 +76,28 @@ def create_table_if_not_exists():
         try:
             cursor.execute(create_user_account_table)
             connection.commit()
+            
         except mysql.connector.Error as err:
             print(f"Error creating USER_ACCOUNT table: {err}")
             
         # Create Trigger for User Account Table
         create_user_account_trigger = f'''
-            CREATE TRIGGER IF NOT EXISTS USER_ACCOUNT_TRIGGER
+            CREATE TRIGGER USER_ACCOUNT_TRIGGER
             BEFORE INSERT ON USER_ACCOUNT
             FOR EACH ROW
             BEGIN
                 INSERT INTO `{schemaName}`.USER_ACCOUNT_SEQ VALUES (NULL);
                 SET NEW.userID = CONCAT('U-', LPAD(LAST_INSERT_ID(), 5, '0'));
             END
-        '''
+            '''
         try:
+            drop_trigger_query = f"DROP TRIGGER IF EXISTS `{schemaName}`.USER_ACCOUNT_TRIGGER"
+            cursor.execute(drop_trigger_query)
+            connection.commit()
+
             cursor.execute(create_user_account_trigger)
             connection.commit()
+
         except mysql.connector.Error as err:
             print(f"Error creating trigger: {err}")
             
@@ -104,6 +111,7 @@ def create_table_if_not_exists():
         try:
             cursor.execute(create_content_slideshow_seq)
             connection.commit()
+            
         except mysql.connector.Error as err:
             print(f"Error creating CONTENT_SLIDESHOW_SEQ table: {err}")
         
@@ -121,12 +129,13 @@ def create_table_if_not_exists():
         try:
             cursor.execute(create_content_slideshow_table)
             connection.commit()
+            
         except mysql.connector.Error as err:
             print(f"Error creating CONTENT_SLIDESHOW table: {err}")
             
         # Create Trigger for Content Slideshow Table
         create_content_slideshow_trigger = f'''
-            CREATE TRIGGER IF NOT EXISTS CONTENT_SLIDESHOW_TRIGGER
+            CREATE TRIGGER CONTENT_SLIDESHOW_TRIGGER
             BEFORE INSERT ON CONTENT_SLIDESHOW
             FOR EACH ROW
             BEGIN
@@ -135,8 +144,13 @@ def create_table_if_not_exists():
             END
         '''
         try:
+            drop_trigger_query = f"DROP TRIGGER IF EXISTS `{schemaName}`.CONTENT_SLIDESHOW_TRIGGER"
+            cursor.execute(drop_trigger_query)
+            connection.commit()
+
             cursor.execute(create_content_slideshow_trigger)
             connection.commit()
+
         except mysql.connector.Error as err:
             print(f"Error creating trigger: {err}")
             
@@ -150,6 +164,7 @@ def create_table_if_not_exists():
         try:
             cursor.execute(create_content_announcement_seq)
             connection.commit()
+            
         except mysql.connector.Error as err:
             print(f"Error creating CONTENT_ANNOUNCEMENT_SEQ table: {err}")
         
@@ -167,12 +182,13 @@ def create_table_if_not_exists():
         try:
             cursor.execute(create_content_announcement_table)
             connection.commit()
+            
         except mysql.connector.Error as err:
             print(f"Error creating CONTENT_ANNOUNCEMENT table: {err}")
             
         # Create Trigger for Content Slideshow Table
         create_content_announcement_trigger = f'''
-            CREATE TRIGGER IF NOT EXISTS CONTENT_ANNOUNCEMENT_TRIGGER
+            CREATE TRIGGER CONTENT_ANNOUNCEMENT_TRIGGER
             BEFORE INSERT ON CONTENT_ANNOUNCEMENT
             FOR EACH ROW
             BEGIN
@@ -181,15 +197,118 @@ def create_table_if_not_exists():
             END
         '''
         try:
+            drop_trigger_query = f"DROP TRIGGER IF EXISTS `{schemaName}`.CONTENT_ANNOUNCEMENT_TRIGGER"
+            cursor.execute(drop_trigger_query)
+            connection.commit()
+
             cursor.execute(create_content_announcement_trigger)
             connection.commit()
+
         except mysql.connector.Error as err:
             print(f"Error creating trigger: {err}")
+            
+    def create_educator():
+        # Create Sequence Table for Educator
+        create_educator_seq = f'''
+        CREATE TABLE IF NOT EXISTS `{schemaName}`.EDUCATOR_SEQ (
+            educatorID INT NOT NULL AUTO_INCREMENT PRIMARY KEY
+        )
+        '''
+        try:
+            cursor.execute(create_educator_seq)
+            connection.commit()
+            
+        except mysql.connector.Error as err:
+            print(f"Error creating EDUCATOR_SEQ table: {err}")
+        
+        # SQL query to create the educator table if it doesn't exist
+        create_educator_table = '''
+        CREATE TABLE IF NOT EXISTS EDUCATOR (
+            educatorID VARCHAR(12) NOT NULL,
+            userID VARCHAR(12) NOT NULL,
+            privacyStatus INT(2) DEFAULT 0,
+            PRIMARY KEY (educatorID),
+            FOREIGN KEY (userID) REFERENCES USER_ACCOUNT(userID) ON DELETE CASCADE ON UPDATE CASCADE
+        )
+        '''
+        try:
+            cursor.execute(create_educator_table)
+            connection.commit()
+            
+        except mysql.connector.Error as err:
+            print(f"Error creating EDUCATOR table: {err}")
+            
+        # Create Trigger for Educator Table
+        create_educator_trigger = f'''
+            CREATE TRIGGER EDUCATOR_TRIGGER
+            BEFORE INSERT ON EDUCATOR
+            FOR EACH ROW
+            BEGIN
+                INSERT INTO `{schemaName}`.EDUCATOR_SEQ VALUES (NULL);
+                SET NEW.educatorID = CONCAT('E-', LPAD(LAST_INSERT_ID(), 5, '0'));
+            END
+        '''
+        try:
+            drop_trigger_query = f"DROP TRIGGER IF EXISTS `{schemaName}`.EDUCATOR_TRIGGER"
+            cursor.execute(drop_trigger_query)
+            connection.commit()
+
+            cursor.execute(create_educator_trigger)
+            connection.commit()
+
+        except mysql.connector.Error as err:
+            print(f"Error creating trigger: {err}")
+            
+    def create_tracking_session():
+        # Create Tracking Session Table
+        create_tracking_session_table = '''
+        CREATE TABLE IF NOT EXISTS TRACKING_SESSION (
+            sessionID CHAR(36) NOT NULL,
+            educatorID VARCHAR(12) NOT NULL,
+            sessionStart DATETIME DEFAULT CURRENT_TIMESTAMP,
+            sessionEnd DATETIME,
+            PRIMARY KEY (sessionID),
+            FOREIGN KEY (educatorID) REFERENCES EDUCATOR(educatorID) ON DELETE CASCADE ON UPDATE CASCADE
+        )
+        '''
+        try:
+            cursor.execute(create_tracking_session_table)
+            connection.commit()
+            
+        except mysql.connector.Error as err:
+            print(f"Error creating TRACKING_SESSION table: {err}")
+            
+    def create_tracking_session_details():
+        # Create Tracking Session Details Table
+        create_tracking_session_details_table = '''
+        CREATE TABLE IF NOT EXISTS TRACKING_SESSION_DETAILS (
+            sessionID CHAR(36) NOT NULL,
+            educatorID VARCHAR(12) NOT NULL,
+            timestamp DATETIME,
+            interested INT,
+            bored INT,
+            lackingfocus INT,
+            PRIMARY KEY (sessionID, educatorID, timestamp),
+            FOREIGN KEY (sessionID) REFERENCES TRACKING_SESSION(sessionID) ON DELETE CASCADE ON UPDATE CASCADE,
+            FOREIGN KEY (educatorID) REFERENCES TRACKING_SESSION(educatorID) ON DELETE CASCADE ON UPDATE CASCADE
+        )
+        '''
+        
+        try:
+            cursor.execute(create_tracking_session_details_table)
+            connection.commit()
+        
+        except mysql.connector.Error as err:
+            print(f"Error creating TRACKING_SESSION_DETAILS table: {err}")
+            
     
     # Calling function for creating sub module table.      
     create_user_account()
     create_content_slideshow()
     create_content_announcement()
+    create_educator()
+    create_tracking_session()
+    create_tracking_session_details()
 
     cursor.close()
     connection.close()
@@ -213,9 +332,11 @@ def create_admin_account_if_not_exists():
             '''
         cursor.execute(query_add_admin_account, ('Administrator', email_admin, 0, hashed_password, 1))
         connection.commit()
+        
     except Exception as e:
         connection.rollback()
         return jsonify({"status": "error", "message": "Database error occurred"}), 500
+    
     finally:
         cursor.close()
         connection.close()
