@@ -141,7 +141,7 @@ def end_tracking_session():
     # Get data from the request
     data = request.get_json()
     session_id = data.get('sessionID')
-    elapsed_time = data.get('elapsedTime')
+    elapsed_time = data.get('sessionElapsedTime')
     
     if not session_id:
         return jsonify({"error": "sessionID is required"}), 400
@@ -180,6 +180,89 @@ def end_tracking_session():
         connection.rollback()
         return jsonify({"error": str(e)}), 500
     
+    finally:
+        cursor.close()
+        connection.close()
+        
+# ----------------------------------------------
+
+@tracking_session_route.route("/tracking_emotion", methods=["POST"])
+def tracking_emotion():
+    data = request.get_json()
+
+    session_id = data.get("sessionID")
+    user_id = data.get("userID")
+    timestamp = data.get("timestamp")
+    interested_count = int(data.get('interestedCount', 0))
+    bored_count = int(data.get('boredCount', 0))
+    lacking_focus_count = int(data.get('lackingFocusCount', 0))
+
+    try:
+        connection = get_db_connection()
+        cursor = connection.cursor()
+
+        # get educatorID from the EDUCATOR table using userID
+        cursor.execute("SELECT educatorID FROM EDUCATOR WHERE userID = %s", (user_id,))
+        result = cursor.fetchone()
+        
+        if not result:
+            return jsonify({"error": "Educator not found for given userID"}), 404
+
+        educator_id = result[0]
+
+        # Step 2: Insert the tracking data into TRACKING_SESSION_DETAILS
+        insert_query = """
+            INSERT INTO TRACKING_SESSION_DETAILS (sessionID, educatorID, timestamp, 
+                                                  interested, bored, lackingfocus)
+            VALUES (%s, %s, %s, %s, %s, %s);
+        """
+
+        cursor.execute(insert_query, (session_id, educator_id, timestamp, 
+                                      interested_count, bored_count, lacking_focus_count))
+
+        connection.commit()
+
+        return jsonify({"message": "Emotion data inserted successfully!"}), 200
+
+    except Exception as e:
+        connection.rollback()
+        return jsonify({"error": str(e)}), 500
+
+    finally:
+        cursor.close()
+        connection.close()
+        
+@tracking_session_route.route("/get_tracking_emotion", methods=["GET"])
+def get_tracking_emotion():
+    session_id = request.args.get("sessionID")
+    
+    if not session_id:
+        return jsonify({"error": "sessionID is required"}), 400
+
+    connection = get_db_connection()
+    cursor = connection.cursor(dictionary=True)
+
+    try:
+        # Fetch the tracking data for the given sessionID
+        select_query = """
+            SELECT ts.sessionID, ts.sessionStart, ts.sessionEnd, tsd.timestamp,
+                SUM(tsd.interested) AS interestedCount, 
+                SUM(tsd.bored) AS boredCount, 
+                SUM(tsd.lackingfocus) AS lackingFocusCount
+            FROM TRACKING_SESSION_DETAILS tsd
+            INNER JOIN TRACKING_SESSION ts ON tsd.sessionID = ts.sessionID
+            WHERE tsd.sessionID = %s
+            GROUP BY ts.sessionID, ts.sessionStart, ts.sessionEnd, tsd.timestamp;
+        """
+        
+        cursor.execute(select_query, (session_id,))
+        tracking_data = cursor.fetchall()
+
+        return jsonify(tracking_data), 200
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
     finally:
         cursor.close()
         connection.close()

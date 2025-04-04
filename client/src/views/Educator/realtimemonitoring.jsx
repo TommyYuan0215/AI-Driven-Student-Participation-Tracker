@@ -5,6 +5,7 @@ import { toast } from "react-toastify";
 import { io } from "socket.io-client";
 import EmotionStatistics from "../../components/EmotionCharts";
 import { useParams } from "react-router-dom";
+import useSession from "../../utils/sessionUtils";
 import axios from "../../utils/axios_configure";
 
 // WebSocket URL (Update if needed)
@@ -15,11 +16,17 @@ function RealTimeMonitoring() {
   const { sessionId } = useParams();
 
   // Timer to track elapsed time based on sessionStart
-  const [elapsedTime, setElapsedTime] = useState(0);
+  const [sessionElapsedTime, setSessionElapsedTime] = useState(0);
+  const [trackingElapsedTime, setTrackingElapsedTime] = useState(0);
+
+  // Add state variables for emotion tracking
+  const [interestedCount, setInterestedCount] = useState(0);
+  const [boredCount, setBoredCount] = useState(0);
+  const [lackingFocusCount, setLackingFocusCount] = useState(0);
 
   useEffect(() => {
     const interval = setInterval(() => {
-      setElapsedTime((prevTime) => prevTime + 1); // Increment elapsed time every second
+      setSessionElapsedTime((prevTime) => prevTime + 1); // Increment overall session time every second
     }, 1000);
 
     return () => clearInterval(interval); // Clean up on component unmount
@@ -57,6 +64,7 @@ function RealTimeMonitoring() {
   const location = useLocation();
   const navigate = useNavigate();
 
+  const { userData } = useSession(navigate);
   const [isTracking, setIsTracking] = useState(false);
   const [isShareScreen, setIsShareScreen] = useState(false);
   const [isCameraOn, setIsCameraOn] = useState(false);
@@ -72,59 +80,108 @@ function RealTimeMonitoring() {
   const trackingIntervalRef = useRef(null);
   const hasStoppedTracking = useRef(false);
   const animationFrameRef = useRef(null);
+  const currentUserID = userData?.userID;
 
   // Initialize WebSocket Connection while start tracking
   useEffect(() => {
     if (isTracking) {
-      // Connect to the WebSocket server only if tracking is enabled
+      // Connect to WebSocket server
       socketRef.current = io(SOCKET_URL);
 
       socketRef.current.on("connect", () => {
-        console.log("Connected to WebSocket");
         toast.success("Connected to tracking server");
       });
 
       socketRef.current.on("tracking_update", (data) => {
-        console.log("Tracking update received:", data);
-        // Now data might be an array of face objects
-        setTrackingData(data);
+        // Ensure `data.faces` exists and is an array
+        const faces = data?.faces || [];
 
-        // Update statistics for each detected face/emotion
-        if (Array.isArray(data)) {
-          data.forEach((face) => {
-            if (face.label) {
-              setStudentStats((prev) => ({
-                ...prev,
-                [face.label]: (prev[face.label] || 0) + 1,
-              }));
-            }
-          });
-        }
+        setTrackingData(faces);
+
+        // Compute new statistics based on detected faces
+        const newStats = faces.reduce((stats, face) => {
+          if (face.label) {
+            stats[face.label] = (stats[face.label] || 0) + 1;
+          }
+          return stats;
+        }, {});
+
+        // Merge with previous stats
+        setStudentStats((prev) => ({
+          ...prev,
+          ...newStats,
+        }));
       });
 
-      socketRef.current.on("connect_error", (error) => {
-        console.error("WebSocket connection error:", error);
+      socketRef.current.on("connect_error", () => {
         toast.error("Failed to connect to tracking server");
       });
 
       socketRef.current.on("disconnect", () => {
-        console.log("WebSocket Disconnected");
         toast.warn("Disconnected from tracking server");
       });
 
+      // Cleanup function: Disconnect when unmounting or when tracking stops
       return () => {
         if (socketRef.current) {
           socketRef.current.disconnect();
+          socketRef.current = null; // Ensure it's reset
         }
       };
     } else {
-      // If tracking is disabled, make sure to disconnect
+      // If tracking is disabled, disconnect WebSocket
       if (socketRef.current) {
         socketRef.current.disconnect();
-        console.log("Tracking stopped, WebSocket disconnected");
+        socketRef.current = null; // Ensure cleanup
       }
     }
   }, [isTracking]);
+
+  // Update emotion counts whenever tracking data changes
+  useEffect(() => {
+    if (Array.isArray(trackingData) && trackingData.length > 0) {
+      // Reset counts for this frame
+      let interested = 0;
+      let bored = 0;
+      let lackingFocus = 0;
+
+      // Count emotions in the current frame
+      trackingData.forEach((face) => {
+        if (face.label) {
+          // Convert to lowercase for case-insensitive comparison
+          const emotion = face.label.toLowerCase();
+          if (emotion === "interested") {
+            interested++;
+          } else if (emotion === "bored") {
+            bored++;
+          } else if (emotion === "lacking_focus") {
+            lackingFocus++;
+          }
+        }
+      });
+
+      // Update the state with new counts
+      setInterestedCount(interested);
+      setBoredCount(bored);
+      setLackingFocusCount(lackingFocus);
+
+      console.log(
+        "Interested Count (before sending):",
+        interestedCount,
+        typeof interestedCount
+      );
+      console.log(
+        "Bored Count (before sending):",
+        boredCount,
+        typeof boredCount
+      );
+      console.log(
+        "Lacking Focus Count (before sending):",
+        lackingFocusCount,
+        typeof lackingFocusCount
+      );
+    }
+  }, [trackingData]);
 
   // Handle Camera Start/Stop
   const handleCamera = async () => {
@@ -288,24 +345,66 @@ function RealTimeMonitoring() {
       return;
     }
 
-    // If we're turning off tracking, immediately hide all boxes
-    if (isTracking) {
-      // Hide the main box if it exists
-      if (boxRef.current) {
-        boxRef.current.style.display = "none";
-      }
+    setIsTracking((prev) => !prev);
+  };
 
-      // Hide all face boxes
-      if (videoContainerRef.current) {
-        const existingBoxes =
-          videoContainerRef.current.querySelectorAll('[id^="face-box-"]');
-        existingBoxes.forEach((box) => {
-          box.style.display = "none";
+  // Handle tracking time and send data every 60 seconds
+  useEffect(() => {
+    // Only run this effect when isTracking changes
+    if (isTracking) {
+      // Reset tracking time when tracking starts
+      setTrackingElapsedTime(0);
+
+      // Create interval to update tracking time
+      trackingIntervalRef.current = setInterval(() => {
+        setTrackingElapsedTime((prevTime) => {
+          // Use the updated value right away
+          const newTime = prevTime + 1;
+
+          // Check if we need to send data (every 60 seconds)
+          if (newTime % 60 === 0) {
+            sendTrackingData();
+          }
+
+          return newTime;
         });
+      }, 1000);
+    } else {
+      // Clear interval when tracking stops
+      if (trackingIntervalRef.current) {
+        clearInterval(trackingIntervalRef.current);
+        trackingIntervalRef.current = null;
       }
     }
 
-    setIsTracking((prev) => !prev);
+    // Clean up on unmount or when isTracking changes
+    return () => {
+      if (trackingIntervalRef.current) {
+        clearInterval(trackingIntervalRef.current);
+        trackingIntervalRef.current = null;
+      }
+    };
+  }, [isTracking]);
+
+  // Insert data into the database - Updated with emotion counts
+  const sendTrackingData = async () => {
+    try {
+      const timestamp = new Date().toISOString().slice(0, 19).replace("T", " ");
+      const payload = {
+        sessionID: sessionId,
+        userID: currentUserID,
+        timestamp: timestamp,
+        interestedCount: interestedCount,
+        boredCount: boredCount,
+        lackingFocusCount: lackingFocusCount,
+      };
+
+      await axios.post("/tracking_session/tracking_emotion", payload);
+      toast.success("Tracking data recorded!");
+    } catch (error) {
+      toast.error("Failed to send tracking data.");
+      console.error(error);
+    }
   };
 
   // Send Video Frames to Backend
@@ -337,18 +436,12 @@ function RealTimeMonitoring() {
         .catch((e) => console.error("Couldn't play video:", e));
     }
 
-    console.log("Starting video frame capture...");
-
     const canvas = document.createElement("canvas");
     const ctx = canvas.getContext("2d");
 
     // Set canvas dimensions to match video dimensions
     canvas.width = videoElement.videoWidth;
     canvas.height = videoElement.videoHeight;
-
-    console.log(
-      `Canvas initialized with size: ${canvas.width}x${canvas.height}`
-    );
 
     // Clear any existing interval
     if (trackingIntervalRef.current) {
@@ -381,9 +474,6 @@ function RealTimeMonitoring() {
         ctx.drawImage(videoElement, 0, 0, canvas.width, canvas.height);
         const imageData = canvas.toDataURL("image/jpeg", 0.7); // Reduced quality for better performance
 
-        // Log only the first 50 characters to avoid flooding the console
-        console.log("Sending frame:", imageData.substring(0, 50), "...");
-
         socketRef.current.emit("video_frame", {
           frame: imageData,
           dimensions: {
@@ -395,7 +485,7 @@ function RealTimeMonitoring() {
       } catch (error) {
         console.error("Error capturing video frame:", error);
       }
-    }, 200); // Reduced frequency to 5 frames per second for better performance
+    }, 200);
   };
 
   // This function updates the position of the bounding box based on tracking data
@@ -447,13 +537,8 @@ function RealTimeMonitoring() {
     const videoElement = isCameraOn ? cameraRef.current : screenRef.current;
     if (!videoElement || !videoContainerRef.current) return;
 
-    // Debug log to see if this function is being called
-    console.log("Updating bounding boxes...");
-
     // Check if trackingData is an array (multiple faces)
     if (Array.isArray(trackingData) && trackingData.length > 0) {
-      console.log(`Updating ${trackingData.length} bounding boxes`);
-
       // Update each face's box using DOM manipulation
       trackingData.forEach((face, index) => {
         // Find or create a box element for this face
@@ -543,8 +628,6 @@ function RealTimeMonitoring() {
     }
     // If trackingData is a single object (backward compatibility)
     else if (trackingData && trackingData.box && boxRef.current) {
-      console.log("Using single tracking data box:", trackingData.box);
-
       // Original single box update code
       const [x, y, width, height] = trackingData.box;
       const videoWidth = videoElement.videoWidth || 640;
@@ -567,8 +650,6 @@ function RealTimeMonitoring() {
       boxRef.current.style.height = `${boxHeight}px`;
       boxRef.current.style.display = "block";
     } else {
-      console.log("No valid tracking data box available");
-
       // Hide all boxes when no tracking data
       if (boxRef.current) {
         boxRef.current.style.display = "none";
@@ -588,7 +669,6 @@ function RealTimeMonitoring() {
   // Handle window resize for box position updates
   useEffect(() => {
     const handleResize = () => {
-      console.log("Window resize detected");
       if (animationFrameRef.current) {
         cancelAnimationFrame(animationFrameRef.current);
       }
@@ -603,7 +683,6 @@ function RealTimeMonitoring() {
 
   // Update box position whenever tracking data changes
   useEffect(() => {
-    console.log("Tracking data changed, updating box");
     if (animationFrameRef.current) {
       cancelAnimationFrame(animationFrameRef.current);
     }
@@ -620,7 +699,7 @@ function RealTimeMonitoring() {
         "tracking_session/end_tracking_session",
         {
           sessionID: sessionId,
-          elapsedTime: elapsedTime,
+          sessionElapsedTime: sessionElapsedTime,
         }
       );
 
@@ -759,8 +838,8 @@ function RealTimeMonitoring() {
       >
         <Col xs={2} className="d-flex align-items-center ps-3">
           <span className="text-white rounded px-2 py-1 d-flex align-items-center justify-content-start fw-bold">
-            <i className="bi bi-alarm me-2"></i>{" "}
-            {formatElapsedTime(elapsedTime)}
+            <i className="bi bi-alarm me-2"></i>Elapsed:{" "}
+            {formatElapsedTime(sessionElapsedTime)}
           </span>
         </Col>
         <Col
@@ -802,7 +881,7 @@ function RealTimeMonitoring() {
           </Button>
 
           <Button variant="danger" onClick={handleEndMonitoringSession}>
-            <i class="bi bi-door-open"></i> &nbsp;End Monitoring Session
+            <i className="bi bi-door-open"></i> &nbsp;End Monitoring Session
           </Button>
         </Col>
         <Col
@@ -811,6 +890,7 @@ function RealTimeMonitoring() {
         >
           <span className="text-white rounded px-2 py-1 d-flex align-items-center fw-bold">
             <i className="bi bi-clock me-2"></i>
+            Tracking: {formatElapsedTime(trackingElapsedTime)}
           </span>
         </Col>
       </Row>

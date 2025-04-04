@@ -108,7 +108,7 @@ function EducatorStatistics() {
             </section>
 
             <section className="px-1">
-              <h5 className="mb-3">Session History</h5>
+              <h5 className="mb-3"> Session History</h5>
 
               <Table striped bordered hover responsive>
                 <thead>

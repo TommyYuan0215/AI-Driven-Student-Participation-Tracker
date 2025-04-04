@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Container, Form } from "react-bootstrap";
+import { Form, Row, Col } from "react-bootstrap";
 import useSession from "../../../utils/sessionUtils";
 import { useNavigate } from "react-router-dom";
 import { useLoadingState } from "../../../utils/loadingUtils";
@@ -15,53 +15,57 @@ import {
   Tooltip,
   Legend,
   ResponsiveContainer,
-} from "recharts"; // Import necessary Recharts components
+} from "recharts";
 import axios from "../../../utils/axios_configure";
 
 function EducatorTrending() {
   const navigate = useNavigate();
   const { userData, isLoggedIn } = useSession(navigate);
-  const {
-    data: trackingsessionList,
-    loading,
-    refetch,
-  } = useLoadingState("/tracking_session/get_tracking_session", {
-    userID: userData?.userID,
-  });
+  const { data: trackingsessionList, loading } = useLoadingState(
+    "/tracking_session/get_tracking_session",
+    { userID: userData?.userID }
+  );
 
   const [chartData, setChartData] = useState([]);
   const [filteredSessions, setFilteredSessions] = useState([]);
-  const [selectedSession, setSelectedSession] = useState(""); // State to store selected session
+  const [selectedSession, setSelectedSession] = useState("");
 
+  // Fetch trend data when a session is selected
   useEffect(() => {
-    if (trackingsessionList.length > 0) {
-      const processedData = trackingsessionList.map((session) => ({
-        name: session.sessionStart,
-        Interested: session.interestedCount,
-        Bored: session.boredCount,
-        LackingFocus: session.lackingFocusCount,
-        sessionID: session.sessionID, // Store session ID for filtering
-      }));
+    if (isLoggedIn && userData?.userID && selectedSession) {
+      axios
+        .get("/tracking_session/get_tracking_emotion", {
+          params: { sessionID: selectedSession },
+        })
+        .then((response) => {
+          const processedData = response.data.map((sessionDetails) => ({
+            timestamp: sessionDetails.timestamp,
+            Interested: sessionDetails.interestedCount,
+            Bored: sessionDetails.boredCount,
+            LackingFocus: sessionDetails.lackingFocusCount,
+            sessionID: sessionDetails.sessionID,
+          }));
 
-      setChartData(processedData);
-      setFilteredSessions(processedData); // Set all sessions initially
+          setChartData(processedData);
+          setFilteredSessions(processedData);
+        })
+        .catch((error) => {
+          console.error("Error fetching tracking emotion data:", error);
+          toast.error("Failed to load trend data");
+        });
     }
-  }, [trackingsessionList]);
+  }, [selectedSession, isLoggedIn, userData?.userID]);
 
+  // Handle session selection for filtering
   const handleFilterChange = (event) => {
     const selectedSessionID = event.target.value;
     setSelectedSession(selectedSessionID);
 
-    if (selectedSessionID) {
-      // Filter the sessions based on the selected session ID
-      const filteredData = chartData.filter(
-        (session) => session.sessionID === selectedSessionID
-      );
-      setFilteredSessions(filteredData);
-    } else {
-      // If no filter is applied, show all sessions
-      setFilteredSessions(chartData);
-    }
+    // Filter the sessions based on the selected session ID
+    const filteredData = chartData.filter(
+      (session) => session.sessionID === selectedSessionID
+    );
+    setFilteredSessions(filteredData.length > 0 ? filteredData : chartData);
   };
 
   return (
@@ -86,40 +90,83 @@ function EducatorTrending() {
         ) : (
           <>
             {/* Filter Section */}
-            <section className="px-1 py-4">
-              <Form.Group controlId="filterSession" className="mb-3">
-                <Form.Label>Select a Session</Form.Label>
-                <Form.Control
-                  as="select"
-                  onChange={handleFilterChange}
-                  value={selectedSession}
-                >
-                  <option value="">All Sessions</option>
-                  {trackingsessionList.map((session) => (
-                    <option key={session.sessionID} value={session.sessionID}>
-                      {session.sessionID} ({session.sessionStart} -{" "}
-                      {session.sessionEnd})
-                    </option>
-                  ))}
-                </Form.Control>
-              </Form.Group>
+            <section className="px-3 py-4 mb-4">
+              <Row>
+                <Col lg={6} className="mx-auto">
+                  <Form.Group controlId="filterSession">
+                    <Form.Label>Select a Session</Form.Label>
+                    <Form.Control
+                      as="select"
+                      onChange={handleFilterChange}
+                      value={selectedSession}
+                      className="shadow-sm"
+                    >
+                      <option value="" disabled>
+                        --- Select a session ---
+                      </option>
+                      {trackingsessionList.map((session) => (
+                        <option
+                          key={session.sessionID}
+                          value={session.sessionID}
+                        >
+                          {session.sessionID} ({session.sessionStart} -{" "}
+                          {session.sessionEnd})
+                        </option>
+                      ))}
+                    </Form.Control>
+                  </Form.Group>
+                </Col>
+              </Row>
             </section>
 
             {/* Trend Data Section */}
-            <section className="px-1 py-4">
-              <ResponsiveContainer width="100%" height={500}>
+            <section className="px-3 py-4">
+              <ResponsiveContainer width="100%" height={450}>
                 <LineChart data={filteredSessions}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="name" />
-                  <YAxis />
-                  <Tooltip />
-                  <Legend />
-                  <Line type="monotone" dataKey="Interested" stroke="#82ca9d" />
-                  <Line type="monotone" dataKey="Bored" stroke="#ff7300" />
+                  <CartesianGrid strokeDasharray="3 2" />
+                  <XAxis
+                    dataKey="timestamp"
+                    tickFormatter={(timestamp) =>
+                      new Date(timestamp).toLocaleTimeString()
+                    }
+                    tick={{ fontSize: 12 }}
+                    label={{ value: "Session", position: "bottom", offset: 0 }}
+                  />
+                  <YAxis
+                    tick={{ fontSize: 12 }}
+                    label={{
+                      value: "Emotion Count",
+                      angle: -90,
+                      position: "left",
+                      offset: 0,
+                    }}
+                  />
+                  <Tooltip
+                    labelFormatter={(value) =>
+                      new Date(value).toLocaleTimeString()
+                    }
+                  />
+                  <Legend verticalAlign="top" height={36} />
+                  <Line
+                    type="monotone"
+                    dataKey="Interested"
+                    stroke="#82ca9d"
+                    strokeWidth={2}
+                    dot={false}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="Bored"
+                    stroke="#ff7300"
+                    strokeWidth={2}
+                    dot={false}
+                  />
                   <Line
                     type="monotone"
                     dataKey="LackingFocus"
                     stroke="#ff0000"
+                    strokeWidth={2}
+                    dot={false}
                   />
                 </LineChart>
               </ResponsiveContainer>

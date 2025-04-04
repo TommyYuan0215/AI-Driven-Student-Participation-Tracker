@@ -60,47 +60,33 @@ def create_tracking_server(socketio):
             result = preprocess_image(frame_data, detect_multiple)
             
             if result is None or result[0] is None:
+                print("⚠️ No face detected in frame.")
+                emit("tracking_update", {"faces": []}, broadcast=True)  # Send empty array if no face
                 return
                 
             all_faces, all_boxes = result
             
-            # For single face mode
-            if not detect_multiple:
-                img = all_faces[0]
-                box = all_boxes[0]
-                
+            results = []
+            for i, (img, box) in enumerate(zip(all_faces, all_boxes)):
                 prediction = model.predict(img)
-                classes = ["Interested", "Bored", "Lacking_Focus"]
+                classes = ["Bored", "Interested", "Lacking_Focus"]
                 predicted_label = classes[np.argmax(prediction)]
                 confidence = float(np.max(prediction))
-
-                print(f"📦 Emitting: Label={predicted_label}, Confidence={confidence}, Box={box}", flush=True)
-
-                emit("tracking_update", {
+                
+                results.append({
                     "label": predicted_label,
                     "confidence": confidence,
-                    "box": box
-                }, broadcast=True)
+                    "box": box,
+                    "id": i  # Adding an ID for tracking
+                })
             
-            # For multiple face mode
-            else:
-                results = []
-                for i, (img, box) in enumerate(zip(all_faces, all_boxes)):
-                    prediction = model.predict(img)
-                    classes = ["Interested", "Bored", "Lacking_Focus"]
-                    predicted_label = classes[np.argmax(prediction)]
-                    confidence = float(np.max(prediction))
-                    
-                    results.append({
-                        "label": predicted_label,
-                        "confidence": confidence,
-                        "box": box,
-                        "id": i  # Adding an ID can be useful for tracking
-                    })
-                
-                print(f"📦 Emitting multiple faces: {len(results)} faces detected", flush=True)
-                
-                emit("tracking_update", results, broadcast=True)
+            if not results:
+                print("⚠️ No valid face predictions, sending empty data.", flush=True)
+                results = []  # Ensure it's an empty array if no valid predictions
+            
+            print(f"📦 Emitting {len(results)} face(s) detected", flush=True)
+            
+            emit("tracking_update", {"faces": results}, broadcast=True)
 
     return tracking_route
 

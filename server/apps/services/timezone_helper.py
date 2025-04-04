@@ -14,4 +14,4 @@ def convert_to_timezone(mysql_timestamp, timezone="Asia/Kuala_Lumpur"):
 
     target_timezone = pytz.timezone(timezone)
 
-    return utc_time.replace(tzinfo=pytz.utc).astimezone(target_timezone).strftime("%Y-%M-%d, %I:%M %p")
+    return utc_time.replace(tzinfo=pytz.utc).astimezone(target_timezone).strftime("%Y-%m-%d, %I:%M %p")
