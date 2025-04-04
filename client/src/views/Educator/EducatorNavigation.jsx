@@ -25,7 +25,7 @@ const sidebarItems = [
         icon: "bi bi-bar-chart-line",
       },
       {
-        label: "Trend Data",
+        label: "Trend Data Analysis",
         path: "/views/educator/postanalytics/trend",
         icon: "bi bi-graph-up-arrow",
       },

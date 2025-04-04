@@ -38,47 +38,84 @@ function EducatorStatistics() {
       />
 
       <div className="m-4 card px-3">
-        <section className="px-1 py-4">
-          {loading ? (
-            <LoadingSpinner text="Loading statistics..." />
-          ) : (
-            <>
+        {loading ? (
+          <LoadingSpinner text="Loading statistics..." />
+        ) : trackingsessionList.length === 0 ? (
+          <div className="text-center my-5 py-5 text-muted">
+            <i
+              className="bi bi-emoji-neutral"
+              style={{ fontSize: "3rem", opacity: 0.7 }}
+            ></i>
+            <h5 className="mt-3">No engagement data available</h5>
+            <p className="small">Tracking hasn't started yet — stay tuned!</p>
+          </div>
+        ) : (
+          <>
+            <section className="px-1 py-4">
               <div className="row">
                 <div className="col-md-3 mb-3">
-                  <div className="card text-center shadow-sm p-3 mb-5 bg-body rounded">
-                    <h5>Total Session has been created</h5>
-                    <p>{trackingsessionList.length}</p>
+                  <div className="card text-center shadow-lg p-4 mb-5 rounded">
+                    <div className="card-body">
+                      <i
+                        className="bi bi-file-earmark-plus mb-3"
+                        style={{ fontSize: "2rem", color: "magenta" }}
+                      ></i>
+                      <h5 className="card-title">Total Sessions Created</h5>
+                      <h3>{trackingsessionList.length}</h3>
+                    </div>
                   </div>
                 </div>
 
                 <div className="col-md-3 mb-3">
-                  <div className="card text-center shadow-sm p-3 mb-5 bg-body rounded"></div>
+                  <div className="card text-center shadow-lg p-4 mb-5 rounded">
+                    <div className="card-body">
+                      <i
+                        className="bi bi-emoji-smile mb-3"
+                        style={{ fontSize: "2rem", color: "green" }}
+                      ></i>
+                      <h5 className="card-title">Interested (Cumulative)</h5>
+                      <h3>{0}</h3>
+                    </div>
+                  </div>
                 </div>
 
                 <div className="col-md-3 mb-3">
-                  <div className="card text-center shadow-sm p-3 mb-5 bg-body rounded"></div>
+                  <div className="card text-center shadow-lg p-4 mb-5 rounded">
+                    <div className="card-body">
+                      <i
+                        className="bi bi-emoji-expressionless mb-3"
+                        style={{ fontSize: "2rem", color: "orange" }}
+                      ></i>
+                      <h5 className="card-title">Bored (Cumulative)</h5>
+                      <h3>{0}</h3>
+                    </div>
+                  </div>
                 </div>
 
                 <div className="col-md-3 mb-3">
-                  <div className="card text-center shadow-sm p-3 mb-5 bg-body rounded"></div>
+                  <div className="card text-center shadow-lg p-4 mb-5 rounded">
+                    <div className="card-body">
+                      <i
+                        className="bi bi-emoji-frown mb-3"
+                        style={{ fontSize: "2rem", color: "red" }}
+                      ></i>
+                      <h5 className="card-title">Lacking Focus (Cumulative)</h5>
+                      <h3>{0}</h3>
+                    </div>
+                  </div>
                 </div>
               </div>
-            </>
-          )}
-          ;
-        </section>
-        <br />
-        <section className="px-1 py-4">
-          <h5 className="mb-3">Session History</h5>
-          {loading ? (
-            <LoadingSpinner text="Loading users..." />
-          ) : (
-            <>
+            </section>
+
+            <section className="px-1">
+              <h5 className="mb-3">Session History</h5>
+
               <Table striped bordered hover responsive>
                 <thead>
                   <tr className="text-center">
                     <th style={{ width: "50px" }}>#</th>
                     <th>ID</th>
+                    <th>Created By</th>
                     <th>Session Start</th>
                     <th>Session End</th>
                     <th>Action</th>
@@ -89,6 +126,7 @@ function EducatorStatistics() {
                     <tr key={session.sessionID}>
                       <td>{index + 1}</td>
                       <td>{session.sessionID}</td>
+                      <td>{session.userName}</td>
                       <td>{session.sessionStart}</td>
                       <td>{session.sessionEnd}</td>
                       <td>
@@ -100,7 +138,6 @@ function EducatorStatistics() {
                   ))}
                 </tbody>
               </Table>
-              <br />
 
               <Pagination className="d-flex justify-content-end">
                 <Pagination.First
@@ -167,9 +204,9 @@ function EducatorStatistics() {
                   }
                 />
               </Pagination>
-            </>
-          )}
-        </section>
+            </section>
+          </>
+        )}
       </div>
     </>
   );

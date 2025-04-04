@@ -23,6 +23,7 @@ import EducatorDashboard from "./views/Educator/dashboard";
 import RealTimeMonitoring from "./views/Educator/realtimemonitoring";
 import EducatorStatistics from "./views/Educator/postanalytics/statistics";
 import EducatorPublicStatistics from "./views/Educator/postanalytics/statisticspublic";
+import EducatorTrending from "./views/Educator/postanalytics/trend";
 import GeneralSettings from "./views/Settings/general";
 import AccountSettings from "./views/Settings/account";
 
@@ -71,6 +72,7 @@ function App() {
               path="statisticspublic"
               element={<EducatorPublicStatistics />}
             />
+            <Route path="trend" element={<EducatorTrending />} />
           </Route>
           <Route path="settings/*">
             <Route path="general" element={<GeneralSettings />} />
