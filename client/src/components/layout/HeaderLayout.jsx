@@ -1,9 +1,9 @@
 import { useState } from "react";
 import { Nav, Navbar, NavDropdown } from "react-bootstrap";
 import "../../App.css";
-import ModelComponent from "../LoginModelComponent";
-import LoginForm from "../../views/Credentials/LoginForm";
-import SignUpForm from "../../views/Credentials/SignUpForm";
+import ModelComponent from "../modal/LoginModelComponent";
+import LoginForm from "../form/LoginForm";
+import SignUpForm from "../form/SignUpForm";
 import useSession from "../../utils/sessionUtils";
 import { useNavigate } from "react-router-dom";
 

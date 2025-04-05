@@ -89,6 +89,44 @@ def get_tracking_session_public():
     finally:
         cursor.close()
         connection.close()
+        
+@tracking_session_route.route("/get_tracking_session_admin", methods=["GET"])
+def get_tracking_session_admin():
+    connection = get_db_connection()
+    cursor = connection.cursor(dictionary=True)
+
+    try:
+        get_sessions_query = '''
+        SELECT 
+            t.sessionID, 
+            t.educatorID, 
+            t.sessionStart, 
+            t.sessionEnd, 
+            ua.userName
+        FROM 
+            TRACKING_SESSION t
+        INNER JOIN 
+            EDUCATOR e ON t.educatorID = e.educatorID
+        INNER JOIN 
+            USER_ACCOUNT ua ON e.userID = ua.userID
+        ORDER BY
+            t.sessionStart DESC
+        '''
+        cursor.execute(get_sessions_query)
+        trackingsessions = cursor.fetchall()
+        
+        for session in trackingsessions:
+            session["sessionStart"] = convert_to_timezone(session["sessionStart"])
+            session["sessionEnd"] = convert_to_timezone(session["sessionEnd"])
+
+        return jsonify(trackingsessions), 200
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+    finally:
+        cursor.close()
+        connection.close()
 
 
 @tracking_session_route.route("/create_tracking_session", methods=["POST"])

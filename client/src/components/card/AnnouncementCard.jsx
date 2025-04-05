@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Carousel, Badge } from "react-bootstrap";
-import axios from "../../utils/axios_configure";
+import axios from "../../utils/axiosUtils";
 import LargeModelComponent from "../modal/LargeModelComponent";
 
 const AnnouncementCard = ({

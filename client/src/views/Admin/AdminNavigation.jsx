@@ -42,6 +42,13 @@ const sidebarItems = [
         label: "Overall Statistics Data",
         path: "/views/admin/datamanagement/statistics",
         icon: "bi bi-bar-chart-line",
+        ubItems: [
+          {
+            label: "Trend Data Analysis",
+            path: "/views/admin/datamanagement/statistics/trend",
+            icon: "bi bi-graph-up-arrow",
+          },
+        ],
       },
       {
         label: "User Trending Analysis",

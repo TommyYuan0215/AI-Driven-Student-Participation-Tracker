@@ -3,8 +3,8 @@ import { Accordion } from "react-bootstrap";
 import Cookies from "js-cookie";
 import { useNavigate } from "react-router-dom";
 import useSession from "../../utils/sessionUtils";
-import PageTitleBreadcrumb from "../../components/layout/PageTitleBreadcrumb";
-import axios from "../../utils/axios_configure";
+import PageTitleBreadcrumb from "../../components/layout/PageTitleBreadcrumbLayout";
+import axios from "../../utils/axiosUtils";
 import { toast } from "react-toastify";
 
 function GeneralSettings() {

@@ -1,7 +1,7 @@
 import React from "react";
 import { Container, Card, Carousel, Row, Col, Spinner } from "react-bootstrap";
-import Slideshow from "../components/CarouselComponent";
-import LoadingSpinner from "../components/LoadingSpinner";
+import Slideshow from "../components/common/CarouselComponent";
+import LoadingSpinner from "../components/common/LoadingSpinnerComponent";
 import { useLoadingState } from "../utils/loadingUtils";
 
 // Card data array

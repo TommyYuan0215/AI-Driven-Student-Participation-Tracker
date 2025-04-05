@@ -1,10 +1,10 @@
 import React, { useState } from "react";
 import { Row, Col, Card, Button, Pagination } from "react-bootstrap";
 import ModelComponent from "../../../components/modal/XLargeModelComponent";
-import LoadingSpinner from "../../../components/LoadingSpinner";
-import SlideshowForm from "../../../components/form/SlideshowFormComponent";
-import PageTitleBreadcrumb from "../../../components/layout/PageTitleBreadcrumb";
-import axios from "../../../utils/axios_configure";
+import LoadingSpinner from "../../../components/common/LoadingSpinnerComponent";
+import SlideshowForm from "../../../components/form/SlideshowForm";
+import PageTitleBreadcrumb from "../../../components/layout/PageTitleBreadcrumbLayout";
+import axios from "../../../utils/axiosUtils";
 import { toast } from "react-toastify";
 import { useLoadingState } from "../../../utils/loadingUtils";
 

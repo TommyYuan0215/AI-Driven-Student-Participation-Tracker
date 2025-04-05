@@ -3,10 +3,10 @@ import { Container, Row, Col, Card, Button } from "react-bootstrap";
 import { useLocation, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import { io } from "socket.io-client";
-import EmotionStatistics from "../../components/EmotionCharts";
+import EmotionStatistics from "../../components/customized/EmotionCharts";
 import { useParams } from "react-router-dom";
 import useSession from "../../utils/sessionUtils";
-import axios from "../../utils/axios_configure";
+import axios from "../../utils/axiosUtils";
 
 // WebSocket URL (Update if needed)
 const SOCKET_URL = "http://localhost:5000";

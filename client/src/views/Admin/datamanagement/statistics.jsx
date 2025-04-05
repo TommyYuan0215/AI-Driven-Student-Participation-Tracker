@@ -1,16 +1,25 @@
 import React from "react";
-import PageTitleBreadcrumb from "../../../components/layout/PageTitleBreadcrumb";
-import { toast } from "react-toastify";
-import axios from "../../../utils/axios_configure";
+import PageTitleBreadcrumb from "../../../components/layout/PageTitleBreadcrumbLayout";
+import { useNavigate } from "react-router-dom";
+import StatisticsDashboard from "../../../components/dashboard/StatisticsDashboardComponent";
+import useSession from "../../../utils/sessionUtils";
 
 function StatisticsAdmin() {
+  const navigate = useNavigate();
+  const navigateToDetails = (sessionID) => {
+    navigate(`trend`, { state: { sessionID } });
+  };
+
   return (
     <>
       <PageTitleBreadcrumb
         title="Overall Statistics Data"
         path={location.pathname}
       />
-      <div className="m-4 card px-3"></div>
+      <StatisticsDashboard
+        isAdmin={true}
+        navigateToDetails={navigateToDetails}
+      />
     </>
   );
 }

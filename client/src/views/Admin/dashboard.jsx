@@ -3,9 +3,9 @@ import { Container } from "react-bootstrap";
 import useSession from "../../utils/sessionUtils";
 import { useNavigate } from "react-router-dom";
 import { useLoadingState } from "../../utils/loadingUtils";
-import LoadingSpinner from "../../components/LoadingSpinner";
+import LoadingSpinner from "../../components/common/LoadingSpinnerComponent";
 import { PieChart, Pie, Cell, Tooltip, Legend } from "recharts";
-import PageTitleBreadcrumb from "../../components/layout/PageTitleBreadcrumb";
+import PageTitleBreadcrumb from "../../components/layout/PageTitleBreadcrumbLayout";
 import ProfileCard from "../../components/card/ProfileCard";
 import AnnouncementCard from "../../components/card/AnnouncementCard";
 

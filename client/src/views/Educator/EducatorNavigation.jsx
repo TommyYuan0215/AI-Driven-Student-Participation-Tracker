@@ -18,16 +18,25 @@ const sidebarItems = [
         label: "Statistics Dashboard",
         path: "/views/educator/postanalytics/statistics",
         icon: "bi bi-bar-chart-line",
+        subItems: [
+          {
+            label: "Trend Data Analysis",
+            path: "/views/educator/postanalytics/statistics/trend",
+            icon: "bi bi-graph-up-arrow",
+          },
+        ],
       },
       {
         label: "Statistics Dashboard (Public)",
         path: "/views/educator/postanalytics/statisticspublic",
         icon: "bi bi-bar-chart-line",
-      },
-      {
-        label: "Trend Data Analysis",
-        path: "/views/educator/postanalytics/trend",
-        icon: "bi bi-graph-up-arrow",
+        subItems: [
+          {
+            label: "Trend Data Analysis",
+            path: "/views/educator/postanalytics/statisticspublic/trend",
+            icon: "bi bi-graph-up-arrow",
+          },
+        ],
       },
       {
         label: "Generate Reports",

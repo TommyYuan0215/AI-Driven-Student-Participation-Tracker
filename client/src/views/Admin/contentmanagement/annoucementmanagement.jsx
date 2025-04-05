@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from "react";
 import { Table, Container, Button, Form, Pagination } from "react-bootstrap";
-import PageTitleBreadcrumb from "../../../components/layout/PageTitleBreadcrumb";
-import LoadingSpinner from "../../../components/LoadingSpinner";
+import PageTitleBreadcrumb from "../../../components/layout/PageTitleBreadcrumbLayout";
+import LoadingSpinner from "../../../components/common/LoadingSpinnerComponent";
 import LargeModelComponent from "../../../components/modal/LargeModelComponent";
 import { useLoadingState } from "../../../utils/loadingUtils";
-import AnnouncementForm from "../../../components/form/AnnouncementFormComponent";
+import AnnouncementForm from "../../../components/form/AnnouncementForm";
 import { toast } from "react-toastify";
-import axios from "../../../utils/axios_configure";
-import AnnouncementStatusBadge from "../../../components/AnnouncementStatusBadge";
+import axios from "../../../utils/axiosUtils";
+import AnnouncementStatusBadge from "../../../components/customized/AnnouncementStatusBadge";
 
 function AnnouncementManagement() {
   const {

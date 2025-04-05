@@ -10,11 +10,3 @@
 
 - Run below command to setup the docker container.
   - docker-compose up --build
-
-### Instruction before use this application
-
-1. Install requirement.txt in server folder
-2. Uninstall keras and reinstall keras==2.12.0
-3. In the keras_vggface/models.py
-
-- change **from keras.engine.topology import get_source_inputs** to **from keras.utils.layer_utils import get_source_inputs**

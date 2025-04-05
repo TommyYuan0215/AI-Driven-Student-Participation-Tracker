@@ -1,7 +1,7 @@
 import React from "react";
-import PageTitleBreadcrumb from "../../../components/layout/PageTitleBreadcrumb";
+import PageTitleBreadcrumb from "../../../components/layout/PageTitleBreadcrumbLayout";
 import { toast } from "react-toastify";
-import axios from "../../../utils/axios_configure";
+import axios from "../../../utils/axiosUtils";
 
 function UserTrendingAdmin() {
   return (

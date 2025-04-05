@@ -3,12 +3,12 @@ import { Container, Button } from "react-bootstrap";
 import useSession from "../../utils/sessionUtils";
 import { useNavigate } from "react-router-dom";
 import { useLoadingState } from "../../utils/loadingUtils";
-import LoadingSpinner from "../../components/LoadingSpinner";
-import PageTitleBreadcrumb from "../../components/layout/PageTitleBreadcrumb";
+import LoadingSpinner from "../../components/common/LoadingSpinnerComponent";
+import PageTitleBreadcrumb from "../../components/layout/PageTitleBreadcrumbLayout";
 import ProfileCard from "../../components/card/ProfileCard";
 import AnnouncementCard from "../../components/card/AnnouncementCard";
 import { toast } from "react-toastify";
-import axios from "../../utils/axios_configure";
+import axios from "../../utils/axiosUtils";
 
 function EducatorDashboard() {
   const navigate = useNavigate();

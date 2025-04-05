@@ -2,8 +2,8 @@ import "./App.css";
 import React, { useEffect } from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { Navigate } from "react-router-dom";
-import Header from "./components/layout/Header";
-import Footer from "./components/layout/Footer";
+import Header from "./components/layout/HeaderLayout";
+import Footer from "./components/layout/FooterLayout";
 import Cookies from "js-cookie";
 import { ToastContainer } from "react-toastify";
 
@@ -46,7 +46,10 @@ function App() {
           <Route path="dashboard" element={<AdminDashboard />} />
           <Route path="usermanagement" element={<UserManagement />} />
           <Route path="datamanagement/*">
-            <Route path="statistics" element={<StatisticsAdmin />} />
+            <Route path="statistics/*">
+              <Route index element={<StatisticsAdmin />} />
+              <Route path="trend" element={<EducatorTrending />} />
+            </Route>
             <Route path="usertrend" element={<UserTrendingAdmin />} />
             <Route path="datatrend" element={<DataTrendingAdmin />} />
             <Route path="account" element={<AccountSettings />} />
@@ -67,12 +70,15 @@ function App() {
           <Route path="dashboard" element={<EducatorDashboard />} />
           <Route path="tracking/:sessionId" element={<RealTimeMonitoring />} />
           <Route path="postanalytics/*">
-            <Route path="statistics" element={<EducatorStatistics />} />
-            <Route
-              path="statisticspublic"
-              element={<EducatorPublicStatistics />}
-            />
-            <Route path="trend" element={<EducatorTrending />} />
+            <Route path="statistics/*">
+              <Route index element={<EducatorStatistics />} />
+              <Route path="trend" element={<EducatorTrending />} />
+            </Route>
+
+            <Route path="statisticspublic/*">
+              <Route index element={<EducatorPublicStatistics />} />
+              <Route path="trend" element={<EducatorTrending />} />
+            </Route>
           </Route>
           <Route path="settings/*">
             <Route path="general" element={<GeneralSettings />} />

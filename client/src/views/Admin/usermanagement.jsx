@@ -1,14 +1,14 @@
 import React, { useState } from "react";
 import { Table, Container, Button, Form, Pagination } from "react-bootstrap";
-import UserStatusBadge from "../../components/UserStatusBadge";
+import UserStatusBadge from "../../components/customized/UserStatusBadge";
 import { useLoadingState } from "../../utils/loadingUtils";
-import LoadingSpinner from "../../components/LoadingSpinner";
+import LoadingSpinner from "../../components/common/LoadingSpinnerComponent";
 import SmallModelComponent from "../../components/modal/SmallModelComponent";
 import LargeModelComponent from "../../components/modal/LargeModelComponent";
-import PageTitleBreadcrumb from "../../components/layout/PageTitleBreadcrumb";
-import UserFormModal from "../../components/form/UserFormComponent";
+import PageTitleBreadcrumb from "../../components/layout/PageTitleBreadcrumbLayout";
+import UserFormModal from "../../components/form/UserForm";
 import { toast } from "react-toastify";
-import axios from "../../utils/axios_configure";
+import axios from "../../utils/axiosUtils";
 
 function UserManagement() {
   const {

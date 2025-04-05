@@ -3,8 +3,8 @@ import { Accordion, Table, Form, Button, Row, Col } from "react-bootstrap";
 import { useNavigate } from "react-router-dom";
 import useSession from "../../utils/sessionUtils";
 import { toast } from "react-toastify";
-import axios from "../../utils/axios_configure";
-import PageTitleBreadcrumb from "../../components/layout/PageTitleBreadcrumb";
+import axios from "../../utils/axiosUtils";
+import PageTitleBreadcrumb from "../../components/layout/PageTitleBreadcrumbLayout";
 
 function AccountSettings() {
   const navigate = useNavigate();

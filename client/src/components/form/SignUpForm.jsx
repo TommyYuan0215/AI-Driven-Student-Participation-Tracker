@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Form, Button, Alert } from "react-bootstrap";
 import { toast } from "react-toastify";
-import axios from "../../utils/axios_configure";
+import axios from "../../utils/axiosUtils";
 
 function SignUpForm({ switchToLogin }) {
   const [formData, setFormData] = useState({
