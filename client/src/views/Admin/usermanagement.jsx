@@ -24,8 +24,15 @@ function UserManagement() {
 
   const handleSort = (key) => {
     let direction = "asc";
-    if (sortConfig.key === key && sortConfig.direction === "asc") {
-      direction = "desc";
+
+    if (sortConfig.key === key) {
+      if (sortConfig.direction === "asc") {
+        direction = "desc";
+      } else if (sortConfig.direction === "desc") {
+        // Reset sorting
+        setSortConfig({ key: null, direction: null });
+        return;
+      }
     }
 
     setSortConfig({ key, direction });
@@ -227,7 +234,7 @@ function UserManagement() {
                         ? sortConfig.direction === "asc"
                           ? "🔼"
                           : "🔽"
-                        : ""}
+                        : "↕️"}
                     </th>
                     <th
                       onClick={() => handleSort("userName")}
@@ -238,7 +245,7 @@ function UserManagement() {
                         ? sortConfig.direction === "asc"
                           ? "🔼"
                           : "🔽"
-                        : ""}
+                        : "↕️"}
                     </th>
                     <th
                       onClick={() => handleSort("userEmail")}
@@ -249,29 +256,30 @@ function UserManagement() {
                         ? sortConfig.direction === "asc"
                           ? "🔼"
                           : "🔽"
-                        : ""}
+                        : "↕️"}
                     </th>
+
                     <th
-                      style={{ width: "150px", cursor: "pointer" }}
-                      onClick={() => handleSort("userStatus")}
-                    >
-                      Account Status{" "}
-                      {sortConfig.key === "userStatus"
-                        ? sortConfig.direction === "asc"
-                          ? "🔼"
-                          : "🔽"
-                        : ""}
-                    </th>
-                    <th
-                      style={{ width: "250px", cursor: "pointer" }}
+                      style={{ width: "200px", cursor: "pointer" }}
                       onClick={() => handleSort("createAt")}
                     >
-                      Created Date{""}
+                      Created Date{" "}
                       {sortConfig.key === "createAt"
                         ? sortConfig.direction === "asc"
                           ? "🔼"
                           : "🔽"
-                        : ""}
+                        : "↕️"}
+                    </th>
+                    <th
+                      style={{ width: "120px", cursor: "pointer" }}
+                      onClick={() => handleSort("userStatus")}
+                    >
+                      Status{" "}
+                      {sortConfig.key === "userStatus"
+                        ? sortConfig.direction === "asc"
+                          ? "🔼"
+                          : "🔽"
+                        : "↕️"}
                     </th>
                     <th style={{ width: "320px" }}>Action</th>
                   </tr>
@@ -283,10 +291,10 @@ function UserManagement() {
                       <td>{user.userID}</td>
                       <td>{user.userName}</td>
                       <td>{user.userEmail}</td>
+                      <td>{user.createAt}</td>
                       <td className="text-center">
                         <UserStatusBadge userStatus={user.userStatus} />
                       </td>
-                      <td>{user.createAt}</td>
                       <td>
                         <Button
                           variant="primary"

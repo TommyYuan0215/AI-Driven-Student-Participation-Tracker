@@ -21,8 +21,15 @@ function AnnouncementManagement() {
 
   const handleSort = (key) => {
     let direction = "asc";
-    if (sortConfig.key === key && sortConfig.direction === "asc") {
-      direction = "desc";
+
+    if (sortConfig.key === key) {
+      if (sortConfig.direction === "asc") {
+        direction = "desc";
+      } else if (sortConfig.direction === "desc") {
+        // Reset sorting
+        setSortConfig({ key: null, direction: null });
+        return;
+      }
     }
 
     setSortConfig({ key, direction });
@@ -299,7 +306,7 @@ function AnnouncementManagement() {
                         ? sortConfig.direction === "asc"
                           ? "🔼"
                           : "🔽"
-                        : ""}
+                        : "↕️"}
                     </th>
                     <th
                       onClick={() => handleSort("announcementTitle")}
@@ -310,7 +317,7 @@ function AnnouncementManagement() {
                         ? sortConfig.direction === "asc"
                           ? "🔼"
                           : "🔽"
-                        : ""}
+                        : "↕️"}
                     </th>
                     <th>Description </th>
                     <th
@@ -322,7 +329,7 @@ function AnnouncementManagement() {
                         ? sortConfig.direction === "asc"
                           ? "🔼"
                           : "🔽"
-                        : ""}
+                        : "↕️"}
                     </th>
                     <th style={{ width: "300px" }}>Action</th>
                   </tr>

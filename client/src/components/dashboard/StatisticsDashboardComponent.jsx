@@ -31,11 +31,40 @@ function StatisticsDashboard({
     refetch,
   } = useLoadingState(endpoint, params);
 
+  // To handle sort function
+  const [sortConfig, setSortConfig] = useState({ key: null, direction: "asc" });
+
+  const handleSort = (key) => {
+    let direction = "asc";
+
+    if (sortConfig.key === key) {
+      if (sortConfig.direction === "asc") {
+        direction = "desc";
+      } else if (sortConfig.direction === "desc") {
+        // Reset sorting
+        setSortConfig({ key: null, direction: null });
+        return;
+      }
+    }
+
+    setSortConfig({ key, direction });
+  };
+
+  // Applied sorting dynamically
+  const sortedSessionList = [...trackingsessionList].sort((a, b) => {
+    if (!sortConfig.key) return 0; // No sorting initially
+    if (a[sortConfig.key] < b[sortConfig.key])
+      return sortConfig.direction === "asc" ? -1 : 1;
+    if (a[sortConfig.key] > b[sortConfig.key])
+      return sortConfig.direction === "asc" ? 1 : -1;
+    return 0;
+  });
+
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 25;
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-  const trackingsessionListPagination = trackingsessionList.slice(
+  const trackingsessionListPagination = sortedSessionList.slice(
     indexOfFirstItem,
     indexOfLastItem
   );
@@ -123,11 +152,51 @@ function StatisticsDashboard({
                 <thead>
                   <tr className="text-center">
                     <th style={{ width: "50px" }}>#</th>
-                    <th>ID</th>
-                    <th>Created By</th>
-                    <th>Session Start</th>
-                    <th>Session End</th>
-                    <th>Action</th>
+                    <th
+                      onClick={() => handleSort("sessionID")}
+                      style={{ cursor: "pointer" }}
+                    >
+                      Session ID{" "}
+                      {sortConfig.key === "sessionID"
+                        ? sortConfig.direction === "asc"
+                          ? "🔼"
+                          : "🔽"
+                        : "↕️"}
+                    </th>
+                    <th
+                      onClick={() => handleSort("createAt")}
+                      style={{ cursor: "pointer" }}
+                    >
+                      Create By{" "}
+                      {sortConfig.key === "createAt"
+                        ? sortConfig.direction === "asc"
+                          ? "🔼"
+                          : "🔽"
+                        : "↕️"}
+                    </th>
+                    <th
+                      onClick={() => handleSort("sessionStart")}
+                      style={{ cursor: "pointer" }}
+                    >
+                      Session Start{" "}
+                      {sortConfig.key === "sessionStart"
+                        ? sortConfig.direction === "asc"
+                          ? "🔼"
+                          : "🔽"
+                        : "↕️"}
+                    </th>
+                    <th
+                      onClick={() => handleSort("sessionEnd")}
+                      style={{ cursor: "pointer" }}
+                    >
+                      Session End{" "}
+                      {sortConfig.key === "sessionEnd"
+                        ? sortConfig.direction === "asc"
+                          ? "🔼"
+                          : "🔽"
+                        : "↕️"}
+                    </th>
+                    <th style={{ width: "180px" }}>Action</th>
                   </tr>
                 </thead>
                 <tbody>
