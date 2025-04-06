@@ -86,8 +86,8 @@ const AnnouncementCard = ({
       <div
         className="card-body d-flex flex-column justify-content-center"
         style={{
-          height: "230px",
-          maxHeight: "230px",
+          height: "250px",
+          maxHeight: "250px",
           overflow: "hidden", // Prevent overflow from the parent div
         }}
       >
@@ -164,7 +164,7 @@ const AnnouncementCard = ({
               <div
                 className="card-body"
                 style={{
-                  maxHeight: "300px", // Set a fixed max height for the container
+                  maxHeight: "350px", // Set a fixed max height for the container
                   overflowY: "auto", // Enable vertical scrolling if content exceeds the height
                   whiteSpace: "pre-line", // Maintains line breaks
                   wordWrap: "break-word",

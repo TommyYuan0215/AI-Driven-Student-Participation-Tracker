@@ -40,15 +40,19 @@ const ProfileCard = ({ userData }) => {
         className="card-body"
         style={{ marginTop: "60px", paddingTop: "20px" }}
       >
-        <Table hover responsive>
+        <Table hover responsive borderless>
           <tbody>
             <tr>
-              <th className="col-4">Name:</th>
-              <td className="col-8 text-justify">{userData.userName}</td>
+              <th className="col-12 text-center" style={{ fontSize: "18px" }}>
+                {userData.userName}
+              </th>
             </tr>
             <tr>
-              <th className="col-4">Type of User:</th>
-              <td className="col-8 text-justify">
+              <td className="col-12 text-center">{userData.userEmail}</td>
+            </tr>
+            <tr>
+              <td className="col-12 text-center">
+                <b>Role : </b>
                 {userData?.userType === 0 ? "Administrator" : "Educator"}
               </td>
             </tr>

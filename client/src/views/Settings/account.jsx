@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import useSession from "../../utils/sessionUtils";
 import { toast } from "react-toastify";
 import axios from "../../utils/axiosUtils";
+import ProfileCard from "../../components/card/ProfileCard";
 import PageTitleBreadcrumb from "../../components/layout/PageTitleBreadcrumbLayout";
 
 function AccountSettings() {
@@ -229,214 +230,176 @@ function AccountSettings() {
       <PageTitleBreadcrumb title="Account Settings" path={location.pathname} />
       <div className="ms-4 me-4 m-3">
         <div className="row">
-          <div className="col-md-12">
-            <div className="card">
-              <div className="card-header">
-                <img
-                  src={
-                    userData.userPhoto
-                      ? `data:image/jpeg;base64,${userData.userPhoto}`
-                      : "/profile.jpg"
-                  }
-                  alt="User"
-                  className="rounded-circle mx-auto d-block img-thumbnail"
-                  style={{
-                    width: "120px",
-                    height: "120px",
-                    objectFit: "cover",
-                  }}
-                />
-                <br />
-                <h5 className="card-title text-center">
-                  Hello, {userData.userName} &#128075;
-                </h5>
-              </div>
-              <div className="card-body">
-                <Table hover responsive>
-                  <tbody>
-                    <tr>
-                      <th className="col-4">Registered Email Address:</th>
-                      <td className="col-8 text-justify">
-                        {userData.userEmail}
-                      </td>
-                    </tr>
-                    <tr>
-                      <th className="col-4">Type of User:</th>
-                      <td className="col-8 text-justify">
-                        {userData?.userType === 0
-                          ? "Administrator"
-                          : "Educator"}
-                      </td>
-                    </tr>
-                  </tbody>
-                </Table>
-              </div>
-            </div>
-          </div>
+          <section className="col-md-8">
+            <Form onSubmit={handleFormSaveChanges} className="card">
+              <Accordion defaultActiveKey="0">
+                <Accordion.Item eventKey="0">
+                  <Accordion.Header>
+                    <strong style={{ color: "red" }}>(Mandatory)</strong> &nbsp;
+                    Basic Information
+                  </Accordion.Header>
+                  <Accordion.Body>
+                    <Form.Group>
+                      <Form.Group className="form-floating mb-3 d-none">
+                        <input
+                          className="form-control"
+                          id="id"
+                          type="text"
+                          name="id"
+                          value={formData.id}
+                          onChange={handleInputChange}
+                          placeholder="UserID"
+                          data-sb-validations="required"
+                          disabled
+                        />
+                        <label for="name">User ID</label>
+                      </Form.Group>
+                      <Form.Group className="form-floating mb-3">
+                        <input
+                          className="form-control"
+                          id="name"
+                          type="text"
+                          name="name"
+                          value={formData.name}
+                          onChange={handleInputChange}
+                          placeholder="Name"
+                          data-sb-validations="required"
+                        />
+                        <label for="name">Name</label>
+                      </Form.Group>
+
+                      <Form.Group className="form-floating mb-3">
+                        <input
+                          className="form-control"
+                          id="email"
+                          type="email"
+                          name="email"
+                          value={formData.email}
+                          onChange={handleInputChange}
+                          placeholder="name@example.com"
+                          data-sb-validations="required,email"
+                        />
+                        <label for="email">Email address</label>
+                      </Form.Group>
+
+                      <Form.Group className="form-floating mb-3">
+                        <input
+                          className="form-control"
+                          id="password"
+                          type="password"
+                          name="currentpass"
+                          value={formData.currentpass}
+                          onChange={handleInputChange}
+                          placeholder="Enter your password here..."
+                          data-sb-validations="required"
+                          required
+                        />
+                        <label for="password">Current Password</label>
+                      </Form.Group>
+                    </Form.Group>
+                  </Accordion.Body>
+                </Accordion.Item>
+                <Accordion.Item eventKey="1">
+                  <Accordion.Header>
+                    <strong>(Optional)</strong> &nbsp; Update Password
+                  </Accordion.Header>
+                  <Accordion.Body>
+                    <Row className="g-2">
+                      <Col md>
+                        <Form.Group className="form-floating mb-3">
+                          <input
+                            className="form-control"
+                            id="password"
+                            type="password"
+                            name="newpass"
+                            value={formData.newpass}
+                            onChange={handleInputChange}
+                            placeholder="Enter your password here..."
+                          />
+                          <Form.Label for="password">New Password</Form.Label>
+                        </Form.Group>
+                      </Col>
+                      <Col md>
+                        <Form.Group className="form-floating mb-3">
+                          <input
+                            className="form-control"
+                            id="password"
+                            type="password"
+                            name="confirmpass"
+                            value={formData.confirmpass}
+                            onChange={handleInputChange}
+                            placeholder="Enter your password here..."
+                          />
+                          <Form.Label for="password">
+                            Confirm New Password
+                          </Form.Label>
+                        </Form.Group>
+                      </Col>
+                    </Row>
+                  </Accordion.Body>
+                </Accordion.Item>
+                <Accordion.Item eventKey="2">
+                  <Accordion.Header>
+                    <strong>(Optional)</strong> &nbsp; Update User Profile
+                  </Accordion.Header>
+                  <Accordion.Body>
+                    <>
+                      <Form.Group className="image-section">
+                        <img
+                          src={imagePreview}
+                          id="image-preview"
+                          className="rounded-circle mx-auto d-block img-thumbnail"
+                          alt=""
+                          style={{
+                            width: "120px",
+                            height: "120px",
+                            objectFit: "cover",
+                          }}
+                        />
+                        <br />
+                        <div className="custom-file">
+                          <input
+                            type="file"
+                            className="form-control"
+                            name="image"
+                            id="image"
+                            onChange={previewImage}
+                          />
+                        </div>
+                        <br />
+                      </Form.Group>
+                      <Form.Group className="d-grid">
+                        <Button
+                          variant="danger"
+                          size="sm"
+                          disabled={imagePreview === "/profile.jpg"}
+                          onClick={handleResetPhoto}
+                        >
+                          <i className="bi bi-arrow-counterclockwise"></i>
+                          &nbsp;Reset to Default Profile Picture
+                        </Button>
+                      </Form.Group>
+                    </>
+                  </Accordion.Body>
+                </Accordion.Item>
+              </Accordion>
+              <br />
+              <Form.Group className="d-flex justify-content-around align-content-center">
+                <Button className="" variant="success" type="submit">
+                  <i className="bi bi-save"></i>&nbsp; Save Changes
+                </Button>
+                <Button variant="secondary" onClick={handleClearOptional}>
+                  <i className="bi bi-arrow-clockwise"></i>&nbsp; Clear Optional
+                </Button>
+              </Form.Group>
+              <br />
+            </Form>
+          </section>
+
+          <section className="col-md-4">
+            <ProfileCard userData={userData}></ProfileCard>
+          </section>
         </div>
-        <br />
-        <Form onSubmit={handleFormSaveChanges}>
-          <Accordion defaultActiveKey="0">
-            <Accordion.Item eventKey="0">
-              <Accordion.Header>
-                <strong style={{ color: "red" }}>(Mandatory)</strong> &nbsp;
-                Basic Information
-              </Accordion.Header>
-              <Accordion.Body>
-                <Form.Group>
-                  <Form.Group className="form-floating mb-3 d-none">
-                    <input
-                      className="form-control"
-                      id="id"
-                      type="text"
-                      name="id"
-                      value={formData.id}
-                      onChange={handleInputChange}
-                      placeholder="UserID"
-                      data-sb-validations="required"
-                      disabled
-                    />
-                    <label for="name">User ID</label>
-                  </Form.Group>
-                  <Form.Group className="form-floating mb-3">
-                    <input
-                      className="form-control"
-                      id="name"
-                      type="text"
-                      name="name"
-                      value={formData.name}
-                      onChange={handleInputChange}
-                      placeholder="Name"
-                      data-sb-validations="required"
-                    />
-                    <label for="name">Name</label>
-                  </Form.Group>
-
-                  <Form.Group className="form-floating mb-3">
-                    <input
-                      className="form-control"
-                      id="email"
-                      type="email"
-                      name="email"
-                      value={formData.email}
-                      onChange={handleInputChange}
-                      placeholder="name@example.com"
-                      data-sb-validations="required,email"
-                    />
-                    <label for="email">Email address</label>
-                  </Form.Group>
-
-                  <Form.Group className="form-floating mb-3">
-                    <input
-                      className="form-control"
-                      id="password"
-                      type="password"
-                      name="currentpass"
-                      value={formData.currentpass}
-                      onChange={handleInputChange}
-                      placeholder="Enter your password here..."
-                      data-sb-validations="required"
-                      required
-                    />
-                    <label for="password">Current Password</label>
-                  </Form.Group>
-                </Form.Group>
-              </Accordion.Body>
-            </Accordion.Item>
-            <Accordion.Item eventKey="1">
-              <Accordion.Header>
-                <strong>(Optional)</strong> &nbsp; Update Password
-              </Accordion.Header>
-              <Accordion.Body>
-                <Row className="g-2">
-                  <Col md>
-                    <Form.Group className="form-floating mb-3">
-                      <input
-                        className="form-control"
-                        id="password"
-                        type="password"
-                        name="newpass"
-                        value={formData.newpass}
-                        onChange={handleInputChange}
-                        placeholder="Enter your password here..."
-                      />
-                      <Form.Label for="password">New Password</Form.Label>
-                    </Form.Group>
-                  </Col>
-                  <Col md>
-                    <Form.Group className="form-floating mb-3">
-                      <input
-                        className="form-control"
-                        id="password"
-                        type="password"
-                        name="confirmpass"
-                        value={formData.confirmpass}
-                        onChange={handleInputChange}
-                        placeholder="Enter your password here..."
-                      />
-                      <Form.Label for="password">
-                        Confirm New Password
-                      </Form.Label>
-                    </Form.Group>
-                  </Col>
-                </Row>
-              </Accordion.Body>
-            </Accordion.Item>
-            <Accordion.Item eventKey="2">
-              <Accordion.Header>
-                <strong>(Optional)</strong> &nbsp; Update User Profile
-              </Accordion.Header>
-              <Accordion.Body>
-                <>
-                  <Form.Group className="image-section">
-                    <img
-                      src={imagePreview}
-                      id="image-preview"
-                      className="rounded-circle mx-auto d-block img-thumbnail"
-                      alt=""
-                      style={{
-                        width: "120px",
-                        height: "120px",
-                        objectFit: "cover",
-                      }}
-                    />
-                    <br />
-                    <div className="custom-file">
-                      <input
-                        type="file"
-                        className="form-control"
-                        name="image"
-                        id="image"
-                        onChange={previewImage}
-                      />
-                    </div>
-                    <br />
-                  </Form.Group>
-                  <Form.Group className="d-grid">
-                    <Button
-                      variant="danger"
-                      size="sm"
-                      disabled={imagePreview === "/profile.jpg"}
-                      onClick={handleResetPhoto}
-                    >
-                      <i className="bi bi-arrow-counterclockwise"></i>
-                      &nbsp;Reset to Default Profile Picture
-                    </Button>
-                  </Form.Group>
-                </>
-              </Accordion.Body>
-            </Accordion.Item>
-          </Accordion>
-          <br />
-          <Form.Group className="d-flex justify-content-around align-content-center">
-            <Button className="" variant="success" type="submit">
-              <i className="bi bi-save"></i>&nbsp; Save Changes
-            </Button>
-            <Button variant="secondary" onClick={handleClearOptional}>
-              <i className="bi bi-arrow-clockwise"></i>&nbsp; Clear Optional
-            </Button>
-          </Form.Group>
-        </Form>
       </div>
     </>
   );
