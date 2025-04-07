@@ -38,11 +38,6 @@ const sidebarItems = [
           },
         ],
       },
-      {
-        label: "Generate Reports",
-        path: "/views/educator/postanalytics/generatereport",
-        icon: "bi bi-file-earmark-text",
-      },
     ],
   },
   {
