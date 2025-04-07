@@ -52,6 +52,9 @@ function EducatorTrending() {
       <PageTitleBreadcrumb
         title="Trend Data Analysis"
         path={location.pathname}
+        isAddNew={true}
+        btnTitle="Generate Report"
+        btnIcon="bi-file-earmark-text"
       />
 
       <div className="m-4 card px-3">

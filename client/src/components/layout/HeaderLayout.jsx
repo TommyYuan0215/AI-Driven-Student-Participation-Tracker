@@ -11,7 +11,7 @@ function ProfileIcon({ userData, showName = true }) {
   return (
     <span>
       <img
-        className="rounded-circle userprofile me-1 img"
+        className="rounded-circle userprofile me-1 img-thumbnail"
         src={
           userData.userPhoto
             ? `data:image/jpeg;base64,${userData.userPhoto}`
@@ -61,7 +61,7 @@ function Header() {
                 title={<ProfileIcon userData={userData} />}
                 id="profile-nav-dropdown"
                 align="end"
-                className="custom-nav-dropdown"
+                className="custom-nav-dropdown fw-bold"
               >
                 <NavDropdown.Item
                   onClick={() =>
@@ -73,17 +73,14 @@ function Header() {
                 </NavDropdown.Item>
               </NavDropdown>
             ) : (
-              <NavDropdown
-                title={<ProfileIcon userData={{}} />}
-                id="profile-nav-dropdown"
-                align="end"
-                className="custom-nav-dropdown"
+              <Nav.Link
+                onClick={openLoginModal}
+                className="d-flex align-items-center"
               >
-                <NavDropdown.Item onClick={openLoginModal}>
-                  <i className="bi bi-box-arrow-in-right me-2"></i>
-                  Login to Account
-                </NavDropdown.Item>
-              </NavDropdown>
+                <span className="ms-2 fw-bold" style={{ lineHeight: "40px" }}>
+                  Login Now
+                </span>
+              </Nav.Link>
             )}
           </Nav>
         </Navbar.Collapse>

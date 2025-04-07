@@ -11,6 +11,17 @@ import axios from "../../utils/axiosUtils";
 // WebSocket URL (Update if needed)
 const SOCKET_URL = "http://localhost:5000";
 
+// Socket.io configuration options for better stability
+const socketOptions = {
+  reconnection: true,
+  reconnectionAttempts: 10,
+  reconnectionDelay: 1000,
+  reconnectionDelayMax: 5000,
+  timeout: 20000,
+  pingTimeout: 30000,
+  pingInterval: 10000,
+};
+
 function RealTimeMonitoring() {
   // Use useParams to get sessionID from the url
   const { sessionId } = useParams();
@@ -23,6 +34,11 @@ function RealTimeMonitoring() {
   const [interestedCount, setInterestedCount] = useState(0);
   const [boredCount, setBoredCount] = useState(0);
   const [lackingFocusCount, setLackingFocusCount] = useState(0);
+
+  // Add connection status state
+  const [isConnected, setIsConnected] = useState(false);
+  const [connectionAttempts, setConnectionAttempts] = useState(0);
+  const maxReconnectAttempts = 5;
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -80,60 +96,159 @@ function RealTimeMonitoring() {
   const trackingIntervalRef = useRef(null);
   const hasStoppedTracking = useRef(false);
   const animationFrameRef = useRef(null);
+  const pingIntervalRef = useRef(null);
+  const reconnectTimeoutRef = useRef(null);
   const currentUserID = userData?.userID;
 
   // Initialize WebSocket Connection while start tracking
   useEffect(() => {
     if (isTracking) {
-      // Connect to WebSocket server
-      socketRef.current = io(SOCKET_URL);
+      // Clear any previous connection attempts
+      if (reconnectTimeoutRef.current) {
+        clearTimeout(reconnectTimeoutRef.current);
+        reconnectTimeoutRef.current = null;
+      }
 
-      socketRef.current.on("connect", () => {
-        toast.success("Connected to tracking server");
-      });
+      // Reset connection attempts counter when tracking starts
+      setConnectionAttempts(0);
 
-      socketRef.current.on("tracking_update", (data) => {
-        // Ensure `data.faces` exists and is an array
-        const faces = data?.faces || [];
+      // Function to create socket connection
+      const createSocketConnection = () => {
+        // Clean up any existing connection first
+        if (socketRef.current) {
+          socketRef.current.disconnect();
+          socketRef.current = null;
+        }
 
-        setTrackingData(faces);
+        // Create new socket connection with improved options
+        socketRef.current = io(SOCKET_URL, socketOptions);
 
-        // Compute new statistics based on detected faces
-        const newStats = faces.reduce((stats, face) => {
-          if (face.label) {
-            stats[face.label] = (stats[face.label] || 0) + 1;
+        // Setup connection event handlers
+        socketRef.current.on("connect", () => {
+          console.log("Connected to tracking server");
+          toast.success("Connected to tracking server");
+          setIsConnected(true);
+          setConnectionAttempts(0);
+
+          // Setup heartbeat ping
+          if (pingIntervalRef.current) {
+            clearInterval(pingIntervalRef.current);
           }
-          return stats;
-        }, {});
 
-        // Merge with previous stats
-        setStudentStats((prev) => ({
-          ...prev,
-          ...newStats,
-        }));
-      });
+          pingIntervalRef.current = setInterval(() => {
+            if (socketRef.current && socketRef.current.connected) {
+              socketRef.current.emit("ping");
+            }
+          }, 10000);
+        });
 
-      socketRef.current.on("connect_error", () => {
-        toast.error("Failed to connect to tracking server");
-      });
+        socketRef.current.on("pong", () => {
+          console.log("Received pong from server");
+        });
 
-      socketRef.current.on("disconnect", () => {
-        toast.warn("Disconnected from tracking server");
-      });
+        socketRef.current.on("tracking_update", (data) => {
+          // Ensure `data.faces` exists and is an array
+          const faces = data?.faces || [];
+          setTrackingData(faces);
 
-      // Cleanup function: Disconnect when unmounting or when tracking stops
+          // Compute new statistics based on detected faces
+          const newStats = faces.reduce((stats, face) => {
+            if (face.label) {
+              stats[face.label] = (stats[face.label] || 0) + 1;
+            }
+            return stats;
+          }, {});
+
+          // Merge with previous stats
+          setStudentStats((prev) => ({
+            ...prev,
+            ...newStats,
+          }));
+        });
+
+        socketRef.current.on("connect_error", (error) => {
+          console.error("Connection error:", error);
+          toast.error("Failed to connect to tracking server");
+          setIsConnected(false);
+
+          // Increment connection attempts
+          setConnectionAttempts((prev) => {
+            const newAttempts = prev + 1;
+            if (newAttempts >= maxReconnectAttempts && isTracking) {
+              toast.error(
+                `Failed to connect after ${maxReconnectAttempts} attempts. Please check server status.`
+              );
+              // Optionally stop tracking after max attempts
+              // setIsTracking(false);
+            }
+            return newAttempts;
+          });
+        });
+
+        socketRef.current.on("disconnect", (reason) => {
+          console.warn("Disconnected from tracking server:", reason);
+          toast.warn("Disconnected from tracking server");
+          setIsConnected(false);
+
+          // Clear ping interval
+          if (pingIntervalRef.current) {
+            clearInterval(pingIntervalRef.current);
+            pingIntervalRef.current = null;
+          }
+
+          // Try to reconnect if still tracking
+          if (isTracking && connectionAttempts < maxReconnectAttempts) {
+            toast.info("Attempting to reconnect...");
+            reconnectTimeoutRef.current = setTimeout(() => {
+              createSocketConnection();
+            }, 2000);
+          }
+        });
+
+        socketRef.current.on("error", (error) => {
+          console.error("Socket error:", error);
+          toast.error("Socket error occurred");
+        });
+      };
+
+      // Create the initial socket connection
+      createSocketConnection();
+
+      // Cleanup function
       return () => {
         if (socketRef.current) {
           socketRef.current.disconnect();
-          socketRef.current = null; // Ensure it's reset
+          socketRef.current = null;
+        }
+
+        if (pingIntervalRef.current) {
+          clearInterval(pingIntervalRef.current);
+          pingIntervalRef.current = null;
+        }
+
+        if (reconnectTimeoutRef.current) {
+          clearTimeout(reconnectTimeoutRef.current);
+          reconnectTimeoutRef.current = null;
         }
       };
     } else {
-      // If tracking is disabled, disconnect WebSocket
+      // If tracking is disabled, disconnect WebSocket and clean up
       if (socketRef.current) {
         socketRef.current.disconnect();
-        socketRef.current = null; // Ensure cleanup
+        socketRef.current = null;
       }
+
+      if (pingIntervalRef.current) {
+        clearInterval(pingIntervalRef.current);
+        pingIntervalRef.current = null;
+      }
+
+      if (reconnectTimeoutRef.current) {
+        clearTimeout(reconnectTimeoutRef.current);
+        reconnectTimeoutRef.current = null;
+      }
+
+      setIsConnected(false);
     }
   }, [isTracking]);
 
@@ -164,22 +279,6 @@ function RealTimeMonitoring() {
       setInterestedCount(interested);
       setBoredCount(bored);
       setLackingFocusCount(lackingFocus);
-
-      console.log(
-        "Interested Count (before sending):",
-        interestedCount,
-        typeof interestedCount
-      );
-      console.log(
-        "Bored Count (before sending):",
-        boredCount,
-        typeof boredCount
-      );
-      console.log(
-        "Lacking Focus Count (before sending):",
-        lackingFocusCount,
-        typeof lackingFocusCount
-      );
     }
   }, [trackingData]);
 
@@ -335,6 +434,12 @@ function RealTimeMonitoring() {
       if (socketRef.current) {
         socketRef.current.disconnect();
       }
+      if (pingIntervalRef.current) {
+        clearInterval(pingIntervalRef.current);
+      }
+      if (reconnectTimeoutRef.current) {
+        clearTimeout(reconnectTimeoutRef.current);
+      }
     };
   }, []);
 
@@ -350,9 +455,9 @@ function RealTimeMonitoring() {
 
   // Handle tracking time and send data every 60 seconds
   useEffect(() => {
-    // Only run this effect when isTracking changes
+    // Only run this effect when isTracking changes to true
     if (isTracking) {
-      // Reset tracking time when tracking starts
+      // Reset tracking time when tracking starts (only when isTracking changes from false to true)
       setTrackingElapsedTime(0);
 
       // Create interval to update tracking time
@@ -363,6 +468,7 @@ function RealTimeMonitoring() {
 
           // Check if we need to send data (every 60 seconds)
           if (newTime % 60 === 0) {
+            // Use the current state values directly when sending
             sendTrackingData();
           }
 
@@ -386,9 +492,35 @@ function RealTimeMonitoring() {
     };
   }, [isTracking]);
 
+  // Create a separate effect for sending data when emotion counts change
+  useEffect(() => {
+    // This effect will only run when emotion counts change AND tracking is active
+    // It will not reset the timer, but will ensure we're using the latest emotion counts
+    if (
+      isTracking &&
+      trackingElapsedTime > 0 &&
+      trackingElapsedTime % 60 === 0
+    ) {
+      sendTrackingData();
+    }
+  }, [
+    interestedCount,
+    boredCount,
+    lackingFocusCount,
+    isTracking,
+    trackingElapsedTime,
+  ]);
+
   // Insert data into the database - Updated with emotion counts
   const sendTrackingData = async () => {
     try {
+      // Log the current counts for debugging
+      console.log("Sending counts:", {
+        interested: interestedCount,
+        bored: boredCount,
+        lackingFocus: lackingFocusCount,
+      });
+
       const timestamp = new Date().toISOString().slice(0, 19).replace("T", " ");
       const payload = {
         sessionID: sessionId,
@@ -399,15 +531,19 @@ function RealTimeMonitoring() {
         lackingFocusCount: lackingFocusCount,
       };
 
-      await axios.post("/tracking_session/tracking_emotion", payload);
+      const response = await axios.post(
+        "/tracking_session/tracking_emotion",
+        payload
+      );
+      console.log("Server response:", response.data);
       toast.success("Tracking data recorded!");
     } catch (error) {
       toast.error("Failed to send tracking data.");
-      console.error(error);
+      console.error("Tracking error:", error);
     }
   };
 
-  // Send Video Frames to Backend
+  // Send Video Frames to Backend with improved error handling and optimizations
   const startSendingVideo = () => {
     const videoElement = isCameraOn ? cameraRef.current : screenRef.current;
 
@@ -439,21 +575,26 @@ function RealTimeMonitoring() {
     const canvas = document.createElement("canvas");
     const ctx = canvas.getContext("2d");
 
-    // Set canvas dimensions to match video dimensions
-    canvas.width = videoElement.videoWidth;
-    canvas.height = videoElement.videoHeight;
+    // Set canvas dimensions to a smaller size to reduce data transfer
+    // This maintains aspect ratio but reduces resolution
+    const scaleFactor = 0.5; // Reduce to 50% of original size
+    canvas.width = videoElement.videoWidth * scaleFactor;
+    canvas.height = videoElement.videoHeight * scaleFactor;
 
     // Clear any existing interval
     if (trackingIntervalRef.current) {
       clearInterval(trackingIntervalRef.current);
     }
 
-    trackingIntervalRef.current = setInterval(() => {
-      if (!socketRef.current || !socketRef.current.connected) {
-        console.error("Socket not available or not connected!");
-        return;
-      }
+    // Less frequent frame transmission - changed from 200ms to 300ms (3.33 FPS instead of 5 FPS)
+    const captureInterval = 300;
 
+    // Keep track of consecutive failures to implement backoff strategy
+    let consecutiveFailures = 0;
+    const maxConsecutiveFailures = 5;
+
+    trackingIntervalRef.current = setInterval(() => {
+      // Check if we should send frames
       if (!isTracking) {
         console.warn("Tracking is OFF. Stopping video frame capture.");
         clearInterval(trackingIntervalRef.current);
@@ -461,19 +602,46 @@ function RealTimeMonitoring() {
         return;
       }
 
+      // Check socket connection before attempting to send
+      if (!socketRef.current || !socketRef.current.connected) {
+        console.warn(
+          "Socket not available or not connected! Skipping frame send."
+        );
+        consecutiveFailures++;
+
+        // If we've had too many failures, slow down the capture rate
+        if (consecutiveFailures >= maxConsecutiveFailures) {
+          clearInterval(trackingIntervalRef.current);
+          trackingIntervalRef.current = setInterval(
+            arguments.callee, // reference to this same function
+            captureInterval * 2 // double the interval
+          );
+          consecutiveFailures = 0;
+          console.warn("Reduced frame rate due to connection issues");
+        }
+        return;
+      }
+
       try {
+        // Reset failure counter on successful connection
+        consecutiveFailures = 0;
+
         // Check if video dimensions have changed
         if (
-          canvas.width !== videoElement.videoWidth ||
-          canvas.height !== videoElement.videoHeight
+          canvas.width !== videoElement.videoWidth * scaleFactor ||
+          canvas.height !== videoElement.videoHeight * scaleFactor
         ) {
-          canvas.width = videoElement.videoWidth;
-          canvas.height = videoElement.videoHeight;
+          canvas.width = videoElement.videoWidth * scaleFactor;
+          canvas.height = videoElement.videoHeight * scaleFactor;
         }
 
+        // Draw the video frame at the reduced size
         ctx.drawImage(videoElement, 0, 0, canvas.width, canvas.height);
-        const imageData = canvas.toDataURL("image/jpeg", 0.7); // Reduced quality for better performance
 
+        // Use lower JPEG quality (0.6 instead of 0.7)
+        const imageData = canvas.toDataURL("image/jpeg", 0.6);
+
+        // Send the frame with socket.io
         socketRef.current.emit("video_frame", {
           frame: imageData,
           dimensions: {
@@ -481,18 +649,40 @@ function RealTimeMonitoring() {
             height: canvas.height,
           },
           detectMultiple: true,
+          timestamp: Date.now(), // Add timestamp for tracking latency
         });
       } catch (error) {
         console.error("Error capturing video frame:", error);
+        consecutiveFailures++;
+
+        // If there are too many consecutive failures, slow down
+        if (consecutiveFailures >= maxConsecutiveFailures) {
+          clearInterval(trackingIntervalRef.current);
+          trackingIntervalRef.current = setInterval(
+            arguments.callee, // reference to this same function
+            captureInterval * 2 // double the interval
+          );
+          consecutiveFailures = 0;
+          console.warn("Reduced frame rate due to capture errors");
+        }
       }
-    }, 200);
+    }, captureInterval);
   };
 
   // This function updates the position of the bounding box based on tracking data
   const calculateBoxPosition = (box, videoElement) => {
     if (!box || !videoElement) return { left: 0, top: 0, width: 0, height: 0 };
 
-    const [x, y, width, height] = box;
+    // Add this line to account for the scaling during transmission
+    const transmissionScaleFactor = 0.5;
+
+    // Adjust for the transmission scale factor
+    const [rawX, rawY, rawWidth, rawHeight] = box;
+    const x = rawX / transmissionScaleFactor;
+    const y = rawY / transmissionScaleFactor;
+    const width = rawWidth / transmissionScaleFactor;
+    const height = rawHeight / transmissionScaleFactor;
+
     const videoWidth = videoElement.videoWidth || 640;
     const videoHeight = videoElement.videoHeight || 480;
 
@@ -568,8 +758,15 @@ function RealTimeMonitoring() {
         }
 
         if (face.box) {
-          // Get the bounding box from tracking data
-          const [x, y, width, height] = face.box;
+          // Add this line
+          const transmissionScaleFactor = 0.5;
+
+          // Get the bounding box and adjust for transmission scaling
+          const [rawX, rawY, rawWidth, rawHeight] = face.box;
+          const x = rawX / transmissionScaleFactor;
+          const y = rawY / transmissionScaleFactor;
+          const width = rawWidth / transmissionScaleFactor;
+          const height = rawHeight / transmissionScaleFactor;
 
           // Get the current video dimensions
           const videoWidth = videoElement.videoWidth || 640;
@@ -628,8 +825,16 @@ function RealTimeMonitoring() {
     }
     // If trackingData is a single object (backward compatibility)
     else if (trackingData && trackingData.box && boxRef.current) {
-      // Original single box update code
-      const [x, y, width, height] = trackingData.box;
+      // Add this line
+      const transmissionScaleFactor = 0.5;
+
+      // Original single box update code with scaling adjustment
+      const [rawX, rawY, rawWidth, rawHeight] = trackingData.box;
+      const x = rawX / transmissionScaleFactor;
+      const y = rawY / transmissionScaleFactor;
+      const width = rawWidth / transmissionScaleFactor;
+      const height = rawHeight / transmissionScaleFactor;
+
       const videoWidth = videoElement.videoWidth || 640;
       const videoHeight = videoElement.videoHeight || 480;
       const videoRect = videoElement.getBoundingClientRect();
@@ -695,25 +900,29 @@ function RealTimeMonitoring() {
     );
 
     if (userConfirmed) {
-      const response = await axios.post(
-        "tracking_session/end_tracking_session",
-        {
-          sessionID: sessionId,
-          sessionElapsedTime: sessionElapsedTime,
-        }
-      );
+      try {
+        const response = await axios.post(
+          "tracking_session/end_tracking_session",
+          {
+            sessionID: sessionId,
+            sessionElapsedTime: sessionElapsedTime,
+          }
+        );
 
-      if (response.status === 200) {
-        toast.success(response.data.message);
+        if (response.status === 200) {
+          toast.success(response.data.message);
 
-        if (location.pathname === `/views/educator/tracking/${sessionId}`) {
-          setTimeout(() => {
-            navigate("/views/educator/dashboard");
-          }, 1000);
+          if (location.pathname === `/views/educator/tracking/${sessionId}`) {
+            setTimeout(() => {
+              navigate("/views/educator/dashboard");
+            }, 1000);
+          }
+        } else {
+          toast.error(response.data.error);
         }
-      } else {
-        toast.error(response.data.error);
-        return;
+      } catch (error) {
+        console.error("Error ending session:", error);
+        toast.error("Failed to end session. Please try again.");
       }
     } else {
       toast.info("Session not ended.");

@@ -9,6 +9,7 @@ function PageTitleBreadcrumb({
   isAddNew,
   onclickToggle = () => {},
   btnTitle = "Add New",
+  btnIcon = "",
 }) {
   const breadcrumbItems = getBreadcrumbItems(path);
 
@@ -36,7 +37,7 @@ function PageTitleBreadcrumb({
               onClick={onclickToggle}
               className="d-flex align-items-center btn btn-sm"
             >
-              <i className="bi bi-plus-lg"></i>
+              <i className={`bi ${btnIcon ? btnIcon : "bi-plus-lg"}`}></i>
               <span className="ms-2">{btnTitle}</span>
             </Button>
           )}
