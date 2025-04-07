@@ -85,8 +85,90 @@ def update_privacy_settings():
     finally:
         cursor.close()
         connection.close()
+        
+@settings_route.route('/get_emotion_save_interval', methods=['GET'])
+def get_emotion_save_interval():
+    user_id = session.get('user_id')  # Assuming the user ID is stored in session
+    if not user_id:
+        return jsonify({"success": False, "message": "User not logged in"}), 400
 
-# ------------------Accoyunt Settings------------------ #
+    connection = get_db_connection()
+    cursor = connection.cursor(dictionary=True)
+
+    try:
+        cursor.execute(
+            "SELECT emotionSaveInterval FROM EDUCATOR WHERE userID = %s",
+            (user_id,)
+        )
+        result = cursor.fetchone()
+
+        if not result:
+            return jsonify({"success": False, "message": "Emotion save interval not found"}), 404
+
+        return jsonify({
+            "success": True,
+            "emotionSaveInterval": result['emotionSaveInterval']
+        })
+
+    except Exception as e:
+        return jsonify({"success": False, "message": f"Error retrieving interval: {str(e)}"}), 500
+    finally:
+        cursor.close()
+        connection.close()
+        
+@settings_route.route('/update_emotion_save_interval', methods=['POST'])
+def update_emotion_save_interval():
+    data = request.get_json()
+    user_id = data.get('id')
+    emotion_save_interval = data.get('emotionSaveInterval')
+    
+    # Validate required fields
+    if not all([user_id, emotion_save_interval is not None]):
+        return jsonify({"success": False, "message": "Missing required fields"}), 400
+
+    # Validate interval value (should be between 30 and 300 seconds)
+    if not (30 <= emotion_save_interval <= 300):
+        return jsonify({"success": False, "message": "Invalid interval value. Must be between 30 and 300 seconds."}), 400
+    
+    connection = get_db_connection()
+    cursor = connection.cursor(dictionary=True)
+    
+    # Convert to integer
+    emotion_save_interval = int(emotion_save_interval)
+
+    try:
+        # Update emotionalSaveInterval in the EDUCATOR table
+        cursor.execute(
+            "UPDATE EDUCATOR SET emotionSaveInterval = %s WHERE userID = %s",
+            (emotion_save_interval, user_id)
+        )
+        
+        connection.commit()
+
+        # Fetch the updated interval to return in the response
+        cursor.execute(
+            "SELECT emotionSaveInterval FROM EDUCATOR WHERE userID = %s",
+            (user_id,)
+        )
+        updated_interval = cursor.fetchone()
+
+        return jsonify({
+            "success": True,
+            "message": "Emotion save interval updated successfully",
+            "emotionSaveInterval": updated_interval['emotionSaveInterval']
+        })
+
+    except Exception as e:
+        connection.rollback()
+        return jsonify({"success": False, "message": f"Error updating emotion save interval: {str(e)}"}), 500
+
+    finally:
+        cursor.close()
+        connection.close()
+    
+
+
+# ------------------Account Settings------------------ #
 """Helper function to verify the current password"""  
 def verify_password(user_id, current_password):
     connection = get_db_connection()

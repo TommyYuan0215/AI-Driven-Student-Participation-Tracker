@@ -227,6 +227,9 @@ def create_table_if_not_exists():
             educatorID VARCHAR(12) NOT NULL,
             userID VARCHAR(12) NOT NULL,
             privacyStatus INT(2) DEFAULT 0,
+            thresholdLackingFocus INT DEFAULT 0,
+            thresholdBored INT DEFAULT 0,
+            emotionSaveInterval INT DEFAULT 60,
             PRIMARY KEY (educatorID),
             FOREIGN KEY (userID) REFERENCES USER_ACCOUNT(userID) ON DELETE CASCADE ON UPDATE CASCADE
         )

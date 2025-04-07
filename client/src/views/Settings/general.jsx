@@ -6,12 +6,16 @@ import useSession from "../../utils/sessionUtils";
 import PageTitleBreadcrumb from "../../components/layout/PageTitleBreadcrumbLayout";
 import axios from "../../utils/axiosUtils";
 import { toast } from "react-toastify";
+import { Form, Button } from "react-bootstrap";
 
 function GeneralSettings() {
   const [darkMode, setDarkMode] = useState(false);
   const [privateMode, setPrivateMode] = useState(0);
   const navigate = useNavigate();
   const { userData, isLoggedIn } = useSession(navigate);
+
+  // State for Emotion Save Interval
+  const [savedInterval, setSavedInterval] = useState();
 
   // Fetch privacy status when the component mounts
   useEffect(() => {
@@ -29,6 +33,24 @@ function GeneralSettings() {
     };
 
     fetchPrivacyStatus();
+  }, []);
+
+  // Fetch saved interval when the component mounts
+  useEffect(() => {
+    const fetchSavedInterval = async () => {
+      try {
+        const response = await axios.get("/settings/get_emotion_save_interval");
+        if (response.data.success) {
+          setSavedInterval(response.data.emotionSaveInterval); // Corrected to match the key returned by the backend
+        } else {
+          console.error("Error fetching saved interval");
+        }
+      } catch (error) {
+        console.error("Error fetching saved interval:", error);
+      }
+    };
+
+    fetchSavedInterval();
   }, []);
 
   // useEffect to save theme cache as cookie
@@ -53,7 +75,11 @@ function GeneralSettings() {
 
   // Privacy settings toggle logic
   const togglePrivacy = () => {
-    // Confirm the change with the user
+    if (!userData?.userID) {
+      console.error("User not logged in");
+      return;
+    }
+
     const confirmationMessage =
       privateMode === 0
         ? "Switching to Public Mode will share your data with all educators for further analysis. Are you sure?"
@@ -95,6 +121,35 @@ function GeneralSettings() {
     updatePrivacyStatus();
   };
 
+  // Handle the slider change
+  const handleSliderChange = (e) => {
+    const value = Number(e.target.value);
+    setSavedInterval(value); // Update the savedInterval when the slider changes
+  };
+
+  // Handle Save Emotional Interval
+  const handleSaveInterval = () => {
+    const userId = userData.userID;
+
+    if (!userId) {
+      console.error("User not logged in");
+      return;
+    }
+
+    axios
+      .post("/settings/update_emotion_save_interval", {
+        id: userId,
+        emotionSaveInterval: savedInterval, // Send the selected interval value (in seconds)
+      })
+      .then((response) => {
+        toast.success("Emotion save interval updated successfully!");
+      })
+      .catch((error) => {
+        console.error("Error updating interval:", error);
+        toast.error("Failed to update interval.");
+      });
+  };
+
   return (
     <>
       <PageTitleBreadcrumb title="General Settings" path={location.pathname} />
@@ -105,7 +160,7 @@ function GeneralSettings() {
             <Accordion.Body>
               {/* Dark Mode Toggle */}
               <>
-                <p>System Theme</p>
+                <h6 className="fw-semibold">System Theme</h6>
                 <div className="theme-toggle">
                   <label className="toggle-switch mb-0">
                     <input
@@ -139,13 +194,14 @@ function GeneralSettings() {
             <Accordion.Item eventKey="2">
               <Accordion.Header>Educator Settings</Accordion.Header>
               <Accordion.Body>
-                <>
-                  <p>Privacy Information Settings</p>
-                  <div className="model-toggle d-flex align-items-center">
+                {/* Privacy Section */}
+                <section className="mb-4">
+                  <h6 className="fw-semibold">Privacy Information Settings</h6>
+                  <div className="model-toggle d-flex align-items-center mt-2">
                     <label className="toggle-switch mb-0">
                       <input
                         type="checkbox"
-                        checked={privateMode === 1} // True when public (1)
+                        checked={privateMode === 1}
                         onChange={togglePrivacy}
                       />
                       <span className="slider"></span>
@@ -156,7 +212,103 @@ function GeneralSettings() {
                         : "Public Mode: Everyone can see your student participation session data"}
                     </span>
                   </div>
-                </>
+                </section>
+
+                <hr />
+
+                {/* Emotion Data Save Frequency */}
+                <section className="mb-4">
+                  <h6 className="fw-semibold">Emotion Data Save Frequency</h6>
+                  <div className="d-flex align-items-end gap-3 mt-3 flex-wrap">
+                    <Form.Group
+                      className="flex-fill"
+                      controlId="formIntervalSlider"
+                    >
+                      <Form.Range
+                        min={30}
+                        max={300}
+                        step={30}
+                        value={savedInterval} // Use savedInterval directly for the slider
+                        onChange={handleSliderChange}
+                      />
+                      <div className="d-flex justify-content-between small text-muted px-1 mt-1">
+                        <span>30s</span>
+                        <span>1m</span>
+                        <span>1.5m</span>
+                        <span>2m</span>
+                        <span>2.5m</span>
+                        <span>3m</span>
+                        <span>3.5m</span>
+                        <span>4m</span>
+                        <span>4.5m</span>
+                        <span>5m</span>
+                      </div>
+                    </Form.Group>
+
+                    <Button
+                      variant="success"
+                      className="h-50 mt-2"
+                      onClick={handleSaveInterval}
+                    >
+                      <i className="bi bi-floppy me-1"></i> Save Changes
+                    </Button>
+                  </div>
+                </section>
+
+                <hr />
+
+                {/* Threshold Settings Section */}
+                <section className="mb-4">
+                  <h6 className="fw-semibold">
+                    Predefined Threshold Settings (Alert Toast)
+                  </h6>
+                  <div className="d-flex align-items-end gap-3 mt-2 flex-wrap">
+                    <Form.Group
+                      className="flex-fill"
+                      controlId="formLackingFocus"
+                    >
+                      <Form.Label>
+                        Lacking Focus (Cumulative) Threshold Value
+                      </Form.Label>
+                      <Form.Control
+                        type="number"
+                        placeholder="Enter threshold value"
+                        min={0}
+                        max={100}
+                        step={1}
+                      />
+                    </Form.Group>
+
+                    <Form.Group className="flex-fill" controlId="formBored">
+                      <Form.Label>
+                        Bored (Cumulative) Threshold Value
+                      </Form.Label>
+                      <Form.Control
+                        type="number"
+                        placeholder="Enter threshold value"
+                        min={0}
+                        max={100}
+                        step={1}
+                      />
+                    </Form.Group>
+
+                    <Button variant="success" className="h-50 mt-2">
+                      <i className="bi bi-floppy me-1"></i> Save Changes
+                    </Button>
+                  </div>
+                </section>
+
+                <hr />
+
+                {/* Danger Zone */}
+                <section>
+                  <h6 className="fw-semibold text-danger">
+                    Clear All Session Data (Danger Zone)
+                  </h6>
+                  <Button variant="danger" className="mt-2">
+                    Clear All Session Data
+                  </Button>
+                </section>
               </Accordion.Body>
             </Accordion.Item>
           )}

@@ -29,6 +29,7 @@ function RealTimeMonitoring() {
   // Timer to track elapsed time based on sessionStart
   const [sessionElapsedTime, setSessionElapsedTime] = useState(0);
   const [trackingElapsedTime, setTrackingElapsedTime] = useState(0);
+  const [intervalFromDb, setIntervalFromDb] = useState(60);
 
   // Add state variables for emotion tracking
   const [interestedCount, setInterestedCount] = useState(0);
@@ -74,6 +75,24 @@ function RealTimeMonitoring() {
     return () => {
       window.removeEventListener("beforeunload", handleBeforeUnload);
     };
+  }, []);
+
+  // Fetch the interval from the backend when the component mounts
+  useEffect(() => {
+    const fetchInterval = async () => {
+      try {
+        const response = await axios.get("/settings/get_emotion_save_interval"); // API endpoint to fetch the interval
+        if (response.data.success) {
+          setIntervalFromDb(response.data.emotionSaveInterval); // Set the interval from DB
+        } else {
+          console.error("Failed to fetch interval from DB");
+        }
+      } catch (error) {
+        console.error("Error fetching interval:", error);
+      }
+    };
+
+    fetchInterval();
   }, []);
 
   // Function to navigate to other page
@@ -263,7 +282,6 @@ function RealTimeMonitoring() {
       // Count emotions in the current frame
       trackingData.forEach((face) => {
         if (face.label) {
-          // Convert to lowercase for case-insensitive comparison
           const emotion = face.label.toLowerCase();
           if (emotion === "interested") {
             interested++;
@@ -279,6 +297,11 @@ function RealTimeMonitoring() {
       setInterestedCount(interested);
       setBoredCount(bored);
       setLackingFocusCount(lackingFocus);
+    } else {
+      // If trackingData is empty or invalid, reset the counts
+      setInterestedCount(0);
+      setBoredCount(0);
+      setLackingFocusCount(0);
     }
   }, [trackingData]);
 
@@ -453,7 +476,7 @@ function RealTimeMonitoring() {
     setIsTracking((prev) => !prev);
   };
 
-  // Handle tracking time and send data every 60 seconds
+  // Handle tracking time and send data based on Emotion Data Save Frequency
   useEffect(() => {
     // Only run this effect when isTracking changes to true
     if (isTracking) {
@@ -467,7 +490,7 @@ function RealTimeMonitoring() {
           const newTime = prevTime + 1;
 
           // Check if we need to send data (every 60 seconds)
-          if (newTime % 60 === 0) {
+          if (newTime % intervalFromDb === 0) {
             // Use the current state values directly when sending
             sendTrackingData();
           }
