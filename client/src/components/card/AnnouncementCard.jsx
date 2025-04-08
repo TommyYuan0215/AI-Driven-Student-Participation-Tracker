@@ -51,7 +51,12 @@ const AnnouncementCard = ({
           })
         );
 
-        setNotifications(announcementData);
+        // Sort announcements by latest timestamp (newest first)
+        const sortedData = announcementData.sort(
+          (a, b) => new Date(b.timestamp) - new Date(a.timestamp)
+        );
+
+        setNotifications(sortedData);
       } catch (error) {
         console.error("Error fetching announcements:", error);
         setNotifications([

@@ -96,7 +96,7 @@ function EducatorTrending() {
                     tickFormatter={(ts) => new Date(ts).toLocaleTimeString()}
                     tick={{ fontSize: 12 }}
                     label={{
-                      value: "Timestamp (Every Minutes)",
+                      value: "Timestamp (Emotions Save Frequency)",
                       position: "bottom",
                       offset: -10,
                     }}

@@ -7,36 +7,31 @@ import numpy as np
 import tensorflow as tf
 import mediapipe as mp
 
-# Initialize the mediapipe face detection
+DEBUG = False
+
+# Initialize MediaPipe face detection
 mp_face_detection = mp.solutions.face_detection
 face_detector = mp_face_detection.FaceDetection(min_detection_confidence=0.5)
 
-# Load Model
+# Load emotion recognition model
 model_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "models", "emotion_recognition_model.h5"))
 model = tf.keras.models.load_model(model_path, compile=False)
 
-# Global tracking variable for smoothing
-previous_boxes = {}  
+previous_boxes = {}
 
 def smooth_box(new_box, face_id, alpha=0.2):
-    """
-    Apply exponential smoothing to stabilize the bounding box.
-    Each face is tracked separately by its ID.
-    """
     global previous_boxes
-    
     if face_id not in previous_boxes:
-        previous_boxes[face_id] = new_box  # First frame for this face
+        previous_boxes[face_id] = new_box
         return new_box
 
-    # Apply Exponential Moving Average (EMA) smoothing
     smoothed_box = [
         alpha * new + (1 - alpha) * old
         for new, old in zip(new_box, previous_boxes[face_id])
     ]
 
-    previous_boxes[face_id] = smoothed_box  # Update previous box
-    return [int(coord) for coord in smoothed_box]  # Convert back to integers
+    previous_boxes[face_id] = smoothed_box
+    return [int(coord) for coord in smoothed_box]
 
 def create_tracking_server(socketio):
     tracking_route = Blueprint("tracking", __name__)
@@ -51,75 +46,72 @@ def create_tracking_server(socketio):
 
     @socketio.on("video_frame")
     def handle_video_frame(data):
-        print("🟢 Received video frame!", flush=True)
+        if DEBUG:
+            print("🟢 Received video frame!")
 
         frame_data = data.get("frame")
         detect_multiple = data.get("detectMultiple", False)
-        
+
         if frame_data:
             result = preprocess_image(frame_data, detect_multiple)
-            
+
             if result is None or result[0] is None:
-                print("⚠️ No face detected in frame.")
-                emit("tracking_update", {"faces": []}, broadcast=True)  # Send empty array if no face
+                if DEBUG:
+                    print("⚠️ No face detected in frame.")
+                emit("tracking_update", {"faces": []}, broadcast=True)
                 return
-                
+
             all_faces, all_boxes = result
-            
             results = []
+
             for i, (img, box) in enumerate(zip(all_faces, all_boxes)):
                 prediction = model.predict(img)
                 classes = ["Bored", "Interested", "Lacking_Focus"]
                 predicted_label = classes[np.argmax(prediction)]
                 confidence = float(np.max(prediction))
-                
+
                 results.append({
                     "label": predicted_label,
                     "confidence": confidence,
                     "box": box,
-                    "id": i  # Adding an ID for tracking
+                    "id": i
                 })
-            
-            if not results:
-                print("⚠️ No valid face predictions, sending empty data.", flush=True)
-                results = []  # Ensure it's an empty array if no valid predictions
-            
-            print(f"📦 Emitting {len(results)} face(s) detected", flush=True)
-            
+
+            if DEBUG:
+                print(f"📦 Emitting {len(results)} face(s) detected")
+
             emit("tracking_update", {"faces": results}, broadcast=True)
 
     return tracking_route
 
-# Image Preprocessing Function (with mediapipe face detection)
 def preprocess_image(image_data, detect_multiple=False):
     try:
-        print("🔍 Raw Data Length:", len(image_data))
+        if DEBUG:
+            print("🔍 Raw Data Length:", len(image_data))
 
-        # Decode Base64 image
         header, encoded = image_data.split(",", 1)
         nparr = np.frombuffer(base64.b64decode(encoded), np.uint8)
         img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
 
         if img is None:
-            print("❌ Error: Image decoding failed!")
+            if DEBUG:
+                print("❌ Error: Image decoding failed!")
             return None, None
 
-        # Convert to RGB (MediaPipe requires RGB format)
         img_rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
         results = face_detector.process(img_rgb)
 
         if not results.detections:
-            print("⚠️ No face detected")
+            if DEBUG:
+                print("⚠️ No face detected")
             return None, None
 
-        h_img, w_img, _ = img.shape  # Get image dimensions
-        
+        h_img, w_img, _ = img.shape
         all_faces = []
         all_boxes = []
-        
-        # Process either all detections or just the first one
+
         detections_to_process = results.detections if detect_multiple else [results.detections[0]]
-        
+
         for detection in detections_to_process:
             bboxC = detection.location_data.relative_bounding_box
 
@@ -128,35 +120,32 @@ def preprocess_image(image_data, detect_multiple=False):
             box_w = int(bboxC.width * w_img)
             box_h = int(bboxC.height * h_img)
 
-            # Ensure bounding box is valid
             x = max(0, x)
             y = max(0, y)
             box_w = min(box_w, w_img - x)
             box_h = min(box_h, h_img - y)
 
-            # We need a separate smoothing for each face
-            # This is simplified - you may want to track each face separately
-            smoothed_box = [x, y, box_w, box_h]  # No smoothing for multiple faces for now
+            smoothed_box = [x, y, box_w, box_h]
 
-            # Crop and preprocess face
             face_crop = img[y:y+box_h, x:x+box_w]
 
             if face_crop.size == 0:
-                print(f"❌ Error: Face crop is empty for detection at {x},{y}!")
+                if DEBUG:
+                    print(f"❌ Error: Face crop is empty for detection at {x},{y}!")
                 continue
 
-            # Resize and normalize
             face_crop = cv2.resize(face_crop, (224, 224))
             face_crop = face_crop.astype("float32") / 255.0
-            
+
             all_faces.append(np.expand_dims(face_crop, axis=0))
             all_boxes.append(smoothed_box)
-        
+
         if not all_faces:
             return None, None
-            
+
         return all_faces, all_boxes
 
     except Exception as e:
-        print("❌ Error processing image:", str(e))
+        if DEBUG:
+            print("❌ Error processing image:", str(e))
         return None, None

@@ -41,6 +41,31 @@ function RealTimeMonitoring() {
   const [connectionAttempts, setConnectionAttempts] = useState(0);
   const maxReconnectAttempts = 5;
 
+  // Function to navigate to other page
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  const { userData } = useSession(navigate);
+  const [isTracking, setIsTracking] = useState(false);
+  const [isShareScreen, setIsShareScreen] = useState(false);
+  const [isCameraOn, setIsCameraOn] = useState(false);
+  const [trackingData, setTrackingData] = useState({});
+  const [studentStats, setStudentStats] = useState({});
+
+  const cameraRef = useRef(null);
+  const screenRef = useRef(null);
+  const videoContainerRef = useRef(null);
+  const mediaStreamRef = useRef(null);
+  const socketRef = useRef(null);
+  const boxRef = useRef(null);
+  const trackingIntervalRef = useRef(null);
+  const hasStoppedTracking = useRef(false);
+  const animationFrameRef = useRef(null);
+  const pingIntervalRef = useRef(null);
+  const reconnectTimeoutRef = useRef(null);
+  const currentUserID = userData?.userID;
+
+  // Initialize the session timer
   useEffect(() => {
     const interval = setInterval(() => {
       setSessionElapsedTime((prevTime) => prevTime + 1); // Increment overall session time every second
@@ -49,6 +74,7 @@ function RealTimeMonitoring() {
     return () => clearInterval(interval); // Clean up on component unmount
   }, []);
 
+  // Format time for display
   const formatElapsedTime = (seconds) => {
     const hrs = Math.floor(seconds / 3600);
     const mins = Math.floor((seconds % 3600) / 60);
@@ -62,7 +88,7 @@ function RealTimeMonitoring() {
     return formattedTime.trim();
   };
 
-  // useEffect hook to prevent refresh page
+  // Prevent page refresh
   useEffect(() => {
     const handleBeforeUnload = async (event) => {
       event.preventDefault();
@@ -95,163 +121,111 @@ function RealTimeMonitoring() {
     fetchInterval();
   }, []);
 
-  // Function to navigate to other page
-  const location = useLocation();
-  const navigate = useNavigate();
-
-  const { userData } = useSession(navigate);
-  const [isTracking, setIsTracking] = useState(false);
-  const [isShareScreen, setIsShareScreen] = useState(false);
-  const [isCameraOn, setIsCameraOn] = useState(false);
-  const [trackingData, setTrackingData] = useState({});
-  const [studentStats, setStudentStats] = useState({});
-
-  const cameraRef = useRef(null);
-  const screenRef = useRef(null);
-  const videoContainerRef = useRef(null);
-  const mediaStreamRef = useRef(null);
-  const socketRef = useRef(null);
-  const boxRef = useRef(null);
-  const trackingIntervalRef = useRef(null);
-  const hasStoppedTracking = useRef(false);
-  const animationFrameRef = useRef(null);
-  const pingIntervalRef = useRef(null);
-  const reconnectTimeoutRef = useRef(null);
-  const currentUserID = userData?.userID;
-
-  // Initialize WebSocket Connection while start tracking
+  // Initialize WebSocket Connection when component mounts
   useEffect(() => {
-    if (isTracking) {
-      // Clear any previous connection attempts
-      if (reconnectTimeoutRef.current) {
-        clearTimeout(reconnectTimeoutRef.current);
-        reconnectTimeoutRef.current = null;
+    // Function to create socket connection
+    const createSocketConnection = () => {
+      // Clean up any existing connection first
+      if (socketRef.current) {
+        socketRef.current.disconnect();
+        socketRef.current = null;
       }
 
-      // Reset connection attempts counter when tracking starts
-      setConnectionAttempts(0);
+      // Create new socket connection with improved options
+      socketRef.current = io(SOCKET_URL, socketOptions);
+      console.log("Attempting to connect to tracking server...");
 
-      // Function to create socket connection
-      const createSocketConnection = () => {
-        // Clean up any existing connection first
-        if (socketRef.current) {
-          socketRef.current.disconnect();
-          socketRef.current = null;
+      // Setup connection event handlers
+      socketRef.current.on("connect", () => {
+        console.log("Connected to tracking server");
+        toast.success("Tracking server connected");
+        setIsConnected(true);
+        setConnectionAttempts(0);
+
+        // Setup heartbeat ping
+        if (pingIntervalRef.current) {
+          clearInterval(pingIntervalRef.current);
         }
 
-        // Create new socket connection with improved options
-        socketRef.current = io(SOCKET_URL, socketOptions);
-
-        // Setup connection event handlers
-        socketRef.current.on("connect", () => {
-          console.log("Connected to tracking server");
-          toast.success("Connected to tracking server");
-          setIsConnected(true);
-          setConnectionAttempts(0);
-
-          // Setup heartbeat ping
-          if (pingIntervalRef.current) {
-            clearInterval(pingIntervalRef.current);
+        pingIntervalRef.current = setInterval(() => {
+          if (socketRef.current && socketRef.current.connected) {
+            socketRef.current.emit("ping");
           }
+        }, 10000);
+      });
 
-          pingIntervalRef.current = setInterval(() => {
-            if (socketRef.current && socketRef.current.connected) {
-              socketRef.current.emit("ping");
-            }
-          }, 10000);
-        });
+      socketRef.current.on("pong", () => {
+        console.log("Received pong from server");
+      });
 
-        socketRef.current.on("pong", () => {
-          console.log("Received pong from server");
-        });
+      socketRef.current.on("tracking_update", (data) => {
+        // Ensure `data.faces` exists and is an array
+        const faces = data?.faces || [];
+        setTrackingData(faces);
 
-        socketRef.current.on("tracking_update", (data) => {
-          // Ensure `data.faces` exists and is an array
-          const faces = data?.faces || [];
-          setTrackingData(faces);
-
-          // Compute new statistics based on detected faces
-          const newStats = faces.reduce((stats, face) => {
-            if (face.label) {
-              stats[face.label] = (stats[face.label] || 0) + 1;
-            }
-            return stats;
-          }, {});
-
-          // Merge with previous stats
-          setStudentStats((prev) => ({
-            ...prev,
-            ...newStats,
-          }));
-        });
-
-        socketRef.current.on("connect_error", (error) => {
-          console.error("Connection error:", error);
-          toast.error("Failed to connect to tracking server");
-          setIsConnected(false);
-
-          // Increment connection attempts
-          setConnectionAttempts((prev) => {
-            const newAttempts = prev + 1;
-            if (newAttempts >= maxReconnectAttempts && isTracking) {
-              toast.error(
-                `Failed to connect after ${maxReconnectAttempts} attempts. Please check server status.`
-              );
-              // Optionally stop tracking after max attempts
-              // setIsTracking(false);
-            }
-            return newAttempts;
-          });
-        });
-
-        socketRef.current.on("disconnect", (reason) => {
-          console.warn("Disconnected from tracking server:", reason);
-          toast.warn("Disconnected from tracking server");
-          setIsConnected(false);
-
-          // Clear ping interval
-          if (pingIntervalRef.current) {
-            clearInterval(pingIntervalRef.current);
-            pingIntervalRef.current = null;
+        // Compute new statistics based on detected faces
+        const newStats = faces.reduce((stats, face) => {
+          if (face.label) {
+            stats[face.label] = (stats[face.label] || 0) + 1;
           }
+          return stats;
+        }, {});
 
-          // Try to reconnect if still tracking
-          if (isTracking && connectionAttempts < maxReconnectAttempts) {
-            toast.info("Attempting to reconnect...");
-            reconnectTimeoutRef.current = setTimeout(() => {
-              createSocketConnection();
-            }, 2000);
+        // Merge with previous stats
+        setStudentStats((prev) => ({
+          ...prev,
+          ...newStats,
+        }));
+      });
+
+      socketRef.current.on("connect_error", (error) => {
+        console.error("Connection error:", error);
+        toast.error("Failed to connect to tracking server");
+        setIsConnected(false);
+
+        // Increment connection attempts
+        setConnectionAttempts((prev) => {
+          const newAttempts = prev + 1;
+          if (newAttempts >= maxReconnectAttempts) {
+            toast.error(
+              `Failed to connect after ${maxReconnectAttempts} attempts. Please check server status.`
+            );
           }
+          return newAttempts;
         });
+      });
 
-        socketRef.current.on("error", (error) => {
-          console.error("Socket error:", error);
-          toast.error("Socket error occurred");
-        });
-      };
+      socketRef.current.on("disconnect", (reason) => {
+        console.warn("Disconnected from tracking server:", reason);
+        toast.warn("Disconnected from tracking server");
+        setIsConnected(false);
 
-      // Create the initial socket connection
-      createSocketConnection();
-
-      // Cleanup function
-      return () => {
-        if (socketRef.current) {
-          socketRef.current.disconnect();
-          socketRef.current = null;
-        }
-
+        // Clear ping interval
         if (pingIntervalRef.current) {
           clearInterval(pingIntervalRef.current);
           pingIntervalRef.current = null;
         }
 
-        if (reconnectTimeoutRef.current) {
-          clearTimeout(reconnectTimeoutRef.current);
-          reconnectTimeoutRef.current = null;
-        }
-      };
-    } else {
-      // If tracking is disabled, disconnect WebSocket and clean up
+        // Try to reconnect if still on the page
+        // if (connectionAttempts < maxReconnectAttempts) {
+        //   toast.info("Attempting to reconnect...");
+        //   reconnectTimeoutRef.current = setTimeout(() => {
+        //     createSocketConnection();
+        //   }, 2000);
+        // }
+      });
+
+      socketRef.current.on("error", (error) => {
+        console.error("Socket error:", error);
+        toast.error("Socket error occurred");
+      });
+    };
+
+    // Initialize socket connection immediately when component mounts
+    createSocketConnection();
+
+    // Cleanup function
+    return () => {
       if (socketRef.current) {
         socketRef.current.disconnect();
         socketRef.current = null;
@@ -266,10 +240,73 @@ function RealTimeMonitoring() {
         clearTimeout(reconnectTimeoutRef.current);
         reconnectTimeoutRef.current = null;
       }
+    };
+  }, []); // Empty dependency array to run once on mount
 
-      setIsConnected(false);
+  // Handle tracking state changes
+  useEffect(() => {
+    if (isTracking) {
+      // Reset connection attempts counter when tracking starts
+      setConnectionAttempts(0);
+
+      // Initialize tracking state
+      hasStoppedTracking.current = false;
+      toast.success("Tracking started");
+
+      // Make sure we're connected to the socket
+      if (!isConnected) {
+        toast.info("Reconnecting to tracking server...");
+        if (socketRef.current) {
+          socketRef.current.connect();
+        }
+      }
+
+      startSendingVideo();
+      updateBoundingBox();
+    } else {
+      // Stop tracking-related processes
+      if (trackingIntervalRef.current) {
+        clearInterval(trackingIntervalRef.current);
+        trackingIntervalRef.current = null;
+      }
+
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+        animationFrameRef.current = null;
+      }
+
+      // Hide the main bounding box when tracking stops
+      if (boxRef.current) {
+        boxRef.current.style.display = "none";
+      }
+
+      // Hide all face boxes
+      if (videoContainerRef.current) {
+        const existingBoxes =
+          videoContainerRef.current.querySelectorAll('[id^="face-box-"]');
+        existingBoxes.forEach((box) => {
+          box.style.display = "none";
+        });
+      }
+
+      if (!hasStoppedTracking.current && trackingElapsedTime > 0) {
+        toast.info("Tracking stopped");
+        hasStoppedTracking.current = true;
+      }
     }
-  }, [isTracking]);
+
+    return () => {
+      if (trackingIntervalRef.current) {
+        clearInterval(trackingIntervalRef.current);
+        trackingIntervalRef.current = null;
+      }
+
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+        animationFrameRef.current = null;
+      }
+    };
+  }, [isTracking, isConnected]);
 
   // Update emotion counts whenever tracking data changes
   useEffect(() => {
@@ -421,7 +458,6 @@ function RealTimeMonitoring() {
 
     // Reset tracking state
     hasStoppedTracking.current = false;
-    toast.success("Tracking started");
 
     startSendingVideo();
 
