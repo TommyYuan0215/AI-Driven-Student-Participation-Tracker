@@ -1,7 +1,7 @@
 import React from "react";
 import PageTitleBreadcrumb from "../../../components/layout/PageTitleBreadcrumbLayout";
 import { useNavigate } from "react-router-dom";
-import useSession from "../../../utils/sessionUtils";
+import useSession from "../../../hooks/useSession";
 import StatisticsDashboard from "../../../components/dashboard/StatisticsDashboardComponent";
 
 function EducatorStatistics() {

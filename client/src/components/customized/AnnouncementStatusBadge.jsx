@@ -1,23 +1,17 @@
 import React from "react";
-import { Button, Badge } from "react-bootstrap";
+import StatusBadge from "../common/StatusBadgeComponent";
+
+const announcementStatusConfig = {
+  1: { color: "bg-success", text: "Activated" },
+  0: { color: "bg-secondary", text: "Archived" },
+};
 
 function AnnouncementStatusBadge({ announcementStatus }) {
-  const status =
-    announcementStatus === 1
-      ? {
-          color: "badge bg-success text-white",
-          text: "Activated",
-        }
-      : {
-          color: "badge bg-secondary text-white",
-          text: "Archived",
-        };
-
   return (
-    <div>
-      {/* Display the badge with the corresponding color and text */}
-      <Badge className={status.color}>{status.text}</Badge>
-    </div>
+    <StatusBadge
+      status={announcementStatus}
+      statusConfig={announcementStatusConfig}
+    />
   );
 }
 

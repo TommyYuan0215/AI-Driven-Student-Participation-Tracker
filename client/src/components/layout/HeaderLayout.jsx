@@ -4,7 +4,7 @@ import "../../App.css";
 import ModelComponent from "../modal/LoginModelComponent";
 import LoginForm from "../form/LoginForm";
 import SignUpForm from "../form/SignUpForm";
-import useSession from "../../utils/sessionUtils";
+import useSession from "../../hooks/useSession";
 import { useNavigate } from "react-router-dom";
 
 function ProfileIcon({ userData, showName = true }) {

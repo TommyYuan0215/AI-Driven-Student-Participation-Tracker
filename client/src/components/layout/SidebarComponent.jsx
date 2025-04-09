@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Nav, Accordion } from "react-bootstrap";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
-import useSession from "../../utils/sessionUtils";
+import useSession from "../../hooks/useSession";
 
 import "../../App.css";
 

@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Table, Container, Button, Form, Pagination } from "react-bootstrap";
 import UserStatusBadge from "../../components/customized/UserStatusBadge";
-import { useLoadingState } from "../../utils/loadingUtils";
+import { useLoadingState } from "../../hooks/useLoadingState";
 import LoadingSpinner from "../../components/common/LoadingSpinnerComponent";
 import SmallModelComponent from "../../components/modal/SmallModelComponent";
 import LargeModelComponent from "../../components/modal/LargeModelComponent";

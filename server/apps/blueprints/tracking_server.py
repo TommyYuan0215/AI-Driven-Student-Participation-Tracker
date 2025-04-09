@@ -11,7 +11,7 @@ DEBUG = False
 
 # Initialize MediaPipe face detection
 mp_face_detection = mp.solutions.face_detection
-face_detector = mp_face_detection.FaceDetection(min_detection_confidence=0.5)
+face_detector = mp_face_detection.FaceDetection(min_detection_confidence=0.3)
 
 # Load emotion recognition model
 model_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "models", "emotion_recognition_model.h5"))
@@ -84,68 +84,82 @@ def create_tracking_server(socketio):
 
     return tracking_route
 
-def preprocess_image(image_data, detect_multiple=False):
+def preprocess_image(image_data, detect_multiple=True):
     try:
-        if DEBUG:
-            print("🔍 Raw Data Length:", len(image_data))
-
+        # Decode image
         header, encoded = image_data.split(",", 1)
         nparr = np.frombuffer(base64.b64decode(encoded), np.uint8)
         img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
 
         if img is None:
-            if DEBUG:
-                print("❌ Error: Image decoding failed!")
+            print("❌ Error: Image decoding failed!")
             return None, None
 
-        img_rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-        results = face_detector.process(img_rgb)
+        # Convert to grayscale and equalize histogram to improve face detection
+        gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+        gray = cv2.equalizeHist(gray)
 
-        if not results.detections:
-            if DEBUG:
-                print("⚠️ No face detected")
+        # Convert back to RGB for face detection
+        img_rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+
+        # Use multiple detection strategies
+        detections = []
+        
+        # MediaPipe Detection (Short Range)
+        with mp_face_detection.FaceDetection(
+            min_detection_confidence=0.3,
+            model_selection=1  # Full range model
+        ) as face_detector:
+            mp_results = face_detector.process(img_rgb)
+            if mp_results.detections:
+                detections.extend(mp_results.detections)
+
+        # Optional: Additional Detection Methods
+        # You could add more detection methods here, such as:
+        # - Haar Cascade Classifier
+        # - DNN-based face detectors
+        
+        if not detections:
+            print("⚠️ No faces detected")
             return None, None
 
         h_img, w_img, _ = img.shape
         all_faces = []
         all_boxes = []
 
-        detections_to_process = results.detections if detect_multiple else [results.detections[0]]
-
-        for detection in detections_to_process:
+        # Process all detected faces
+        for detection in detections:
             bboxC = detection.location_data.relative_bounding_box
 
-            x = int(bboxC.xmin * w_img)
-            y = int(bboxC.ymin * h_img)
-            box_w = int(bboxC.width * w_img)
-            box_h = int(bboxC.height * h_img)
+            # Compute absolute coordinates
+            x = max(0, int(bboxC.xmin * w_img))
+            y = max(0, int(bboxC.ymin * h_img))
+            box_w = min(int(bboxC.width * w_img), w_img - x)
+            box_h = min(int(bboxC.height * h_img), h_img - y)
 
-            x = max(0, x)
-            y = max(0, y)
-            box_w = min(box_w, w_img - x)
-            box_h = min(box_h, h_img - y)
+            # Expand detection box slightly
+            expand_factor = 1.3
+            x_expanded = max(0, int(x - (box_w * (expand_factor - 1) / 2)))
+            y_expanded = max(0, int(y - (box_h * (expand_factor - 1) / 2)))
+            w_expanded = min(int(box_w * expand_factor), w_img - x_expanded)
+            h_expanded = min(int(box_h * expand_factor), h_img - y_expanded)
 
-            smoothed_box = [x, y, box_w, box_h]
-
-            face_crop = img[y:y+box_h, x:x+box_w]
+            # Crop face region
+            face_crop = img[y_expanded:y_expanded+h_expanded, x_expanded:x_expanded+w_expanded]
 
             if face_crop.size == 0:
-                if DEBUG:
-                    print(f"❌ Error: Face crop is empty for detection at {x},{y}!")
+                print(f"❌ Error: Face crop is empty!")
                 continue
 
-            face_crop = cv2.resize(face_crop, (224, 224))
+            # Resize with better interpolation
+            face_crop = cv2.resize(face_crop, (224, 224), interpolation=cv2.INTER_AREA)
             face_crop = face_crop.astype("float32") / 255.0
 
             all_faces.append(np.expand_dims(face_crop, axis=0))
-            all_boxes.append(smoothed_box)
+            all_boxes.append([x_expanded, y_expanded, w_expanded, h_expanded])
 
-        if not all_faces:
-            return None, None
-
-        return all_faces, all_boxes
+        return (all_faces, all_boxes) if all_faces else (None, None)
 
     except Exception as e:
-        if DEBUG:
-            print("❌ Error processing image:", str(e))
+        print("❌ Error processing image:", str(e))
         return None, None

@@ -20,7 +20,7 @@ import AnnouncementManagement from "./views/Admin/contentmanagement/annoucementm
 
 import EducatorPage from "./views/Educator/EducatorPage";
 import EducatorDashboard from "./views/Educator/dashboard";
-import RealTimeMonitoring from "./views/Educator/realtimemonitoring";
+import RealTimeMonitoring from "./views/Educator/realtime/realtimemonitoring";
 import EducatorStatistics from "./views/Educator/postanalytics/statistics";
 import EducatorPublicStatistics from "./views/Educator/postanalytics/statisticspublic";
 import EducatorTrending from "./views/Educator/postanalytics/trend";

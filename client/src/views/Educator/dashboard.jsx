@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { Container, Button } from "react-bootstrap";
-import useSession from "../../utils/sessionUtils";
+import useSession from "../../hooks/useSession";
 import { useNavigate } from "react-router-dom";
-import { useLoadingState } from "../../utils/loadingUtils";
+import { useLoadingState } from "../../hooks/useLoadingState";
 import LoadingSpinner from "../../components/common/LoadingSpinnerComponent";
 import PageTitleBreadcrumb from "../../components/layout/PageTitleBreadcrumbLayout";
 import ProfileCard from "../../components/card/ProfileCard";

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import axios from "./axiosUtils";
+import axios from "../utils/axiosUtils";
 import { toast } from "react-toastify";
 
 const SESSION_TIMEOUT = 180 * 60 * 1000; // 3 hours in milliseconds

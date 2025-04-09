@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Accordion, Table, Form, Button, Row, Col } from "react-bootstrap";
 import { useNavigate } from "react-router-dom";
-import useSession from "../../utils/sessionUtils";
+import useSession from "../../hooks/useSession";
 import { toast } from "react-toastify";
 import axios from "../../utils/axiosUtils";
 import ProfileCard from "../../components/card/ProfileCard";

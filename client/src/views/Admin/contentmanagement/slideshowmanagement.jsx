@@ -6,7 +6,7 @@ import SlideshowForm from "../../../components/form/SlideshowForm";
 import PageTitleBreadcrumb from "../../../components/layout/PageTitleBreadcrumbLayout";
 import axios from "../../../utils/axiosUtils";
 import { toast } from "react-toastify";
-import { useLoadingState } from "../../../utils/loadingUtils";
+import { useLoadingState } from "../../../hooks/useLoadingState";
 
 function SlideshowManagement() {
   const {

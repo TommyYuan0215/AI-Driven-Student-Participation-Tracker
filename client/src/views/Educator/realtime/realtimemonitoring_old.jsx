@@ -3,10 +3,10 @@ import { Container, Row, Col, Card, Button } from "react-bootstrap";
 import { useLocation, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import { io } from "socket.io-client";
-import EmotionStatistics from "../../components/customized/EmotionCharts";
+import EmotionStatistics from "../../../components/customized/EmotionCharts";
 import { useParams } from "react-router-dom";
-import useSession from "../../utils/sessionUtils";
-import axios from "../../utils/axiosUtils";
+import useSession from "../../../hooks/useSession";
+import axios from "../../../utils/axiosUtils";
 
 // WebSocket URL (Update if needed)
 const SOCKET_URL = "http://localhost:5000";
@@ -15,10 +15,10 @@ const SOCKET_URL = "http://localhost:5000";
 const socketOptions = {
   reconnection: true,
   reconnectionAttempts: 10,
-  reconnectionDelay: 1000,
-  reconnectionDelayMax: 5000,
-  timeout: 20000,
-  pingTimeout: 30000,
+  reconnectionDelay: 2000,
+  reconnectionDelayMax: 10000,
+  timeout: 10000,
+  pingTimeout: 20000,
   pingInterval: 10000,
 };
 
@@ -51,6 +51,7 @@ function RealTimeMonitoring() {
   const [isCameraOn, setIsCameraOn] = useState(false);
   const [trackingData, setTrackingData] = useState({});
   const [studentStats, setStudentStats] = useState({});
+  const [previousPositions, setPreviousPositions] = useState({}); // For motion prediction
 
   const cameraRef = useRef(null);
   const screenRef = useRef(null);
@@ -63,6 +64,9 @@ function RealTimeMonitoring() {
   const animationFrameRef = useRef(null);
   const pingIntervalRef = useRef(null);
   const reconnectTimeoutRef = useRef(null);
+  const framePendingRef = useRef(false);
+  const frameTimeoutRef = useRef(null);
+  const lastFrameSentTimeRef = useRef(0); // For tracking when last frame was sent
   const currentUserID = userData?.userID;
 
   // Initialize the session timer
@@ -127,6 +131,7 @@ function RealTimeMonitoring() {
     const createSocketConnection = () => {
       // Clean up any existing connection first
       if (socketRef.current) {
+        socketRef.current.off(); // Remove all listeners
         socketRef.current.disconnect();
         socketRef.current = null;
       }
@@ -156,6 +161,14 @@ function RealTimeMonitoring() {
 
       socketRef.current.on("pong", () => {
         console.log("Received pong from server");
+      });
+
+      socketRef.current.on("frame_received", () => {
+        framePendingRef.current = false;
+        if (frameTimeoutRef.current) {
+          clearTimeout(frameTimeoutRef.current);
+          frameTimeoutRef.current = null;
+        }
       });
 
       socketRef.current.on("tracking_update", (data) => {
@@ -206,13 +219,18 @@ function RealTimeMonitoring() {
           pingIntervalRef.current = null;
         }
 
-        // Try to reconnect if still on the page
-        // if (connectionAttempts < maxReconnectAttempts) {
-        //   toast.info("Attempting to reconnect...");
-        //   reconnectTimeoutRef.current = setTimeout(() => {
-        //     createSocketConnection();
-        //   }, 2000);
-        // }
+        // Try to reconnect if still on the page and not intentionally disconnected
+        if (
+          reason !== "io client disconnect" &&
+          connectionAttempts < maxReconnectAttempts
+        ) {
+          toast.info("Attempting to reconnect...");
+          reconnectTimeoutRef.current = setTimeout(() => {
+            if (socketRef.current) {
+              socketRef.current.connect();
+            }
+          }, 2000);
+        }
       });
 
       socketRef.current.on("error", (error) => {
@@ -227,6 +245,7 @@ function RealTimeMonitoring() {
     // Cleanup function
     return () => {
       if (socketRef.current) {
+        socketRef.current.off(); // Remove all listeners
         socketRef.current.disconnect();
         socketRef.current = null;
       }
@@ -239,6 +258,11 @@ function RealTimeMonitoring() {
       if (reconnectTimeoutRef.current) {
         clearTimeout(reconnectTimeoutRef.current);
         reconnectTimeoutRef.current = null;
+      }
+
+      if (frameTimeoutRef.current) {
+        clearTimeout(frameTimeoutRef.current);
+        frameTimeoutRef.current = null;
       }
     };
   }, []); // Empty dependency array to run once on mount
@@ -275,6 +299,14 @@ function RealTimeMonitoring() {
         animationFrameRef.current = null;
       }
 
+      if (frameTimeoutRef.current) {
+        clearTimeout(frameTimeoutRef.current);
+        frameTimeoutRef.current = null;
+      }
+
+      // Reset the pending frame flag
+      framePendingRef.current = false;
+
       // Hide the main bounding box when tracking stops
       if (boxRef.current) {
         boxRef.current.style.display = "none";
@@ -304,6 +336,11 @@ function RealTimeMonitoring() {
       if (animationFrameRef.current) {
         cancelAnimationFrame(animationFrameRef.current);
         animationFrameRef.current = null;
+      }
+
+      if (frameTimeoutRef.current) {
+        clearTimeout(frameTimeoutRef.current);
+        frameTimeoutRef.current = null;
       }
     };
   }, [isTracking, isConnected]);
@@ -458,6 +495,7 @@ function RealTimeMonitoring() {
 
     // Reset tracking state
     hasStoppedTracking.current = false;
+    framePendingRef.current = false;
 
     startSendingVideo();
 
@@ -477,6 +515,10 @@ function RealTimeMonitoring() {
         cancelAnimationFrame(animationFrameRef.current);
         animationFrameRef.current = null;
       }
+      if (frameTimeoutRef.current) {
+        clearTimeout(frameTimeoutRef.current);
+        frameTimeoutRef.current = null;
+      }
     };
   }, [isTracking]);
 
@@ -486,18 +528,28 @@ function RealTimeMonitoring() {
       stopMediaStream();
       if (trackingIntervalRef.current) {
         clearInterval(trackingIntervalRef.current);
+        trackingIntervalRef.current = null;
       }
       if (animationFrameRef.current) {
         cancelAnimationFrame(animationFrameRef.current);
+        animationFrameRef.current = null;
       }
       if (socketRef.current) {
+        socketRef.current.off();
         socketRef.current.disconnect();
+        socketRef.current = null;
       }
       if (pingIntervalRef.current) {
         clearInterval(pingIntervalRef.current);
+        pingIntervalRef.current = null;
       }
       if (reconnectTimeoutRef.current) {
         clearTimeout(reconnectTimeoutRef.current);
+        reconnectTimeoutRef.current = null;
+      }
+      if (frameTimeoutRef.current) {
+        clearTimeout(frameTimeoutRef.current);
+        frameTimeoutRef.current = null;
       }
     };
   }, []);
@@ -525,7 +577,7 @@ function RealTimeMonitoring() {
           // Use the updated value right away
           const newTime = prevTime + 1;
 
-          // Check if we need to send data (every 60 seconds)
+          // Check if we need to send data (every intervalFromDb seconds)
           if (newTime % intervalFromDb === 0) {
             // Use the current state values directly when sending
             sendTrackingData();
@@ -558,7 +610,7 @@ function RealTimeMonitoring() {
     if (
       isTracking &&
       trackingElapsedTime > 0 &&
-      trackingElapsedTime % 60 === 0
+      trackingElapsedTime % intervalFromDb === 0
     ) {
       sendTrackingData();
     }
@@ -643,16 +695,15 @@ function RealTimeMonitoring() {
     // Clear any existing interval
     if (trackingIntervalRef.current) {
       clearInterval(trackingIntervalRef.current);
+      trackingIntervalRef.current = null;
     }
 
-    // Less frequent frame transmission - changed from 200ms to 300ms (3.33 FPS instead of 5 FPS)
-    const captureInterval = 300;
-
-    // Keep track of consecutive failures to implement backoff strategy
+    let captureInterval = 100; // IMPROVED: Reduced from 200ms to 100ms for better responsiveness
     let consecutiveFailures = 0;
     const maxConsecutiveFailures = 5;
 
-    trackingIntervalRef.current = setInterval(() => {
+    // Define the capture function separately
+    const captureFrame = () => {
       // Check if we should send frames
       if (!isTracking) {
         console.warn("Tracking is OFF. Stopping video frame capture.");
@@ -671,13 +722,28 @@ function RealTimeMonitoring() {
         // If we've had too many failures, slow down the capture rate
         if (consecutiveFailures >= maxConsecutiveFailures) {
           clearInterval(trackingIntervalRef.current);
-          trackingIntervalRef.current = setInterval(
-            arguments.callee, // reference to this same function
-            captureInterval * 2 // double the interval
-          );
+          const newInterval = captureInterval * 2;
+          captureInterval = newInterval;
+          trackingIntervalRef.current = setInterval(captureFrame, newInterval);
           consecutiveFailures = 0;
           console.warn("Reduced frame rate due to connection issues");
         }
+        return;
+      }
+
+      // IMPROVED: Force reset pending flag if it's been too long
+      const currentTime = Date.now();
+      if (
+        framePendingRef.current &&
+        currentTime - lastFrameSentTimeRef.current > 500
+      ) {
+        console.warn("Forcing reset of pending frame flag due to timeout");
+        framePendingRef.current = false;
+      }
+
+      // Check if a frame is already pending acknowledgment
+      if (framePendingRef.current) {
+        console.log("Frame pending, skipping this capture");
         return;
       }
 
@@ -697,8 +763,12 @@ function RealTimeMonitoring() {
         // Draw the video frame at the reduced size
         ctx.drawImage(videoElement, 0, 0, canvas.width, canvas.height);
 
-        // Use lower JPEG quality (0.6 instead of 0.7)
-        const imageData = canvas.toDataURL("image/jpeg", 0.6);
+        // Use lower JPEG quality for faster transmission
+        const imageData = canvas.toDataURL("image/jpeg", 0.5);
+
+        // Set pending flag before sending
+        framePendingRef.current = true;
+        lastFrameSentTimeRef.current = Date.now(); // Record time of sending
 
         // Send the frame with socket.io
         socketRef.current.emit("video_frame", {
@@ -710,22 +780,37 @@ function RealTimeMonitoring() {
           detectMultiple: true,
           timestamp: Date.now(), // Add timestamp for tracking latency
         });
+
+        // Set a timeout to reset the pending flag in case we don't get an acknowledgment
+        if (frameTimeoutRef.current) {
+          clearTimeout(frameTimeoutRef.current);
+        }
+
+        frameTimeoutRef.current = setTimeout(() => {
+          if (framePendingRef.current) {
+            console.warn("Frame acknowledgment timed out");
+            framePendingRef.current = false;
+          }
+        }, 1000); // IMPROVED: Reduced from 2000ms to 1000ms to recover faster
       } catch (error) {
         console.error("Error capturing video frame:", error);
+        framePendingRef.current = false; // Reset the pending flag on error
         consecutiveFailures++;
 
         // If there are too many consecutive failures, slow down
         if (consecutiveFailures >= maxConsecutiveFailures) {
           clearInterval(trackingIntervalRef.current);
-          trackingIntervalRef.current = setInterval(
-            arguments.callee, // reference to this same function
-            captureInterval * 2 // double the interval
-          );
+          const newInterval = captureInterval * 2;
+          captureInterval = newInterval;
+          trackingIntervalRef.current = setInterval(captureFrame, newInterval);
           consecutiveFailures = 0;
           console.warn("Reduced frame rate due to capture errors");
         }
       }
-    }, captureInterval);
+    };
+
+    // Start the interval with the named function
+    trackingIntervalRef.current = setInterval(captureFrame, captureInterval);
   };
 
   // This function updates the position of the bounding box based on tracking data

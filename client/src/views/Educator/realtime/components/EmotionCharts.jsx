@@ -6,7 +6,6 @@ import {
   ResponsiveContainer,
   Legend,
 } from "recharts";
-import { Card } from "react-bootstrap";
 
 const COLORS = ["#FF6384", "#36A2EB", "#FFCE56", "#4CAF50", "#9966FF"];
 

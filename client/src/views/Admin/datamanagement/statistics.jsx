@@ -2,7 +2,7 @@ import React from "react";
 import PageTitleBreadcrumb from "../../../components/layout/PageTitleBreadcrumbLayout";
 import { useNavigate } from "react-router-dom";
 import StatisticsDashboard from "../../../components/dashboard/StatisticsDashboardComponent";
-import useSession from "../../../utils/sessionUtils";
+import useSession from "../../../hooks/useSession";
 
 function StatisticsAdmin() {
   const navigate = useNavigate();

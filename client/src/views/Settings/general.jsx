@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Accordion } from "react-bootstrap";
 import Cookies from "js-cookie";
 import { useNavigate } from "react-router-dom";
-import useSession from "../../utils/sessionUtils";
+import useSession from "../../hooks/useSession";
 import PageTitleBreadcrumb from "../../components/layout/PageTitleBreadcrumbLayout";
 import axios from "../../utils/axiosUtils";
 import { toast } from "react-toastify";

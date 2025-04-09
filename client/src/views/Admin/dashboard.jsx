@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { Container } from "react-bootstrap";
-import useSession from "../../utils/sessionUtils";
+import useSession from "../../hooks/useSession";
 import { useNavigate } from "react-router-dom";
-import { useLoadingState } from "../../utils/loadingUtils";
+import { useLoadingState } from "../../hooks/useLoadingState";
 import LoadingSpinner from "../../components/common/LoadingSpinnerComponent";
 import { PieChart, Pie, Cell, Tooltip, Legend } from "recharts";
 import PageTitleBreadcrumb from "../../components/layout/PageTitleBreadcrumbLayout";

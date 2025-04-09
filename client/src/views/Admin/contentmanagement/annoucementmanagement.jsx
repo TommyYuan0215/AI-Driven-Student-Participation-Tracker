@@ -3,7 +3,7 @@ import { Table, Container, Button, Form, Pagination } from "react-bootstrap";
 import PageTitleBreadcrumb from "../../../components/layout/PageTitleBreadcrumbLayout";
 import LoadingSpinner from "../../../components/common/LoadingSpinnerComponent";
 import LargeModelComponent from "../../../components/modal/LargeModelComponent";
-import { useLoadingState } from "../../../utils/loadingUtils";
+import { useLoadingState } from "../../../hooks/useLoadingState";
 import AnnouncementForm from "../../../components/form/AnnouncementForm";
 import { toast } from "react-toastify";
 import axios from "../../../utils/axiosUtils";

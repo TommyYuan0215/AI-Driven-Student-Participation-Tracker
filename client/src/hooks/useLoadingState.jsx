@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { toast } from "react-toastify";
-import axios from "./axiosUtils";
+import axios from "../utils/axiosUtils";
 
 const useLoadingState = (fetchUrl, params = {}, initialState = []) => {
   const [data, setData] = useState(initialState);

@@ -2,7 +2,7 @@
 import React, { useState } from "react";
 import { Table, Button, Pagination } from "react-bootstrap";
 import LoadingSpinner from "../common/LoadingSpinnerComponent";
-import { useLoadingState } from "../../utils/loadingUtils";
+import { useLoadingState } from "../../hooks/useLoadingState";
 import { useNavigate } from "react-router-dom";
 
 function StatisticsDashboard({
