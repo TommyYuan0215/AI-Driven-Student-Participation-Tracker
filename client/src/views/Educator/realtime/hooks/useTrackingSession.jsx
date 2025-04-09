@@ -227,7 +227,7 @@ export function useTrackingSession(
           toast.success(response.data.message);
 
           if (typeof navigateCallback === "function") {
-            navigateCallback("/views/educator/dashboard");
+            navigateCallback("/educator/dashboard");
           }
         } else {
           toast.error(response.data.error);

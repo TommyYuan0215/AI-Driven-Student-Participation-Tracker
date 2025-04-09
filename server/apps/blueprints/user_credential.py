@@ -70,9 +70,9 @@ def login():
             session['user_photo'] = user['userPhoto']
             
             if user['userType'] == 0:
-                session['redirect'] = "/views/admin/"
+                session['redirect'] = "/admin/"
             else:
-                session['redirect'] = "/views/educator/"
+                session['redirect'] = "/educator/"
             
             return jsonify({"status": "success", "message": "Login successful", "userName": user['userName'], "redirect": session['redirect']})
         else:

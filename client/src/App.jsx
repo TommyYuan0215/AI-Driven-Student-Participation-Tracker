@@ -41,7 +41,7 @@ function App() {
         <Route path="/" element={<Home />} />
 
         {/* Admin Protected Routes */}
-        <Route path="/views/admin/*" element={<AdminPage />}>
+        <Route path="/admin/*" element={<AdminPage />}>
           <Route index element={<Navigate to="dashboard" />} />
           <Route path="dashboard" element={<AdminDashboard />} />
           <Route path="usermanagement" element={<UserManagement />} />
@@ -65,7 +65,7 @@ function App() {
         </Route>
 
         {/* Educator Protected Routes */}
-        <Route path="/views/educator/*" element={<EducatorPage />}>
+        <Route path="/educator/*" element={<EducatorPage />}>
           <Route index element={<Navigate to="dashboard" />} />
           <Route path="dashboard" element={<EducatorDashboard />} />
           <Route path="tracking/:sessionId" element={<RealTimeMonitoring />} />

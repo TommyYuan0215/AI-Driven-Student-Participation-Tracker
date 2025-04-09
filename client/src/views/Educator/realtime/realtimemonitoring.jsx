@@ -121,7 +121,7 @@ function RealTimeMonitoring() {
   // Wrapper for end monitoring session
   const handleEndMonitoringSession = () => {
     endSession((path) => {
-      if (location.pathname === `/views/educator/tracking/${sessionId}`) {
+      if (location.pathname === `/educator/tracking/${sessionId}`) {
         setTimeout(() => {
           navigate(path);
         }, 1000);

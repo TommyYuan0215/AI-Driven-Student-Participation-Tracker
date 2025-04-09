@@ -43,7 +43,7 @@ function EducatorDashboard() {
         toast.success("New session created successfully.");
 
         setTimeout(() => {
-          navigate(`/views/educator/tracking/${sessionId}`);
+          navigate(`/educator/tracking/${sessionId}`);
         }, 1000);
       } catch (error) {
         // Axios error handling

@@ -6,29 +6,29 @@ const sidebarItems = [
   {
     id: "dashboard",
     label: "Dashboard",
-    path: "/views/admin/dashboard",
+    path: "/admin/dashboard",
     icon: "bi bi-house",
   },
   {
     id: "usermanagement",
     label: "User Account Management",
-    path: "/views/admin/usermanagement",
+    path: "/admin/usermanagement",
     icon: "bi bi-people",
   },
   {
     id: "contentmanagement",
     label: "Content Management",
-    path: "/views/admin/contentmanagement",
+    path: "/admin/contentmanagement",
     icon: "bi bi-file-earmark-text",
     subItems: [
       {
         label: "Slideshow Management",
-        path: "/views/admin/contentmanagement/slideshow",
+        path: "/admin/contentmanagement/slideshow",
         icon: "bi bi-images",
       },
       {
         label: "Announcement Management",
-        path: "/views/admin/contentmanagement/announcement",
+        path: "/admin/contentmanagement/announcement",
         icon: "bi bi-megaphone",
       },
     ],
@@ -40,19 +40,19 @@ const sidebarItems = [
     subItems: [
       {
         label: "Overall Statistics Data",
-        path: "/views/admin/datamanagement/statistics",
+        path: "/admin/datamanagement/statistics",
         icon: "bi bi-bar-chart-line",
         ubItems: [
           {
             label: "Trend Data Analysis",
-            path: "/views/admin/datamanagement/statistics/trend",
+            path: "/admin/datamanagement/statistics/trend",
             icon: "bi bi-graph-up-arrow",
           },
         ],
       },
       {
         label: "User Trending Analysis",
-        path: "/views/admin/datamanagement/usertrend",
+        path: "/admin/datamanagement/usertrend",
         icon: "bi bi-graph-up-arrow",
       },
     ],
@@ -65,12 +65,12 @@ const sidebarItems = [
     subItems: [
       {
         label: "General Settings",
-        path: "/views/admin/settings/general",
+        path: "/admin/settings/general",
         icon: "bi bi-sliders",
       },
       {
         label: "Account Settings",
-        path: "/views/admin/settings/account",
+        path: "/admin/settings/account",
         icon: "bi bi-person",
       },
     ],
