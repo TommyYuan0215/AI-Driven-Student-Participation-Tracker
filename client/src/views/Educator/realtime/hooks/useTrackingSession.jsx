@@ -58,19 +58,31 @@ export function useTrackingSession(
 
     const handleTrackingUpdate = (data) => {
       const faces = data?.faces || [];
+
+      // If no faces are detected, reset counts and stats
+      if (faces.length === 0) {
+        setInterestedCount(0);
+        setBoredCount(0);
+        setLackingFocusCount(0);
+        setStudentStats({});
+      }
+
       setTrackingData(faces);
 
-      const newStats = faces.reduce((stats, face) => {
-        if (face.label) {
-          stats[face.label] = (stats[face.label] || 0) + 1;
-        }
-        return stats;
-      }, {});
+      // Update student stats if faces are detected
+      if (faces.length > 0) {
+        const newStats = faces.reduce((stats, face) => {
+          if (face.label) {
+            stats[face.label] = (stats[face.label] || 0) + 1;
+          }
+          return stats;
+        }, {});
 
-      setStudentStats((prev) => ({
-        ...prev,
-        ...newStats,
-      }));
+        setStudentStats((prev) => ({
+          ...prev,
+          ...newStats,
+        }));
+      }
     };
 
     socketRef.current.on("tracking_update", handleTrackingUpdate);
@@ -225,6 +237,11 @@ export function useTrackingSession(
 
         if (response.status === 200) {
           toast.success(response.data.message);
+
+          // Reset counts after session ends
+          setInterestedCount(0);
+          setBoredCount(0);
+          setLackingFocusCount(0);
 
           if (typeof navigateCallback === "function") {
             navigateCallback("/educator/dashboard");

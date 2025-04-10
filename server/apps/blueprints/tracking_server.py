@@ -11,7 +11,7 @@ DEBUG = False
 
 # Initialize MediaPipe face detection
 mp_face_detection = mp.solutions.face_detection
-face_detector = mp_face_detection.FaceDetection(min_detection_confidence=0.3)
+face_detector = mp_face_detection.FaceDetection(min_detection_confidence=0.8)
 
 # Load emotion recognition model
 model_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "models", "emotion_recognition_model.h5"))
