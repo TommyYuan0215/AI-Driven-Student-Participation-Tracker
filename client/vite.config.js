@@ -13,17 +13,22 @@ export default defineConfig({
     host: "0.0.0.0",  // Allows access from outside the container
     port: 5173, 
     proxy: {
-      '/credential': {
-        target: 'http://localhost:5000',
-        changeOrigin: true,
-        secure: false,
-      },
       '/database': {
         target: 'http://localhost:5000',
         changeOrigin: true,
         secure: false,
       },
-      '/test': {
+      '/tracking': {
+        target: 'http://localhost:5000',
+        changeOrigin: true,
+        secure: false,
+      },
+      '/tracking_session': {
+        target: 'http://localhost:5000',
+        changeOrigin: true,
+        secure: false,
+      },
+      '/credential': {
         target: 'http://localhost:5000',
         changeOrigin: true,
         secure: false,
@@ -32,7 +37,22 @@ export default defineConfig({
         target: 'http://localhost:5000',
         changeOrigin: true,
         secure: false,
-      }
-    }
+      },
+      '/contentmanagement': {
+        target: 'http://localhost:5000',
+        changeOrigin: true,
+        secure: false,
+      },
+      '/settings': {
+        target: 'http://localhost:5000',
+        changeOrigin: true,
+        secure: false,
+      },
+      '/report_generator': {
+        target: 'http://localhost:5000',
+        changeOrigin: true,
+        secure: false,
+      },
+    },
   }
 });

@@ -376,7 +376,21 @@ input:checked + .slider:before {
 }
 
 /* ==========================================================================
-     8. Responsive Design
+     8. Transition Effects for Dropdowns in Generate Report button
+     ========================================================================== */
+.dropdown-menu.transition-dropdown {
+  opacity: 0;
+  transform: translateY(-10px);
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.dropdown-menu.transition-dropdown.show {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* ==========================================================================
+     9. Responsive Design
      ========================================================================== */
 @media (max-width: 768px) {
   .sidebar-wrapper {

@@ -1,9 +1,10 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Table, Button } from "react-bootstrap";
 import LoadingSpinner from "../../../components/common/LoadingSpinnerComponent";
 import PageTitleBreadcrumb from "../../../components/layout/PageTitleBreadcrumbLayout";
 import { toast } from "react-toastify";
+import ReportDropdownButton from "../../../components/customized/ReportDropdownButtonComponent";
 import {
   LineChart,
   Line,
@@ -20,6 +21,7 @@ function EducatorTrending() {
   const location = useLocation();
   const navigate = useNavigate();
   const [chartData, setChartData] = useState([]);
+  const chartRef = useRef();
 
   // Directly get sessionID from location state
   const sessionID = location.state?.sessionID || "";
@@ -55,6 +57,13 @@ function EducatorTrending() {
         isAddNew={true}
         btnTitle="Generate Report"
         btnIcon="bi-file-earmark-text"
+        customButton={
+          <ReportDropdownButton
+            sessionID={sessionID}
+            chartData={chartData}
+            chartRef={chartRef}
+          />
+        }
       />
 
       <div className="m-4 card px-3">
@@ -87,8 +96,8 @@ function EducatorTrending() {
             </section>
 
             {/* Line Chart */}
-            <section className="px-3 py-4">
-              <ResponsiveContainer width="100%" height={450}>
+            <section className="px-3 py-4" ref={chartRef}>
+              <ResponsiveContainer width="100%" height={500}>
                 <LineChart data={chartData}>
                   <CartesianGrid strokeDasharray="3 2" />
                   <XAxis
