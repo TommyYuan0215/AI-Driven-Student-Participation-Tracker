@@ -44,6 +44,7 @@ def create_app():
     from apps.blueprints.user_management import userManagement_route
     from apps.blueprints.content_management import contentManagement_route
     from apps.blueprints.settings import settings_route
+    from apps.blueprints.report_generator import report_generator_route
 
     # Register blueprints based on the imported routes
     app.register_blueprint(databases_route, url_prefix='/database')
@@ -53,5 +54,6 @@ def create_app():
     app.register_blueprint(userManagement_route, url_prefix='/usermanagement')
     app.register_blueprint(contentManagement_route, url_prefix='/contentmanagement')
     app.register_blueprint(settings_route, url_prefix='/settings')
+    app.register_blueprint(report_generator_route, url_prefix='/report_generator')
 
     return app

@@ -149,8 +149,35 @@ function AdminDashboard() {
                       style={{ backgroundColor: "#3B3486", color: "#ffffff" }}
                     >
                       <span className="ms-3">
-                        <b>D</b>
+                        <b>Emotion Distribution</b>
                       </span>
+                    </div>
+                    <div className="card-body d-flex justify-content-center">
+                      {/* <PieChart
+                        width={250}
+                        height={250}
+                        onClick={handlePieChartClick}
+                      >
+                        <Pie
+                          data={data}
+                          cx="50%"
+                          cy="50%"
+                          labelLine={false}
+                          label={false}
+                          innerRadius={60}
+                          outerRadius={100}
+                          dataKey="value"
+                        >
+                          {data.map((entry, index) => (
+                            <Cell
+                              key={`cell-${index}`}
+                              fill={COLORS[index % COLORS.length]}
+                            />
+                          ))}
+                        </Pie>
+                        <Tooltip />
+                        <Legend verticalAlign="top" height={36} />
+                      </PieChart> */}
                     </div>
                   </div>
                 </div>

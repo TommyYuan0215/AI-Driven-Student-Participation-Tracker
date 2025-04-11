@@ -14,7 +14,6 @@ import AdminDashboard from "./views/Admin/dashboard";
 import UserManagement from "./views/Admin/usermanagement";
 import StatisticsAdmin from "./views/Admin/datamanagement/statistics";
 import UserTrendingAdmin from "./views/Admin/datamanagement/usertrending";
-import DataTrendingAdmin from "./views/Admin/datamanagement/datatrending";
 import SlideshowManagement from "./views/Admin/contentmanagement/slideshowmanagement";
 import AnnouncementManagement from "./views/Admin/contentmanagement/annoucementmanagement";
 
@@ -51,7 +50,6 @@ function App() {
               <Route path="trend" element={<EducatorTrending />} />
             </Route>
             <Route path="usertrend" element={<UserTrendingAdmin />} />
-            <Route path="datatrend" element={<DataTrendingAdmin />} />
             <Route path="account" element={<AccountSettings />} />
           </Route>
           <Route path="contentmanagement/*">

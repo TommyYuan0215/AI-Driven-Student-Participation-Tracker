@@ -261,7 +261,7 @@ function UserTrendingDashboard({ isEmbedded = false }) {
               <p className="small">No data available for the selected period</p>
             </div>
           ) : (
-            <ResponsiveContainer width="100%" height={isEmbedded ? 250 : 400}>
+            <ResponsiveContainer width="100%" height={isEmbedded ? 250 : 500}>
               <LineChart data={filteredUserData}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis
@@ -276,10 +276,21 @@ function UserTrendingDashboard({ isEmbedded = false }) {
                         }
                       : undefined
                   }
+                  label={{
+                    value: "Date Registered",
+                    position: "bottom",
+                    offset: -8,
+                  }}
                 />
                 <YAxis
                   tick={{ fontSize: isEmbedded ? 10 : 12 }}
                   width={isEmbedded ? 30 : 40}
+                  label={{
+                    value: "Emotion Count",
+                    angle: -90,
+                    position: "left",
+                    offset: -5,
+                  }}
                 />
                 <Tooltip />
                 <Legend
@@ -291,7 +302,7 @@ function UserTrendingDashboard({ isEmbedded = false }) {
                   type="monotone"
                   dataKey="cumulativeUsers"
                   name="Total Users"
-                  stroke="#ff7300"
+                  stroke="#3b2ee2"
                   strokeWidth={2}
                   activeDot={{ r: 5 }}
                 />
@@ -299,7 +310,7 @@ function UserTrendingDashboard({ isEmbedded = false }) {
                   type="monotone"
                   dataKey="newUsers"
                   name="New Users per Day"
-                  stroke="#8884d8"
+                  stroke="#de1e82"
                   strokeWidth={2}
                   activeDot={{ r: 5 }}
                 />
@@ -319,7 +330,13 @@ function UserTrendingDashboard({ isEmbedded = false }) {
   // Otherwise, return the full standalone page
   return (
     <>
-      <PageTitleBreadcrumb title="User Growth Trend" path={location.pathname} />
+      <PageTitleBreadcrumb
+        title="User Growth Trend"
+        path={location.pathname}
+        isAddNew={true}
+        btnTitle="Generate Report"
+        btnIcon="bi-file-earmark-text"
+      />
       <div className="m-4 card px-3">
         <div
           className={"px-3 m-4"}
