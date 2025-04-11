@@ -51,7 +51,7 @@ const sidebarItems = [
         ],
       },
       {
-        label: "User Trending Analysis",
+        label: "User Growth Trend",
         path: "/admin/datamanagement/usertrend",
         icon: "bi bi-graph-up-arrow",
       },

@@ -8,6 +8,7 @@ import { PieChart, Pie, Cell, Tooltip, Legend } from "recharts";
 import PageTitleBreadcrumb from "../../components/layout/PageTitleBreadcrumbLayout";
 import ProfileCard from "../../components/card/ProfileCard";
 import AnnouncementCard from "../../components/card/AnnouncementCard";
+import UserTrendingDashboard from "./datamanagement/usertrending";
 
 function AdminDashboard() {
   const navigate = useNavigate();
@@ -20,7 +21,11 @@ function AdminDashboard() {
   const [userStats, setUserStats] = useState({ active: 0, inactive: 0 });
 
   const handlePieChartClick = () => {
-    navigate("/views/admin/usermanagement");
+    navigate("/admin/usermanagement");
+  };
+
+  const handleTrendChartClick = () => {
+    navigate("/admin/datamanagement/usertrend");
   };
 
   useEffect(() => {
@@ -56,7 +61,7 @@ function AdminDashboard() {
         path={location.pathname}
       />
       <div className="px-3">
-        <section className="px-1">
+        <section className="px-1 py-4">
           {loading ? (
             <LoadingSpinner text="Loading dashboard..." />
           ) : (
@@ -82,14 +87,14 @@ function AdminDashboard() {
                       className="card-header"
                       style={{ backgroundColor: "#3B3486", color: "#ffffff" }}
                     >
-                      <span className="ms-3">
-                        <b>User Account Authorization Status</b>
+                      <span className="ms-1">
+                        <b>Authorization Status</b>
                       </span>
                     </div>
                     <div className="card-body d-flex justify-content-center">
                       <PieChart
                         width={250}
-                        height={200}
+                        height={250}
                         onClick={handlePieChartClick}
                       >
                         <Pie
@@ -98,8 +103,8 @@ function AdminDashboard() {
                           cy="50%"
                           labelLine={false}
                           label={false}
-                          innerRadius={40}
-                          outerRadius={80}
+                          innerRadius={60}
+                          outerRadius={100}
                           dataKey="value"
                         >
                           {data.map((entry, index) => (
@@ -116,28 +121,23 @@ function AdminDashboard() {
                   </div>
                 </div>
 
-                <div className="col-md-3">
+                <div className="col-md-6">
                   <div className="card">
                     <div
                       className="card-header"
                       style={{ backgroundColor: "#3B3486", color: "#ffffff" }}
                     >
-                      <span className="ms-3">
-                        <b>B</b>
+                      <span className="ms-1">
+                        <b>User Growth Trend (Monthly)</b>
                       </span>
                     </div>
-                  </div>
-                </div>
-
-                <div className="col-md-3">
-                  <div className="card">
                     <div
-                      className="card-header"
-                      style={{ backgroundColor: "#3B3486", color: "#ffffff" }}
+                      className="card-body p-0"
+                      onClick={handleTrendChartClick}
+                      style={{ cursor: "pointer", height: "280px" }}
                     >
-                      <span className="ms-3">
-                        <b>C</b>
-                      </span>
+                      {/* Embed the UserTrendingDashboard component here */}
+                      <UserTrendingDashboard isEmbedded={true} />
                     </div>
                   </div>
                 </div>

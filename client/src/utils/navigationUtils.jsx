@@ -10,10 +10,10 @@ export const getBreadcrumbItems = (currentPath) => {
     : `/views${currentPath}`;
   const isAdminPath = normalizedPath.includes("/views/admin");
   const navigationItems = isAdminPath ? adminItems : educatorItems;
-  const basePath = <i class="bi bi-house"></i>;
+  const basePath = <i className="bi bi-house"></i>;
   const baseLink = isAdminPath
-    ? "/views/admin/dashboard"
-    : "/views/educator/dashboard";
+    ? "/admin/dashboard"
+    : "/educator/dashboard";
 
   const findMatchingItem = (navItems, path, breadcrumbPath = []) => {
     for (const item of navItems) {
