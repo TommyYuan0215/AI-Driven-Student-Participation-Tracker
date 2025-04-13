@@ -305,89 +305,87 @@ function SlideshowManagement() {
             <LoadingSpinner text="Loading slideshows..." />
           ) : slideshowData.length > 0 ? (
             <>
-              <div className="table-responsive">
-                <Table
-                  striped
-                  bordered
-                  hover
-                  responsive
-                  className="align-middle"
-                >
-                  <thead className="table-light">
-                    <tr className="text-center">
-                      <th style={{ width: "50px" }}>#</th>
-                      <th
-                        onClick={() => handleSort("slideshowID")}
-                        style={{ width: "100px", cursor: "pointer" }}
-                      >
-                        ID{" "}
-                        {sortConfig.key === "slideshowID"
-                          ? sortConfig.direction === "asc"
-                            ? "🔼"
-                            : "🔽"
-                          : "↕️"}
-                      </th>
-                      <th style={{ width: "200px" }}>Image</th>
-                      <th
-                        onClick={() => handleSort("slideshowTitle")}
-                        style={{ width: "180px", cursor: "pointer" }}
-                      >
-                        Title{" "}
-                        {sortConfig.key === "slideshowTitle"
-                          ? sortConfig.direction === "asc"
-                            ? "🔼"
-                            : "🔽"
-                          : "↕️"}
-                      </th>
-                      <th>Description</th>
-                      <th className="text-center" style={{ width: "180px" }}>
-                        Actions
-                      </th>
+              <Table
+                striped
+                bordered
+                hover
+                responsive
+                className="align-middle"
+              >
+                <thead className="table-light">
+                  <tr className="text-center">
+                    <th style={{ width: "50px" }}>#</th>
+                    <th
+                      onClick={() => handleSort("slideshowID")}
+                      style={{ width: "100px", cursor: "pointer" }}
+                    >
+                      ID{" "}
+                      {sortConfig.key === "slideshowID"
+                        ? sortConfig.direction === "asc"
+                          ? "🔼"
+                          : "🔽"
+                        : "↕️"}
+                    </th>
+                    <th style={{ width: "200px" }}>Image</th>
+                    <th
+                      onClick={() => handleSort("slideshowTitle")}
+                      style={{ width: "180px", cursor: "pointer" }}
+                    >
+                      Title{" "}
+                      {sortConfig.key === "slideshowTitle"
+                        ? sortConfig.direction === "asc"
+                          ? "🔼"
+                          : "🔽"
+                        : "↕️"}
+                    </th>
+                    <th>Description</th>
+                    <th className="text-center" style={{ width: "180px" }}>
+                      Action
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {createdSlideshow.map((slideshow, index) => (
+                    <tr key={slideshow.slideshowID}>
+                      <td>{index + 1}</td>
+                      <td>{slideshow.slideshowID}</td>
+                      <td>
+                        <img
+                          src={`data:image/*;base64,${slideshow.slideshowImage}`}
+                          alt="slideshow"
+                          style={{
+                            width: "100%",
+                            maxHeight: "120px",
+                            objectFit: "cover",
+                            borderRadius: "8px",
+                          }}
+                        />
+                      </td>
+                      <td>{slideshow.slideshowTitle}</td>
+                      <td>{slideshow.slideshowDescription}</td>
+                      <td className="text-center">
+                        <Button
+                          variant="info"
+                          size="sm"
+                          className="me-2"
+                          onClick={() => handleOpenModalEdit(slideshow)}
+                        >
+                          <i className="bi bi-pencil"></i> Edit
+                        </Button>
+                        <Button
+                          variant="danger"
+                          size="sm"
+                          onClick={() =>
+                            handleDeleteSlideshow(slideshow.slideshowID)
+                          }
+                        >
+                          <i className="bi bi-trash"></i> Delete
+                        </Button>
+                      </td>
                     </tr>
-                  </thead>
-                  <tbody>
-                    {createdSlideshow.map((slideshow, index) => (
-                      <tr key={slideshow.slideshowID}>
-                        <td>{index + 1}</td>
-                        <td>{slideshow.slideshowID}</td>
-                        <td>
-                          <img
-                            src={`data:image/*;base64,${slideshow.slideshowImage}`}
-                            alt="slideshow"
-                            style={{
-                              width: "100%",
-                              maxHeight: "120px",
-                              objectFit: "cover",
-                              borderRadius: "8px",
-                            }}
-                          />
-                        </td>
-                        <td>{slideshow.slideshowTitle}</td>
-                        <td>{slideshow.slideshowDescription}</td>
-                        <td className="text-center">
-                          <Button
-                            variant="info"
-                            size="sm"
-                            className="me-2"
-                            onClick={() => handleOpenModalEdit(slideshow)}
-                          >
-                            <i className="bi bi-pencil"></i> Edit
-                          </Button>
-                          <Button
-                            variant="danger"
-                            size="sm"
-                            onClick={() =>
-                              handleDeleteSlideshow(slideshow.slideshowID)
-                            }
-                          >
-                            <i className="bi bi-trash"></i> Delete
-                          </Button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </Table>
-              </div>
+                  ))}
+                </tbody>
+              </Table>
             </>
           ) : (
             <div
