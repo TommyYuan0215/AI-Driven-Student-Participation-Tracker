@@ -9,8 +9,8 @@ import "react-toastify/dist/ReactToastify.css";
 
 createRoot(document.getElementById("root")).render(
   <ErrorBoundary>
-    {/* <StrictMode> */}
+    <StrictMode>
     <App />
-    {/* </StrictMode> */}
+    </StrictMode>
   </ErrorBoundary>
 );

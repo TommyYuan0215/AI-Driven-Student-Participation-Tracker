@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Row, Col, Card, Button, Pagination } from "react-bootstrap";
+import { Table, Button, Pagination } from "react-bootstrap";
 import ModelComponent from "../../../components/modal/XLargeModelComponent";
 import LoadingSpinner from "../../../components/common/LoadingSpinnerComponent";
 import SlideshowForm from "../../../components/form/SlideshowForm";
@@ -15,6 +15,45 @@ function SlideshowManagement() {
     refetch,
   } = useLoadingState("/contentmanagement/get_slideshow_data", []);
 
+  // To handle sort function
+  const [sortConfig, setSortConfig] = useState({ key: null, direction: "asc" });
+
+  const handleSort = (key) => {
+    let direction = "asc";
+
+    if (sortConfig.key === key) {
+      if (sortConfig.direction === "asc") {
+        direction = "desc";
+      } else if (sortConfig.direction === "desc") {
+        // Reset sorting
+        setSortConfig({ key: null, direction: null });
+        return;
+      }
+    }
+
+    setSortConfig({ key, direction });
+  };
+
+  // Applied sorting dynamically
+  const sortedSlideshow = [...slideshowData].sort((a, b) => {
+    if (!sortConfig.key) return 0; // No sorting initially
+    if (a[sortConfig.key] < b[sortConfig.key])
+      return sortConfig.direction === "asc" ? -1 : 1;
+    if (a[sortConfig.key] > b[sortConfig.key])
+      return sortConfig.direction === "asc" ? 1 : -1;
+    return 0;
+  });
+
+  // Pagination function
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 25;
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const createdSlideshow = sortedSlideshow.slice(
+    indexOfFirstItem,
+    indexOfLastItem
+  );
+
   const [formData, setFormData] = useState({
     slideshowId: "",
     slideshowImage: "",
@@ -25,10 +64,6 @@ function SlideshowManagement() {
   const [previewImage, setPreviewImage] = useState("");
   const [showNewModal, setShowNewModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
-
-  // Pagination state
-  const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 8;
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -255,18 +290,6 @@ function SlideshowManagement() {
     }
   };
 
-  // Pagination logic
-  const totalPages = Math.ceil(slideshowData.length / itemsPerPage);
-
-  // Pagination controls
-  const getPaginationItems = () => {
-    const pageNumbers = [];
-    for (let i = 1; i <= totalPages; i++) {
-      pageNumbers.push(i);
-    }
-    return pageNumbers;
-  };
-
   return (
     <>
       <PageTitleBreadcrumb
@@ -280,72 +303,109 @@ function SlideshowManagement() {
         <section className="px-1 py-4">
           {loading ? (
             <LoadingSpinner text="Loading slideshows..." />
+          ) : slideshowData.length > 0 ? (
+            <>
+              <div className="table-responsive">
+                <Table
+                  striped
+                  bordered
+                  hover
+                  responsive
+                  className="align-middle"
+                >
+                  <thead className="table-light">
+                    <tr className="text-center">
+                      <th style={{ width: "50px" }}>#</th>
+                      <th
+                        onClick={() => handleSort("slideshowID")}
+                        style={{ width: "100px", cursor: "pointer" }}
+                      >
+                        ID{" "}
+                        {sortConfig.key === "slideshowID"
+                          ? sortConfig.direction === "asc"
+                            ? "🔼"
+                            : "🔽"
+                          : "↕️"}
+                      </th>
+                      <th style={{ width: "200px" }}>Image</th>
+                      <th
+                        onClick={() => handleSort("slideshowTitle")}
+                        style={{ width: "180px", cursor: "pointer" }}
+                      >
+                        Title{" "}
+                        {sortConfig.key === "slideshowTitle"
+                          ? sortConfig.direction === "asc"
+                            ? "🔼"
+                            : "🔽"
+                          : "↕️"}
+                      </th>
+                      <th>Description</th>
+                      <th className="text-center" style={{ width: "180px" }}>
+                        Actions
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {createdSlideshow.map((slideshow, index) => (
+                      <tr key={slideshow.slideshowID}>
+                        <td>{index + 1}</td>
+                        <td>{slideshow.slideshowID}</td>
+                        <td>
+                          <img
+                            src={`data:image/*;base64,${slideshow.slideshowImage}`}
+                            alt="slideshow"
+                            style={{
+                              width: "100%",
+                              maxHeight: "120px",
+                              objectFit: "cover",
+                              borderRadius: "8px",
+                            }}
+                          />
+                        </td>
+                        <td>{slideshow.slideshowTitle}</td>
+                        <td>{slideshow.slideshowDescription}</td>
+                        <td className="text-center">
+                          <Button
+                            variant="info"
+                            size="sm"
+                            className="me-2"
+                            onClick={() => handleOpenModalEdit(slideshow)}
+                          >
+                            <i className="bi bi-pencil"></i> Edit
+                          </Button>
+                          <Button
+                            variant="danger"
+                            size="sm"
+                            onClick={() =>
+                              handleDeleteSlideshow(slideshow.slideshowID)
+                            }
+                          >
+                            <i className="bi bi-trash"></i> Delete
+                          </Button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </Table>
+              </div>
+            </>
           ) : (
-            <Row>
-              {slideshowData.length > 0 ? (
-                slideshowData
-                  .slice(
-                    (currentPage - 1) * itemsPerPage,
-                    currentPage * itemsPerPage
-                  )
-                  .map((slideshow) => (
-                    <Col key={slideshow.slideshowID} md={3} className="mb-3">
-                      <Card>
-                        <Card.Img
-                          variant="top"
-                          src={`data:image/*;base64,${slideshow.slideshowImage}`}
-                          style={{ height: "200px", objectFit: "cover" }}
-                        />
-                        <Card.Body>
-                          <Card.Title className="text-center">
-                            {slideshow.slideshowTitle}
-                          </Card.Title>
-                          <Card.Text className="card">
-                            {slideshow.slideshowDescription}
-                          </Card.Text>
-                          <div className="d-flex justify-content-between">
-                            <Button
-                              variant="info"
-                              onClick={() => handleOpenModalEdit(slideshow)}
-                            >
-                              <i className="bi bi-pencil"></i>
-                              &nbsp; Edit
-                            </Button>
-                            <Button
-                              variant="danger"
-                              onClick={() =>
-                                handleDeleteSlideshow(slideshow.slideshowID)
-                              }
-                            >
-                              <i className="bi bi-trash"></i>
-                              &nbsp; Delete
-                            </Button>
-                          </div>
-                        </Card.Body>
-                      </Card>
-                    </Col>
-                  ))
-              ) : (
-                <Col className="md-12">
-                  <div
-                    className="d-flex justify-content-center align-items-center"
-                    style={{ minHeight: "calc(100vh - 250px)" }}
-                  >
-                    <div className="text-center">
-                      <i className="bi bi-calendar-x text-muted fs-1"></i>
-                      <h3 className="text-muted mt-3">
-                        No slideshows available
-                      </h3>
-                      <p className="text-muted">
-                        Click the add button to create a new slideshow.
-                      </p>
-                    </div>
-                  </div>
-                </Col>
-              )}
-            </Row>
+            <div
+              className="d-flex justify-content-center align-items-center"
+              style={{ minHeight: "calc(100vh - 250px)" }}
+            >
+              <div className="text-center">
+                <i className="bi bi-calendar-x text-muted fs-1"></i>
+                <h3 className="text-muted mt-3">No slideshows available</h3>
+                <p className="text-muted">
+                  Click the add button to create a new slideshow.
+                </p>
+              </div>
+            </div>
           )}
         </section>
+
+        <br />
 
         <Pagination className="d-flex justify-content-end">
           <Pagination.First
@@ -357,31 +417,52 @@ function SlideshowManagement() {
             disabled={currentPage === 1}
           />
 
-          {/* Conditionally display ellipsis */}
           {currentPage > 3 && <Pagination.Ellipsis disabled />}
 
-          {/* Loop through page numbers to display pagination items */}
-          {getPaginationItems().map((pageIndex) => (
-            <Pagination.Item
-              key={pageIndex}
-              active={pageIndex === currentPage}
-              onClick={() => setCurrentPage(pageIndex)}
-            >
-              {pageIndex}
-            </Pagination.Item>
-          ))}
+          {Array.from({
+            length: Math.ceil(slideshowData.length / itemsPerPage),
+          })
+            .slice(
+              Math.max(0, currentPage - 3),
+              Math.min(
+                currentPage + 2,
+                Math.ceil(slideshowData.length / itemsPerPage)
+              )
+            )
+            .map((_, pageIndex) => (
+              <Pagination.Item
+                key={pageIndex + 1}
+                active={pageIndex + 1 === currentPage}
+                onClick={() => setCurrentPage(pageIndex + 1)}
+              >
+                {pageIndex + 1}
+              </Pagination.Item>
+            ))}
 
-          {currentPage < totalPages - 2 && <Pagination.Ellipsis disabled />}
+          {currentPage < Math.ceil(slideshowData.length / itemsPerPage) - 2 && (
+            <Pagination.Ellipsis disabled />
+          )}
 
           <Pagination.Next
             onClick={() =>
-              setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+              setCurrentPage((prev) =>
+                Math.min(
+                  prev + 1,
+                  Math.ceil(slideshowData.length / itemsPerPage)
+                )
+              )
             }
-            disabled={currentPage === totalPages}
+            disabled={
+              currentPage === Math.ceil(slideshowData.length / itemsPerPage)
+            }
           />
           <Pagination.Last
-            onClick={() => setCurrentPage(totalPages)}
-            disabled={currentPage === totalPages}
+            onClick={() =>
+              setCurrentPage(Math.ceil(slideshowData.length / itemsPerPage))
+            }
+            disabled={
+              currentPage === Math.ceil(slideshowData.length / itemsPerPage)
+            }
           />
         </Pagination>
 
