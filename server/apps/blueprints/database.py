@@ -122,7 +122,7 @@ def create_table_if_not_exists():
             slideshowTitle VARCHAR(255) NOT NULL,
             slideshowDescription TEXT,
             slideshowImage LONGBLOB,
-            slideshowStatus INT(2) DEFAULT 0,
+            slideshowStatus INT(2) DEFAULT 1,
             PRIMARY KEY (slideshowID)
         )
         '''

@@ -38,6 +38,33 @@ def get_slideshow():
     finally:
         cursor.close()
         connection.close()
+        
+@contentManagement_route.route('/update_slideshow_status', methods=['POST'])
+def update_slideshow_status():
+    data = request.get_json()
+    slideshowId = data.get('slideshowId')
+    slideshowStatus = data.get('slideshowStatus')
+
+    if slideshowId is None or slideshowStatus is None:
+        return jsonify({"success": False, "message": "Announcement ID and status are required"}), 400
+
+    connection = get_db_connection()
+    cursor = connection.cursor(dictionary=True)
+
+    try:
+        cursor.execute(
+            "UPDATE CONTENT_SLIDESHOW SET slideshowStatus = %s WHERE slideshowID = %s",
+            (slideshowStatus, slideshowId)
+        )
+        connection.commit()
+
+        return jsonify({"success": True, "message": "Slideshow status updated successfully."})
+    except Exception as e:
+        connection.rollback()
+        return jsonify({"success": False, "message": f"Error: {e}"}), 500
+    finally:
+        cursor.close()
+        connection.close()
 
 @contentManagement_route.route('/add_slideshow', methods=['POST'])
 def add_slideshow():

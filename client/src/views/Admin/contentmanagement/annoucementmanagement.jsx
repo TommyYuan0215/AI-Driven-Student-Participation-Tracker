@@ -7,7 +7,7 @@ import { useLoadingState } from "../../../hooks/useLoadingState";
 import AnnouncementForm from "../../../components/form/AnnouncementForm";
 import { toast } from "react-toastify";
 import axios from "../../../utils/axiosUtils";
-import AnnouncementStatusBadge from "../../../components/customized/AnnouncementStatusBadge";
+import ContentManagementStatusBadge from "../../../components/customized/ContentManagementStatusBadge";
 
 function AnnouncementManagement() {
   const {
@@ -112,13 +112,10 @@ function AnnouncementManagement() {
       );
 
       if (response.data.success) {
-        toast.success("Announcement status updated successfully!");
-        // Optionally, refresh the data here
-        await refetch(); // Call your function to refetch the updated announcement data
+        toast.success(response.data.message);
+        await refetch();
       } else {
-        toast.error(
-          response.data.message || "Failed to update announcement status."
-        );
+        toast.error(response.data.message);
       }
     } catch (error) {
       console.error("Error updating status:", error);
@@ -293,7 +290,7 @@ function AnnouncementManagement() {
             <LoadingSpinner text="Loading announcement list..." />
           ) : (
             <>
-              <Table striped bordered hover responsive>
+              <Table striped bordered hover responsive className="align-middle">
                 <thead>
                   <tr className="text-center">
                     <th style={{ width: "50px" }}>#</th>
@@ -342,17 +339,17 @@ function AnnouncementManagement() {
                       <td>{announcement.announcementTitle}</td>
                       <td>{announcement.announcementDescription}</td>
                       <td className="text-center">
-                        <AnnouncementStatusBadge
-                          announcementStatus={announcement.announcementStatus}
+                        <ContentManagementStatusBadge
+                          contentStatus={announcement.announcementStatus}
                         />
                       </td>
-                      <td>
+                      <td className="text-center">
                         <Button
                           variant={
                             announcement.announcementStatus === 1
                               ? "secondary"
                               : "success"
-                          } // Red for active, green for inactive
+                          }
                           size="sm"
                           onClick={() =>
                             handleToggleStatus(

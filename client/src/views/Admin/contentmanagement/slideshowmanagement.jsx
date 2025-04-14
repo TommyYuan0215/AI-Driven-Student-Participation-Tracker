@@ -7,6 +7,7 @@ import PageTitleBreadcrumb from "../../../components/layout/PageTitleBreadcrumbL
 import axios from "../../../utils/axiosUtils";
 import { toast } from "react-toastify";
 import { useLoadingState } from "../../../hooks/useLoadingState";
+import ContentManagementStatusBadge from "../../../components/customized/ContentManagementStatusBadge";
 
 function SlideshowManagement() {
   const {
@@ -136,6 +137,32 @@ function SlideshowManagement() {
       slideshowDesc: "",
     });
     toast.info("Form has been reset to original values");
+  };
+
+  // Handle activated and deactivated announcement status
+  const handleToggleStatus = async (slideshowId, currentStatus) => {
+    const newStatus = currentStatus === 1 ? 0 : 1;
+
+    try {
+      // Sending the updated status to the backend
+      const response = await axios.post(
+        "/contentmanagement/update_slideshow_status",
+        {
+          slideshowId,
+          slideshowStatus: newStatus,
+        }
+      );
+
+      if (response.data.success) {
+        toast.success(response.data.message);
+        await refetch();
+      } else {
+        toast.error(response.data.message);
+      }
+    } catch (error) {
+      console.error("Error updating status:", error);
+      toast.error("Error updating slideshow status.");
+    }
   };
 
   const handleNewSlideshow = async (e) => {
@@ -305,13 +332,7 @@ function SlideshowManagement() {
             <LoadingSpinner text="Loading slideshows..." />
           ) : slideshowData.length > 0 ? (
             <>
-              <Table
-                striped
-                bordered
-                hover
-                responsive
-                className="align-middle"
-              >
+              <Table striped bordered hover responsive className="align-middle">
                 <thead className="table-light">
                   <tr className="text-center">
                     <th style={{ width: "50px" }}>#</th>
@@ -339,9 +360,18 @@ function SlideshowManagement() {
                         : "↕️"}
                     </th>
                     <th>Description</th>
-                    <th className="text-center" style={{ width: "180px" }}>
-                      Action
+                    <th
+                      style={{ width: "120px", cursor: "pointer" }}
+                      onClick={() => handleSort("slideshowStatus")}
+                    >
+                      Status{" "}
+                      {sortConfig.key === "slideshowStatus"
+                        ? sortConfig.direction === "asc"
+                          ? "🔼"
+                          : "🔽"
+                        : "↕️"}
                     </th>
+                    <th style={{ width: "300px" }}>Action</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -364,6 +394,37 @@ function SlideshowManagement() {
                       <td>{slideshow.slideshowTitle}</td>
                       <td>{slideshow.slideshowDescription}</td>
                       <td className="text-center">
+                        <ContentManagementStatusBadge
+                          contentStatus={slideshow.slideshowStatus}
+                        />
+                      </td>
+                      <td className="text-center">
+                        <Button
+                          variant={
+                            slideshow.slideshowStatus === 1
+                              ? "secondary"
+                              : "success"
+                          }
+                          size="sm"
+                          onClick={() =>
+                            handleToggleStatus(
+                              slideshow.slideshowID,
+                              slideshow.slideshowStatus
+                            )
+                          }
+                        >
+                          <i
+                            className={`bi ${
+                              slideshow.slideshowStatus === 1
+                                ? "bi-ban"
+                                : "bi-check-circle"
+                            }`}
+                          ></i>
+                          &nbsp;
+                          {slideshow.slideshowStatus === 1
+                            ? "Archived"
+                            : "Activate"}
+                        </Button>{" "}
                         <Button
                           variant="info"
                           size="sm"
