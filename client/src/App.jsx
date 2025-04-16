@@ -12,8 +12,9 @@ import Home from "./views/home";
 import AdminPage from "./views/Admin/AdminPage";
 import AdminDashboard from "./views/Admin/dashboard";
 import UserManagement from "./views/Admin/usermanagement";
-import StatisticsAdmin from "./views/Admin/datamanagement/statistics";
-import UserTrendingAdmin from "./views/Admin/datamanagement/usertrending";
+import AdminStatistics from "./views/Admin/datamanagement/statistics";
+import UserTrendingDashboard from "./views/Admin/datamanagement/usertrending";
+import AdminDataTrending from "./views/Admin/datamanagement/datatrend";
 import SlideshowManagement from "./views/Admin/contentmanagement/slideshowmanagement";
 import AnnouncementManagement from "./views/Admin/contentmanagement/annoucementmanagement";
 
@@ -22,7 +23,7 @@ import EducatorDashboard from "./views/Educator/dashboard";
 import RealTimeMonitoring from "./views/Educator/realtime/realtimemonitoring";
 import EducatorStatistics from "./views/Educator/postanalytics/statistics";
 import EducatorPublicStatistics from "./views/Educator/postanalytics/statisticspublic";
-import EducatorTrending from "./views/Educator/postanalytics/trend";
+import EducatorDataTrending from "./views/Educator/postanalytics/datatrend";
 import GeneralSettings from "./views/Settings/general";
 import AccountSettings from "./views/Settings/account";
 
@@ -45,11 +46,11 @@ function App() {
           <Route path="dashboard" element={<AdminDashboard />} />
           <Route path="usermanagement" element={<UserManagement />} />
           <Route path="datamanagement/*">
-            <Route path="statistics/*">
-              <Route index element={<StatisticsAdmin />} />
-              <Route path="trend" element={<EducatorTrending />} />
+            <Route path="statisticsadmin/*">
+              <Route index element={<AdminStatistics />} />
+              <Route path="datatrend" element={<AdminDataTrending />} />
             </Route>
-            <Route path="usertrend" element={<UserTrendingAdmin />} />
+            <Route path="usertrend" element={<UserTrendingDashboard />} />
             <Route path="account" element={<AccountSettings />} />
           </Route>
           <Route path="contentmanagement/*">
@@ -70,12 +71,12 @@ function App() {
           <Route path="postanalytics/*">
             <Route path="statistics/*">
               <Route index element={<EducatorStatistics />} />
-              <Route path="trend" element={<EducatorTrending />} />
+              <Route path="datatrend" element={<EducatorDataTrending />} />
             </Route>
 
             <Route path="statisticspublic/*">
               <Route index element={<EducatorPublicStatistics />} />
-              <Route path="trend" element={<EducatorTrending />} />
+              <Route path="datatrend" element={<EducatorDataTrending />} />
             </Route>
           </Route>
           <Route path="settings/*">

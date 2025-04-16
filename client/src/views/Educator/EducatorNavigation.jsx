@@ -21,7 +21,7 @@ const sidebarItems = [
         subItems: [
           {
             label: "Trend Data Analysis",
-            path: "/educator/postanalytics/statistics/trend",
+            path: "/educator/postanalytics/statistics/datatrend",
             icon: "bi bi-graph-up-arrow",
           },
         ],
@@ -33,7 +33,7 @@ const sidebarItems = [
         subItems: [
           {
             label: "Trend Data Analysis",
-            path: "/educator/postanalytics/statisticspublic/trend",
+            path: "/educator/postanalytics/statisticspublic/datatrend",
             icon: "bi bi-graph-up-arrow",
           },
         ],

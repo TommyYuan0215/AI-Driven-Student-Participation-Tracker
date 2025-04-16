@@ -11,9 +11,7 @@ export const getBreadcrumbItems = (currentPath) => {
   const isAdminPath = normalizedPath.includes("/views/admin");
   const navigationItems = isAdminPath ? adminItems : educatorItems;
   const basePath = <i className="bi bi-house"></i>;
-  const baseLink = isAdminPath
-    ? "/admin/dashboard"
-    : "/educator/dashboard";
+  const baseLink = isAdminPath ? "/admin/dashboard" : "/educator/dashboard";
 
   const findMatchingItem = (navItems, path, breadcrumbPath = []) => {
     for (const item of navItems) {
@@ -21,7 +19,6 @@ export const getBreadcrumbItems = (currentPath) => {
         ? item.path
         : `/views${item.path}`;
 
-      // Check if this is a settings parent item (disabled)
       const isDisabled =
         (item.id === "settings" ||
           item.id === "datamanagement" ||
@@ -58,11 +55,7 @@ export const getBreadcrumbItems = (currentPath) => {
         // Add intermediate items with links (unless disabled)
         items.push({
           text: item.label,
-          link: item.disabled
-            ? null
-            : item.path?.startsWith("/views")
-            ? item.path
-            : `/views${item.path}`,
+          link: item.disabled ? null : item.path?.replace(/^\/views/, ""),
           disabled: item.disabled,
         });
       } else {

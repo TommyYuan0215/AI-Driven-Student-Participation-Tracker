@@ -35,17 +35,17 @@ const sidebarItems = [
   },
   {
     id: "datamanagement",
-    label: "View Data",
+    label: "Data Management (Viewer)",
     icon: "bi bi-database",
     subItems: [
       {
         label: "Overall Statistics Data",
-        path: "/admin/datamanagement/statistics",
+        path: "/admin/datamanagement/statisticsadmin",
         icon: "bi bi-bar-chart-line",
-        ubItems: [
+        subItems: [
           {
             label: "Trend Data Analysis",
-            path: "/admin/datamanagement/statistics/trend",
+            path: "/admin/datamanagement/statisticsadmin/datatrend",
             icon: "bi bi-graph-up-arrow",
           },
         ],
