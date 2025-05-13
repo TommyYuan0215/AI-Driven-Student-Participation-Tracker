@@ -13,7 +13,7 @@ import {
   Legend,
   ResponsiveContainer,
 } from "recharts";
-import { Form } from "react-bootstrap";
+import { Form, Button, Row, Col } from "react-bootstrap";
 
 function UserTrendingDashboard({ isEmbedded = false }) {
   const location = useLocation();
@@ -32,9 +32,6 @@ function UserTrendingDashboard({ isEmbedded = false }) {
   const [selectedMonth, setSelectedMonth] = useState("all");
   const [filteredUserData, setFilteredUserData] = useState([]);
 
-  // Get current year
-  const currentYear = new Date().getFullYear().toString();
-
   useEffect(() => {
     if (userList && userList.length > 0) {
       // Process user data to get cumulative counts by day
@@ -45,16 +42,13 @@ function UserTrendingDashboard({ isEmbedded = false }) {
       const months = extractAvailableMonths(userList);
       setAvailableMonths(months);
 
-      // Set initial selectedMonth to current year if available
-      if (selectedMonth === "all" && months.length > 0) {
-        // Try to find current year in the available months
-        const currentYearMonths = months.filter((month) =>
-          month.startsWith(currentYear)
-        );
-        if (currentYearMonths.length > 0) {
-          // If current year exists, select the first month of current year
-          setSelectedMonth(currentYearMonths[0]);
-        }
+      // Set initial selectedMonth to current month if available, else 'all'
+      const now = new Date();
+      const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+      if (months.includes(currentMonth)) {
+        setSelectedMonth(currentMonth);
+      } else {
+        setSelectedMonth("all");
       }
     }
   }, [userList]);
@@ -153,7 +147,6 @@ function UserTrendingDashboard({ isEmbedded = false }) {
   // Function to extract all available months from user data
   const extractAvailableMonths = (data) => {
     const monthsSet = new Set();
-
     data.forEach((user) => {
       if (user && user.createAt) {
         const dateStr = extractDatePart(user.createAt);
@@ -164,21 +157,17 @@ function UserTrendingDashboard({ isEmbedded = false }) {
         }
       }
     });
-
     // Convert Set to Array and sort
     return Array.from(monthsSet).sort();
   };
 
   // Function to filter data by selected month
   const filterDataByMonth = (data, monthFilter) => {
-    // If no specific month is selected, return all data with running totals
     if (monthFilter === "all") {
       return calculateCumulativeTotals(data);
     }
-
-    // Filter the data to only include dates from the selected month
+    // Filter the data to only include dates from the selected month (YYYY-MM)
     const filteredData = data.filter((item) => item.yearMonth === monthFilter);
-
     // Calculate running total for the month
     return calculateMonthlyRunningTotal(filteredData);
   };
@@ -235,6 +224,33 @@ function UserTrendingDashboard({ isEmbedded = false }) {
     return date.toLocaleString("default", { month: "long", year: "numeric" });
   };
 
+  // --- New: Summary statistics ---
+  const getSummaryStats = () => {
+    if (!filteredUserData || filteredUserData.length === 0) return null;
+    const totalUsers = filteredUserData[filteredUserData.length - 1]?.cumulativeUsers || 0;
+    const newUsers = filteredUserData.reduce((sum, d) => sum + (d.newUsers || 0), 0);
+    const avgNewUsers = filteredUserData.length > 0 ? (newUsers / filteredUserData.length).toFixed(2) : 0;
+    return { totalUsers, newUsers, avgNewUsers };
+  };
+  const summary = getSummaryStats();
+
+  // --- New: Custom tooltip ---
+  const CustomTooltip = ({ active, payload, label }) => {
+    if (active && payload && payload.length) {
+      return (
+        <div className="bg-white border rounded p-2">
+          <div><strong>Date:</strong> {label}</div>
+          {payload.map((entry, idx) => (
+            <div key={idx} style={{ color: entry.color }}>
+              <strong>{entry.name}:</strong> {entry.value}
+            </div>
+          ))}
+        </div>
+      );
+    }
+    return null;
+  };
+
   // Render the component content
   const renderUserTrendContent = () => {
     if (loading) {
@@ -255,6 +271,50 @@ function UserTrendingDashboard({ isEmbedded = false }) {
 
     return (
       <>
+        {/* --- Summary statistics --- */}
+        {summary && (
+          <section className="px-1 py-4">
+            <div className="row">
+              <div className="col-md-4 mb-3">
+                <div className="card text-center shadow-lg p-4 mb-4 rounded">
+                  <div className="card-body">
+                    <i
+                      className="bi bi-people mb-3"
+                      style={{ fontSize: "2rem", color: "#3b2ee2" }}
+                    ></i>
+                    <h5 className="card-title">Total Users</h5>
+                    <h3>{summary.totalUsers}</h3>
+                  </div>
+                </div>
+              </div>
+              <div className="col-md-4 mb-3">
+                <div className="card text-center shadow-lg p-4 mb-4 rounded">
+                  <div className="card-body">
+                    <i
+                      className="bi bi-person-plus mb-3"
+                      style={{ fontSize: "2rem", color: "#de1e82" }}
+                    ></i>
+                    <h5 className="card-title">New Users in Period</h5>
+                    <h3>{summary.newUsers}</h3>
+                  </div>
+                </div>
+              </div>
+              <div className="col-md-4 mb-3">
+                <div className="card text-center shadow-lg p-4 mb-4 rounded">
+                  <div className="card-body">
+                    <i
+                      className="bi bi-bar-chart-line mb-3"
+                      style={{ fontSize: "2rem", color: "#198754" }}
+                    ></i>
+                    <h5 className="card-title">Avg. New Users/Day</h5>
+                    <h3>{summary.avgNewUsers}</h3>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+        )}
+        {/* --- Chart controls --- */}
         <section className="px-3 py-2">
           {filteredUserData.length === 0 ? (
             <div className="text-center my-3">
@@ -262,20 +322,12 @@ function UserTrendingDashboard({ isEmbedded = false }) {
             </div>
           ) : (
             <ResponsiveContainer width="100%" height={isEmbedded ? 250 : 500}>
-              <LineChart data={filteredUserData}>
+              <LineChart data={filteredUserData} margin={{ top: 10, right: 40, left: 10, bottom: 10 }}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis
                   dataKey="date"
                   tick={{ fontSize: isEmbedded ? 10 : 12 }}
-                  tickFormatter={
-                    isEmbedded
-                      ? (value) => {
-                          // Shorten date format for embedded view
-                          const parts = value.split("/");
-                          return `${parts[0]}/${parts[1]}`;
-                        }
-                      : undefined
-                  }
+                  minTickGap={10}
                   label={{
                     value: "Date Registered",
                     position: "bottom",
@@ -286,13 +338,14 @@ function UserTrendingDashboard({ isEmbedded = false }) {
                   tick={{ fontSize: isEmbedded ? 10 : 12 }}
                   width={isEmbedded ? 30 : 40}
                   label={{
-                    value: "Emotion Count",
+                    value: "User Count",
                     angle: -90,
                     position: "left",
                     offset: -5,
                   }}
+                  allowDecimals={false}
                 />
-                <Tooltip />
+                <Tooltip content={<CustomTooltip />} />
                 <Legend
                   verticalAlign="top"
                   height={isEmbedded ? 24 : 36}
@@ -324,7 +377,62 @@ function UserTrendingDashboard({ isEmbedded = false }) {
 
   // If embedded, return just the content without the page title and extra wrapping
   if (isEmbedded) {
-    return renderUserTrendContent();
+    return (
+      <>
+        <section className="px-3 py-2">
+          {filteredUserData.length === 0 ? (
+            <div className="text-center my-3">
+              <p className="small">No data available for the selected period</p>
+            </div>
+          ) : (
+            <ResponsiveContainer width="100%" height={300}>
+              <LineChart data={filteredUserData} margin={{ top: 10, right: 40, left: 10, bottom: 10 }}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis
+                  dataKey="date"
+                  tick={{ fontSize: 10 }}
+                  minTickGap={10}
+                  label={{
+                    value: "Date Registered",
+                    position: "bottom",
+                    offset: -8,
+                  }}
+                />
+                <YAxis
+                  tick={{ fontSize: 10 }}
+                  width={30}
+                  label={{
+                    value: "User Count",
+                    angle: -90,
+                    position: "left",
+                    offset: -5,
+                  }}
+                  allowDecimals={false}
+                />
+                <Tooltip content={<CustomTooltip />} />
+                <Legend />
+                <Line
+                  type="monotone"
+                  dataKey="cumulativeUsers"
+                  name="Total Users"
+                  stroke="#3b2ee2"
+                  strokeWidth={2}
+                  activeDot={{ r: 5 }}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="newUsers"
+                  name="New Users per Day"
+                  stroke="#de1e82"
+                  strokeWidth={2}
+                  activeDot={{ r: 5 }}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          )}
+        </section>
+      </>
+    );
   }
 
   // Otherwise, return the full standalone page
