@@ -47,17 +47,15 @@ function EmotionStatistics({ studentStats, isTracking }) {
         )}
 
         <div className="mt-4">
+          <p className="fw-bold text-center">Emotion Distribution</p>
           {data.map((entry) => (
-            <>
-              <p className="fw-bold text-center">Emotion Distribution</p>
-              <div
-                key={entry.name}
-                className="d-flex justify-content-between my-2"
-              >
-                <span>{entry.name}:</span>
-                <span className="badge bg-primary">{entry.value}</span>
-              </div>
-            </>
+            <div
+              key={entry.name}
+              className="d-flex justify-content-between my-2"
+            >
+              <span>{entry.name}:</span>
+              <span className="badge bg-primary">{entry.value}</span>
+            </div>
           ))}
         </div>
       </div>

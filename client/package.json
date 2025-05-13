@@ -30,7 +30,7 @@
     "eslint": "^9.21.0",
     "eslint-plugin-react-hooks": "^5.1.0",
     "eslint-plugin-react-refresh": "^0.4.19",
-    "html-to-image": "^1.11.13",
+    "html2canvas": "^1.4.1",
     "globals": "^15.15.0",
     "js-cookie": "^3.0.5",
     "react-bootstrap": "^2.10.7",

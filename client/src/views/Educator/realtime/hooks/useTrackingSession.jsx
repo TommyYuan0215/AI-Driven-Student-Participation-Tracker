@@ -3,6 +3,15 @@ import { useState, useRef, useEffect } from "react";
 import { toast } from "react-toastify";
 import axios from "../../../../utils/axiosUtils";
 
+// Debounce utility to prevent duplicate sends
+function debounce(fn, delay) {
+  let timer = null;
+  return (...args) => {
+    if (timer) clearTimeout(timer);
+    timer = setTimeout(() => fn(...args), delay);
+  };
+}
+
 export function useTrackingSession(
   sessionId,
   userId,
@@ -23,7 +32,13 @@ export function useTrackingSession(
 
   // Refs
   const trackingIntervalRef = useRef(null);
+  const dataIntervalRef = useRef(null);
   const hasStoppedTracking = useRef(false);
+  const currentElapsedTimeRef = useRef(0);
+
+  // Toast spam prevention
+  const lastToastTimeRef = useRef(0);
+  const TOAST_ERROR_INTERVAL = 5000; // 5 seconds
 
   // Session timer effect
   useEffect(() => {
@@ -52,22 +67,103 @@ export function useTrackingSession(
     fetchInterval();
   }, []);
 
+  // Handle tracking state - FIXED dependency array to prevent timer reset
+  useEffect(() => {
+    if (isTracking) {
+      hasStoppedTracking.current = false;
+      
+      // Only start tracking timer if it's not already running
+      if (!trackingIntervalRef.current) {
+        // Reset tracking time and start counter
+        setTrackingElapsedTime(0);
+        currentElapsedTimeRef.current = 0;
+        
+        trackingIntervalRef.current = setInterval(() => {
+          currentElapsedTimeRef.current += 1;
+          setTrackingElapsedTime(currentElapsedTimeRef.current);
+        }, 1000);
+      }
+
+      // Separate interval for sending data
+      if (!dataIntervalRef.current) {
+        dataIntervalRef.current = setInterval(() => {
+          if (currentElapsedTimeRef.current > 0 && 
+              currentElapsedTimeRef.current % intervalFromDb === 0) {
+            // Capture current counts before sending
+            const currentCounts = {
+              interested: interestedCount,
+              bored: boredCount,
+              lackingFocus: lackingFocusCount
+            };
+            console.log("Current counts at interval:", currentCounts);
+            
+            // Only send if we have any counts
+            if (currentCounts.interested > 0 || currentCounts.bored > 0 || currentCounts.lackingFocus > 0) {
+              debouncedSendTrackingData();
+            }
+          }
+        }, 1000);
+      }
+
+      return () => {
+        if (trackingIntervalRef.current) {
+          clearInterval(trackingIntervalRef.current);
+          trackingIntervalRef.current = null;
+        }
+        if (dataIntervalRef.current) {
+          clearInterval(dataIntervalRef.current);
+          dataIntervalRef.current = null;
+        }
+      };
+    } else {
+      // Stop the tracking timer
+      if (trackingIntervalRef.current) {
+        clearInterval(trackingIntervalRef.current);
+        trackingIntervalRef.current = null;
+      }
+      if (dataIntervalRef.current) {
+        clearInterval(dataIntervalRef.current);
+        dataIntervalRef.current = null;
+      }
+
+      // Show toast message if tracking was active
+      if (!hasStoppedTracking.current && trackingElapsedTime > 0) {
+        toast.info("Tracking stopped");
+        hasStoppedTracking.current = true;
+      }
+    }
+  }, [isTracking]); // REMOVED emotion counts from dependencies to prevent timer resets
+
+  // Separate effect to handle emotion data sending
+  useEffect(() => {
+    // Only run this if tracking is active
+    if (!isTracking) return;
+    
+    // This effect handles changes to emotion counts without affecting the timer
+    console.log("Emotion counts updated:", {
+      interested: interestedCount,
+      bored: boredCount,
+      lackingFocus: lackingFocusCount
+    });
+    
+  }, [interestedCount, boredCount, lackingFocusCount, isTracking]);
+
   // Socket event for tracking updates
   useEffect(() => {
     if (!socketRef.current) return;
 
     const handleTrackingUpdate = (data) => {
       const faces = data?.faces || [];
+      console.log("Received tracking update:", faces);
 
-      // If no faces are detected, reset counts and stats
-      if (faces.length === 0) {
-        setInterestedCount(0);
-        setBoredCount(0);
-        setLackingFocusCount(0);
-        setStudentStats({});
-      }
-
-      setTrackingData(faces);
+      // Update tracking data without resetting
+      setTrackingData(prevData => {
+        // If no faces detected, keep previous data
+        if (faces.length === 0) {
+          return prevData;
+        }
+        return faces;
+      });
 
       // Update student stats if faces are detected
       if (faces.length > 0) {
@@ -78,7 +174,7 @@ export function useTrackingSession(
           return stats;
         }, {});
 
-        setStudentStats((prev) => ({
+        setStudentStats(prev => ({
           ...prev,
           ...newStats,
         }));
@@ -92,11 +188,16 @@ export function useTrackingSession(
         socketRef.current.off("tracking_update", handleTrackingUpdate);
       }
     };
-  }, [socketRef]);
+  }, []);
 
   // Update emotion counts when tracking data changes
   useEffect(() => {
     if (Array.isArray(trackingData) && trackingData.length > 0) {
+      // Keep track of previous counts
+      const prevInterested = interestedCount;
+      const prevBored = boredCount;
+      const prevLackingFocus = lackingFocusCount;
+
       let interested = 0;
       let bored = 0;
       let lackingFocus = 0;
@@ -104,6 +205,7 @@ export function useTrackingSession(
       trackingData.forEach((face) => {
         if (face.label) {
           const emotion = face.label.toLowerCase();
+          console.log("Processing emotion:", emotion);
           if (emotion === "interested") {
             interested++;
           } else if (emotion === "bored") {
@@ -114,100 +216,120 @@ export function useTrackingSession(
         }
       });
 
-      setInterestedCount(interested);
-      setBoredCount(bored);
-      setLackingFocusCount(lackingFocus);
-    } else {
-      setInterestedCount(0);
-      setBoredCount(0);
-      setLackingFocusCount(0);
+      console.log("Updated counts:", { interested, bored, lackingFocus });
+      
+      // Only update if we have new counts and they're different from previous
+      if ((interested > 0 || bored > 0 || lackingFocus > 0) && 
+          (interested !== prevInterested || bored !== prevBored || lackingFocus !== prevLackingFocus)) {
+        setInterestedCount(interested);
+        setBoredCount(bored);
+        setLackingFocusCount(lackingFocus);
+      }
     }
   }, [trackingData]);
 
-  // Handle tracking state
-  useEffect(() => {
-    if (isTracking) {
-      hasStoppedTracking.current = false;
-      toast.success("Tracking started");
+  // Debounced sendTrackingData to avoid duplicate sends
+  const debouncedSendTrackingData = debounce(() => {
+    console.log("Current counts before sending:", {
+      interested: interestedCount,
+      bored: boredCount,
+      lackingFocus: lackingFocusCount
+    });
+    sendTrackingData();
+  }, 300);
 
-      // Reset tracking time and start counter
-      setTrackingElapsedTime(0);
-      trackingIntervalRef.current = setInterval(() => {
-        setTrackingElapsedTime((prevTime) => {
-          const newTime = prevTime + 1;
-
-          if (newTime % intervalFromDb === 0) {
-            sendTrackingData();
-          }
-
-          return newTime;
-        });
-      }, 1000);
-    } else {
-      // Stop the tracking timer
-      if (trackingIntervalRef.current) {
-        clearInterval(trackingIntervalRef.current);
-        trackingIntervalRef.current = null;
-      }
-
-      // Show toast message if tracking was active
-      if (!hasStoppedTracking.current && trackingElapsedTime > 0) {
-        toast.info("Tracking stopped");
-        hasStoppedTracking.current = true;
-      }
-    }
-
-    return () => {
-      if (trackingIntervalRef.current) {
-        clearInterval(trackingIntervalRef.current);
-      }
-    };
-  }, [isTracking]);
-
-  // Send data when emotion counts change if it's time to record
-  useEffect(() => {
-    if (
-      isTracking &&
-      trackingElapsedTime > 0 &&
-      trackingElapsedTime % intervalFromDb === 0
-    ) {
-      sendTrackingData();
-    }
-  }, [
-    interestedCount,
-    boredCount,
-    lackingFocusCount,
-    isTracking,
-    trackingElapsedTime,
-  ]);
-
+  // Improved error handling and toast spam prevention
   const sendTrackingData = async () => {
     try {
+      // Add milliseconds to timestamp to ensure uniqueness
+      const now = new Date();
+      const timestamp = now.toISOString().slice(0, 19).replace('T', ' ');
+      const uniqueId = `${sessionId}_${now.getTime()}`;
+
+      // Get the current counts directly from state
+      const currentInterested = interestedCount;
+      const currentBored = boredCount;
+      const currentLackingFocus = lackingFocusCount;
+
       console.log("Sending counts:", {
-        interested: interestedCount,
-        bored: boredCount,
-        lackingFocus: lackingFocusCount,
+        interested: currentInterested,
+        bored: currentBored,
+        lackingFocus: currentLackingFocus
       });
 
-      const timestamp = new Date().toISOString().slice(0, 19).replace("T", " ");
+      // Only send if we have any counts
+      if (currentInterested === 0 && currentBored === 0 && currentLackingFocus === 0) {
+        console.log("Skipping send - no counts to send");
+        return;
+      }
+
       const payload = {
         sessionID: sessionId,
         userID: userId,
         timestamp: timestamp,
-        interestedCount: interestedCount,
-        boredCount: boredCount,
-        lackingFocusCount: lackingFocusCount,
+        interestedCount: currentInterested,
+        boredCount: currentBored,
+        lackingFocusCount: currentLackingFocus,
+        uniqueId: uniqueId
       };
+
+      console.log("Sending tracking data:", payload);
 
       const response = await axios.post(
         "/tracking_session/tracking_emotion",
-        payload
+        payload,
+        {
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          timeout: 5000
+        }
       );
-      console.log("Server response:", response.data);
-      toast.success("Tracking data recorded!");
+      
+      if (response.data && response.data.message) {
+        console.log("Server response:", response.data);
+        // Show success toast only if we have counts
+        if (currentInterested > 0 || currentBored > 0 || currentLackingFocus > 0) {
+          toast.success("Tracking data recorded!");
+        }
+      } else {
+        throw new Error(response.data?.error || "Failed to record tracking data");
+      }
     } catch (error) {
-      toast.error("Failed to send tracking data.");
-      console.error("Tracking error:", error);
+      // Enhanced error logging
+      console.error("Tracking error details:", {
+        error: error.message,
+        response: error.response?.data,
+        status: error.response?.status,
+        config: {
+          url: error.config?.url,
+          method: error.config?.method,
+          headers: error.config?.headers,
+          data: error.config?.data
+        }
+      });
+      
+      // More specific error messages based on error type
+      let errorMessage = "Failed to send tracking data";
+      
+      if (error.code === 'ECONNABORTED') {
+        errorMessage = "Request timed out. Please check your connection.";
+      } else if (!error.response) {
+        errorMessage = "No response from server. Please check your connection.";
+      } else if (error.response.status === 404) {
+        errorMessage = "API endpoint not found. Please check the server configuration.";
+      } else if (error.response.status === 500) {
+        errorMessage = "Server error. Please try again later.";
+      } else if (error.response.data?.error) {
+        errorMessage = error.response.data.error;
+      }
+
+      // Rate limit toast errors
+      const now = Date.now();
+      if (now - lastToastTimeRef.current > TOAST_ERROR_INTERVAL) {
+        toast.error(`Error: ${errorMessage}`);
+        lastToastTimeRef.current = now;
+      }
     }
   };
 

@@ -47,7 +47,7 @@ function SlideshowManagement() {
 
   // Pagination function
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 25;
+  const [itemsPerPage, setItemsPerPage] = useState(10);
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
   const createdSlideshow = sortedSlideshow.slice(
@@ -332,6 +332,27 @@ function SlideshowManagement() {
             <LoadingSpinner text="Loading slideshows..." />
           ) : slideshowData.length > 0 ? (
             <>
+            <div className="d-flex justify-content-between align-items-center mb-3">
+              <div>
+                Showing {indexOfFirstItem + 1} to {Math.min(indexOfLastItem, slideshowData.length)} of {slideshowData.length} entries
+              </div>
+                <div className="d-flex align-items-center">
+                  <span className="me-2">Items per page:</span>
+                  <select 
+                    className="form-select form-select-sm" 
+                    value={itemsPerPage}
+                    onChange={(e) => {
+                      setItemsPerPage(Number(e.target.value));
+                      setCurrentPage(1); // Reset to first page when changing items per page
+                    }}
+                    style={{ width: "70px" }}
+                  >
+                    <option value={10}>10</option>
+                    <option value={25}>25</option>
+                    <option value={50}>50</option>
+                  </select>
+                </div>
+              </div>
               <Table striped bordered hover responsive className="align-middle">
                 <thead className="table-light">
                   <tr className="text-center">

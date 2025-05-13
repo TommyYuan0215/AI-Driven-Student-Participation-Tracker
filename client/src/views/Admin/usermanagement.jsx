@@ -50,7 +50,7 @@ function UserManagement() {
 
   // Pagination function
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 25;
+  const [itemsPerPage, setItemsPerPage] = useState(10);
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
   const registeredUsers = sortedUsers.slice(indexOfFirstItem, indexOfLastItem);
@@ -221,6 +221,28 @@ function UserManagement() {
             <LoadingSpinner text="Loading users..." />
           ) : (
             <>
+              <div className="d-flex justify-content-between align-items-center mb-3">
+                <div>
+                  Showing {indexOfFirstItem + 1} to {Math.min(indexOfLastItem, userList.length)} of {userList.length} entries
+                </div>
+                <div className="d-flex align-items-center">
+                  <span className="me-2">Items per page:</span>
+                  <select 
+                    className="form-select form-select-sm" 
+                    value={itemsPerPage}
+                    onChange={(e) => {
+                      setItemsPerPage(Number(e.target.value));
+                      setCurrentPage(1); // Reset to first page when changing items per page
+                    }}
+                    style={{ width: "70px" }}
+                  >
+                    <option value={10}>10</option>
+                    <option value={25}>25</option>
+                    <option value={50}>50</option>
+                  </select>
+                </div>
+              </div>
+
               <Table striped bordered hover responsive>
                 <thead>
                   <tr className="text-center">

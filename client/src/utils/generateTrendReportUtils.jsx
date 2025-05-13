@@ -1,9 +1,11 @@
 import axios from "./axiosUtils";
 import { toast } from "react-toastify";
+import html2canvas from "html2canvas";
 
 export const generateTrendReport = async (
   sessionID,
   trendData,
+  chartRef,
   format = "pdf"
 ) => {
   if (!trendData || trendData.length === 0) {
@@ -11,17 +13,44 @@ export const generateTrendReport = async (
     return;
   }
 
-  const summaryData = trendData.reduce(
-    (acc, row) => {
-      acc.Interested += row.Interested;
-      acc.Bored += row.Bored;
-      acc.LackingFocus += row.LackingFocus;
-      return acc;
-    },
-    { Interested: 0, Bored: 0, LackingFocus: 0 }
-  );
-
   try {
+    // Capture chart image
+    let chartImage = null;
+    if (chartRef && chartRef.current) {
+      try {
+        // Wait for the next render cycle to ensure chart is rendered
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
+        // Get the chart container
+        const chartContainer = chartRef.current;
+        if (chartContainer && document.body.contains(chartContainer)) {
+          const canvas = await html2canvas(chartContainer, {
+            useCORS: true,
+            allowTaint: true,
+            scale: 2, // Higher quality
+            logging: false,
+            backgroundColor: '#ffffff'
+          });
+          chartImage = canvas.toDataURL("image/png");
+        } else {
+          console.warn("Chart container not found in document");
+        }
+      } catch (error) {
+        console.error("Error capturing chart:", error);
+        // Continue without chart image
+      }
+    }
+
+    const summaryData = trendData.reduce(
+      (acc, row) => {
+        acc.Interested += row.Interested;
+        acc.Bored += row.Bored;
+        acc.LackingFocus += row.LackingFocus;
+        return acc;
+      },
+      { Interested: 0, Bored: 0, LackingFocus: 0 }
+    );
+
     const response = await axios.post(
       `/report_generator/generate-report?format=${format}`,
       {
@@ -33,6 +62,7 @@ export const generateTrendReport = async (
           lacking_focus: entry.LackingFocus,
         })),
         summary_data: summaryData,
+        chartImage: chartImage
       },
       {
         responseType: "blob",
@@ -41,7 +71,6 @@ export const generateTrendReport = async (
 
     // Check if the response is actually an error JSON disguised as a blob
     if (response.data.size < 100) {
-      // Small blobs might be error messages
       const reader = new FileReader();
       reader.onload = function () {
         try {
@@ -67,7 +96,6 @@ export const generateTrendReport = async (
     const link = document.createElement("a");
     link.href = url;
     link.setAttribute("download", filename);
-    // Make the link visible to potentially reduce blocking
     link.style.display = "none";
     document.body.appendChild(link);
 

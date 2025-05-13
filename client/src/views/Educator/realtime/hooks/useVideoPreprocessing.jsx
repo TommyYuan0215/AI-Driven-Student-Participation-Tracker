@@ -14,6 +14,7 @@ export function useVideoProcessing(
   const frameTimeoutRef = useRef(null);
   const lastFrameSentTimeRef = useRef(0);
   const captureIntervalRef = useRef(null);
+  const isInitializedRef = useRef(false);
 
   // Function to hide all bounding boxes
   const hideAllBoxes = () => {
@@ -36,10 +37,12 @@ export function useVideoProcessing(
   useEffect(() => {
     console.log("Tracking state changed:", isTracking);
 
-    if (isTracking) {
+    if (isTracking && !isInitializedRef.current) {
       console.log("Tracking started");
-    } else {
+      isInitializedRef.current = true;
+    } else if (!isTracking) {
       console.log("Tracking stopped, cleaning up");
+      isInitializedRef.current = false;
 
       // Cancel animation frame when tracking stops
       if (animationFrameRef.current) {
