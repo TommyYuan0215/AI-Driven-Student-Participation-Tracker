@@ -16,6 +16,10 @@ function GeneralSettings() {
 
   // State for Emotion Save Interval
   const [savedInterval, setSavedInterval] = useState();
+  const [fontSize, setFontSize] = useState("medium");
+  const [lackingFocusThreshold, setLackingFocusThreshold] = useState(0);
+  const [boredThreshold, setBoredThreshold] = useState(0);
+  const [clearingSessions, setClearingSessions] = useState(false);
 
   // Fetch privacy status when the component mounts
   useEffect(() => {
@@ -60,6 +64,29 @@ function GeneralSettings() {
       setDarkMode(true);
       document.querySelector("html").setAttribute("data-bs-theme", "dark");
     }
+  }, []);
+
+  useEffect(() => {
+    const savedFontSize = Cookies.get("fontSize");
+    if (savedFontSize) {
+      setFontSize(savedFontSize);
+      const size =
+        savedFontSize === "small"
+          ? "14px"
+          : savedFontSize === "large"
+          ? "20px"
+          : "16px";
+      document.documentElement.style.fontSize = size;
+    }
+  }, []);
+
+  useEffect(() => {
+    axios.get('/settings/get_thresholds').then(res => {
+      if (res.data.success) {
+        setLackingFocusThreshold(res.data.thresholds.thresholdLackingFocus);
+        setBoredThreshold(res.data.thresholds.thresholdBored);
+      }
+    });
   }, []);
 
   // Dark Mode toggle logic
@@ -150,17 +177,75 @@ function GeneralSettings() {
       });
   };
 
+  const handleSaveThresholds = () => {
+    axios.post('/settings/update_thresholds', {
+      thresholdLackingFocus: lackingFocusThreshold,
+      thresholdBored: boredThreshold
+    }).then(response => {
+      if (response.data.success) toast.success('Thresholds updated!');
+      else toast.error(response.data.message);
+    }).catch(() => toast.error('Failed to update thresholds.'));
+  };
+
+  const handleClearAllSessions = async () => {
+    if (!userData?.userID) {
+      toast.error("User not logged in");
+      return;
+    }
+    const confirmed = window.confirm(
+      "Are you sure you want to permanently delete all your session data? This action cannot be undone."
+    );
+    if (!confirmed) return;
+    setClearingSessions(true);
+    try {
+      const response = await axios.post("/tracking_session/delete_all_sessions", {
+        userID: userData.userID,
+      });
+      if (response.data.success) {
+        toast.success(response.data.message || "All session data deleted.");
+      } else {
+        toast.error(response.data.message || "Failed to delete session data.");
+      }
+    } catch (error) {
+      toast.error(
+        error.response?.data?.message || "Failed to delete session data."
+      );
+    } finally {
+      setClearingSessions(false);
+    }
+  };
+
+  const handleFontSizeChange = (e) => {
+    setFontSize(e.target.value);
+    const size =
+      e.target.value === "small"
+        ? "14px"
+        : e.target.value === "large"
+        ? "20px"
+        : "16px";
+    document.documentElement.style.fontSize = size;
+    Cookies.set("fontSize", e.target.value, { expires: 365 });
+  };
+
+  // Determine which accordion section to open by default
+  let defaultActiveKey = "0"; // Basic Settings by default
+  if (isLoggedIn && userData?.userType === 1) defaultActiveKey = "2"; // Educator
+  else if (isLoggedIn && userData?.userType === 0) defaultActiveKey = "1"; // Admin
+
   return (
     <>
       <PageTitleBreadcrumb title="General Settings" path={location.pathname} />
       <div className="ms-4 me-4">
-        <Accordion defaultActiveKey="0">
+        <Accordion defaultActiveKey={defaultActiveKey}>
+          {/* Basic Settings */}
           <Accordion.Item eventKey="0">
             <Accordion.Header>Basic Settings</Accordion.Header>
             <Accordion.Body>
-              {/* Dark Mode Toggle */}
-              <>
+              <section className="mb-4">
                 <h6 className="fw-semibold">System Theme</h6>
+                <p className="text-muted small mb-2">
+                  Switch between light and dark mode for the entire system interface. Your preference will be saved for future visits.
+                </p>
                 <div className="theme-toggle">
                   <label className="toggle-switch mb-0">
                     <input
@@ -174,10 +259,27 @@ function GeneralSettings() {
                     {darkMode ? "Dark Mode" : "Light Mode"}
                   </span>
                 </div>
-              </>
+              </section>
               <hr />
+              {/* Font Size Option */}
+              <section className="mb-4">
+                <h6 className="fw-semibold">Font Size</h6>
+                <p className="text-muted small mb-2">
+                  Adjust the font size for better readability across the system.
+                </p>
+                <div className="d-flex align-items-center gap-3">
+                  <Form.Group>
+                    <Form.Select value={fontSize} onChange={handleFontSizeChange} style={{ width: 300, maxWidth: 300 }}>
+                      <option value="small">Small</option>
+                      <option value="medium">Medium (Default)</option>
+                      <option value="large">Large</option>
+                    </Form.Select>
+                  </Form.Group>
+                </div>
+              </section>
             </Accordion.Body>
           </Accordion.Item>
+
 
           {/* Admin Section */}
           {isLoggedIn && userData?.userType === 0 && (
@@ -191,127 +293,130 @@ function GeneralSettings() {
 
           {/* Educator Section */}
           {isLoggedIn && userData?.userType === 1 && (
-            <Accordion.Item eventKey="2">
-              <Accordion.Header>Educator Settings</Accordion.Header>
-              <Accordion.Body>
-                {/* Privacy Section */}
-                <section className="mb-4">
-                  <h6 className="fw-semibold">Privacy Information Settings</h6>
-                  <div className="model-toggle d-flex align-items-center mt-2">
-                    <label className="toggle-switch mb-0">
-                      <input
-                        type="checkbox"
-                        checked={privateMode === 1}
-                        onChange={togglePrivacy}
-                      />
-                      <span className="slider"></span>
-                    </label>
-                    <span className="model-label ms-2">
-                      {privateMode === 0
-                        ? "Private Mode: Only you can see your own student participation engagement session data"
-                        : "Public Mode: Everyone can see your student participation session data"}
-                    </span>
-                  </div>
-                </section>
+          <Accordion.Item eventKey="2">
+            <Accordion.Header>Educator Settings</Accordion.Header>
+            <Accordion.Body>
+              {/* Privacy Section */}
+              <section className="mb-4">
+                <h6 className="fw-semibold">Privacy Information Settings</h6>
+                <p className="text-muted small mb-2">
+                  Control who can see your student participation session data.
+                </p>
+                <div className="model-toggle d-flex align-items-center mt-2">
+                  <label className="toggle-switch mb-0">
+                    <input
+                      type="checkbox"
+                      checked={privateMode === 1}
+                      onChange={togglePrivacy}
+                    />
+                    <span className="slider"></span>
+                  </label>
+                  <span className="model-label ms-2">
+                    {privateMode === 0
+                      ? "Private Mode: Only you can see your own student participation engagement session data"
+                      : "Public Mode: Everyone can see your student participation session data"}
+                  </span>
+                </div>
+              </section>
 
-                <hr />
+              <hr />
 
-                {/* Emotion Data Save Frequency */}
-                <section className="mb-4">
-                  <h6 className="fw-semibold">Emotion Data Save Frequency</h6>
-                  <div className="d-flex align-items-end gap-3 mt-3 flex-wrap">
-                    <Form.Group
-                      className="flex-fill"
-                      controlId="formIntervalSlider"
-                    >
-                      <Form.Range
-                        min={30}
-                        max={300}
-                        step={30}
-                        value={savedInterval} // Use savedInterval directly for the slider
-                        onChange={handleSliderChange}
-                      />
-                      <div className="d-flex justify-content-between small text-muted px-1 mt-1">
-                        <span>30s</span>
-                        <span>1m</span>
-                        <span>1.5m</span>
-                        <span>2m</span>
-                        <span>2.5m</span>
-                        <span>3m</span>
-                        <span>3.5m</span>
-                        <span>4m</span>
-                        <span>4.5m</span>
-                        <span>5m</span>
-                      </div>
-                    </Form.Group>
-
-                    <Button
-                      variant="success"
-                      className="h-50 mt-2"
-                      onClick={handleSaveInterval}
-                    >
-                      <i className="bi bi-floppy me-1"></i> Save Changes
-                    </Button>
-                  </div>
-                </section>
-
-                <hr />
-
-                {/* Threshold Settings Section */}
-                <section className="mb-4">
-                  <h6 className="fw-semibold">
-                    Predefined Threshold Settings (Alert Toast)
-                  </h6>
-                  <div className="d-flex align-items-end gap-3 mt-2 flex-wrap">
-                    <Form.Group
-                      className="flex-fill"
-                      controlId="formLackingFocus"
-                    >
-                      <Form.Label>
-                        Lacking Focus (Cumulative) Threshold Value
-                      </Form.Label>
-                      <Form.Control
-                        type="number"
-                        placeholder="Enter threshold value"
-                        min={0}
-                        max={100}
-                        step={1}
-                      />
-                    </Form.Group>
-
-                    <Form.Group className="flex-fill" controlId="formBored">
-                      <Form.Label>
-                        Bored (Cumulative) Threshold Value
-                      </Form.Label>
-                      <Form.Control
-                        type="number"
-                        placeholder="Enter threshold value"
-                        min={0}
-                        max={100}
-                        step={1}
-                      />
-                    </Form.Group>
-
-                    <Button variant="success" className="h-50 mt-2">
-                      <i className="bi bi-floppy me-1"></i> Save Changes
-                    </Button>
-                  </div>
-                </section>
-
-                <hr />
-
-                {/* Danger Zone */}
-                <section>
-                  <h6 className="fw-semibold text-danger">
-                    Clear All Session Data (Danger Zone)
-                  </h6>
-                  <Button variant="danger" className="mt-2">
-                    Clear All Session Data
+              {/* Emotion Data Save Frequency */}
+              <section className="mb-4">
+                <h6 className="fw-semibold">Emotion Data Save Frequency</h6>
+                <p className="text-muted small mb-2">
+                  Set how often emotion data is saved during a session.
+                </p>
+                <div className="d-flex align-items-end gap-3 mt-3 flex-wrap">
+                  <Form.Group className="flex-fill" controlId="formIntervalSlider">
+                    <Form.Range
+                      min={30}
+                      max={300}
+                      step={30}
+                      value={savedInterval}
+                      onChange={handleSliderChange}
+                    />
+                    <div className="d-flex justify-content-between small text-muted px-1 mt-1">
+                      <span>30s</span>
+                      <span>1m</span>
+                      <span>1.5m</span>
+                      <span>2m</span>
+                      <span>2.5m</span>
+                      <span>3m</span>
+                      <span>3.5m</span>
+                      <span>4m</span>
+                      <span>4.5m</span>
+                      <span>5m</span>
+                    </div>
+                  </Form.Group>
+                  <Button
+                    variant="success"
+                    className="h-50 mt-2"
+                    onClick={handleSaveInterval}
+                  >
+                    <i className="bi bi-floppy me-1"></i> Save Changes
                   </Button>
-                </section>
-              </Accordion.Body>
-            </Accordion.Item>
-          )}
+                </div>
+              </section>
+
+              <hr />
+
+              {/* Threshold Settings Section */}
+              <section className="mb-4">
+                <h6 className="fw-semibold">Predefined Threshold Settings (Alert Toast)</h6>
+                <p className="text-muted small mb-2">
+                  Set alert thresholds for student engagement.
+                </p>
+                <div className="d-flex align-items-end gap-3 mt-2 flex-wrap">
+                  <Form.Group className="flex-fill" controlId="formLackingFocus">
+                    <Form.Label>Lacking Focus (Cumulative) Threshold Value</Form.Label>
+                    <Form.Control
+                      type="number"
+                      placeholder="Enter threshold value"
+                      min={0}
+                      max={100}
+                      step={1}
+                      value={lackingFocusThreshold}
+                      onChange={e => setLackingFocusThreshold(Number(e.target.value))}
+                    />
+                  </Form.Group>
+                  <Form.Group className="flex-fill" controlId="formBored">
+                    <Form.Label>Bored (Cumulative) Threshold Value</Form.Label>
+                    <Form.Control
+                      type="number"
+                      placeholder="Enter threshold value"
+                      min={0}
+                      max={100}
+                      step={1}
+                      value={boredThreshold}
+                      onChange={e => setBoredThreshold(Number(e.target.value))}
+                    />
+                  </Form.Group>
+                  <Button variant="success" className="h-50 mt-2" onClick={handleSaveThresholds}>
+                    <i className="bi bi-floppy me-1"></i> Save Changes
+                  </Button>
+                </div>
+              </section>
+
+              <hr />
+
+              {/* Danger Zone */}
+              <section>
+                <div className="alert alert-danger">
+                  <h6 className="fw-semibold text-danger mb-2">
+                    Danger Zone: Clear All Session Data
+                  </h6>
+                  <p className="mb-2 small">
+                    This will permanently delete all your session data. This action cannot be undone.
+                  </p>
+                  <Button variant="danger" className="mt-2" onClick={handleClearAllSessions} disabled={clearingSessions}>
+                    {clearingSessions ? "Clearing..." : "Clear All Session Data"}
+                  </Button>
+                </div>
+              </section>
+            </Accordion.Body>
+          </Accordion.Item>
+        )}
         </Accordion>
       </div>
     </>

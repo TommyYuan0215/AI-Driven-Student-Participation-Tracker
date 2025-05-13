@@ -41,6 +41,7 @@ function Header({ showSidebar, toggleSidebar, showSidebarToggle }) {
         {/* Sidebar Toggle Button (if showSidebarToggle is true) */}
         {showSidebarToggle && typeof toggleSidebar === "function" && (
           <Button
+            title={showSidebar ? "Hide Sidebar" : "Show Sidebar"}
             className="sidebar-toggle me-3 d-none d-md-inline-flex align-items-center"
             onClick={toggleSidebar}
             variant="light"
@@ -56,7 +57,10 @@ function Header({ showSidebar, toggleSidebar, showSidebarToggle }) {
               alignItems: "center"
             }}
           >
-            <i className="bi bi-list" style={{ fontSize: "2rem" }}></i>
+            <i
+              className={`bi ${showSidebar ? "bi bi-x-lg" : "bi-list"}`}
+              style={{ fontSize: "2rem", color: "grey" }}
+            ></i>
           </Button>
         )}
         <Navbar.Brand

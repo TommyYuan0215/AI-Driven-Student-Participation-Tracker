@@ -51,7 +51,8 @@ function RealTimeMonitoring() {
     handleTracking,
     handleEndMonitoringSession: endSession,
     formatElapsedTime,
-  } = useTrackingSession(sessionId, currentUserID, socketRef, mediaStreamRef);
+    handleStopScreenShare,
+  } = useTrackingSession(sessionId, currentUserID, socketRef, mediaStreamRef, stopScreenShare);
 
   // Then use isTracking in video processing
   const {
@@ -129,6 +130,31 @@ function RealTimeMonitoring() {
     });
   };
 
+  const handleCameraToggle = async () => {
+    if (isCameraOn) {
+      // Stopping camera: also stop tracking if running
+      if (isTracking) handleTracking();
+      await handleCamera();
+    } else {
+      // Starting camera: if screen share is on, stop it first
+      if (isShareScreen) await handleStopScreenShare();
+      await handleCamera();
+    }
+  };
+
+  const handleShareScreenToggle = async () => {
+    if (isShareScreen) {
+      // Stopping share screen: also stop tracking if running
+      if (isTracking) handleTracking();
+      await handleStopScreenShare();
+    } else {
+      // Starting share screen: if camera is on, stop it first
+      if (isCameraOn) await handleCameraToggle();
+      await handleStopScreenShare(); // ensure screen share is off before starting
+      await handleShareScreen();
+    }
+  };
+
   return (
     <Container fluid className="d-flex flex-column p-0 vh-85">
       <Row className="g-0 flex-grow-1">
@@ -160,8 +186,8 @@ function RealTimeMonitoring() {
         isCameraOn={isCameraOn}
         isShareScreen={isShareScreen}
         isTracking={isTracking}
-        handleCamera={handleCamera}
-        handleShareScreen={handleShareScreen}
+        handleCamera={handleCameraToggle}
+        handleShareScreen={handleShareScreenToggle}
         handleTracking={handleTrackingToggle}
         handleEndMonitoringSession={handleEndMonitoringSession}
       />

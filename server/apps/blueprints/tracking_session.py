@@ -304,3 +304,41 @@ def get_tracking_emotion():
     finally:
         cursor.close()
         connection.close()
+
+@tracking_session_route.route("/delete_all_sessions", methods=["POST"])
+def delete_all_sessions():
+    data = request.get_json()
+    user_id = data.get("userID")
+    if not user_id:
+        return jsonify({"success": False, "message": "userID is required"}), 400
+
+    connection = get_db_connection()
+    cursor = connection.cursor()
+    try:
+        # Get educatorID from userID
+        cursor.execute("SELECT educatorID FROM EDUCATOR WHERE userID = %s", (user_id,))
+        educator = cursor.fetchone()
+        if not educator:
+            return jsonify({"success": False, "message": "Educator not found for this userID"}), 404
+        educator_id = educator[0] if isinstance(educator, (list, tuple)) else educator["educatorID"]
+
+        # Get all sessionIDs for this educator
+        cursor.execute("SELECT sessionID FROM TRACKING_SESSION WHERE educatorID = %s", (educator_id,))
+        session_ids = [row[0] if isinstance(row, (list, tuple)) else row["sessionID"] for row in cursor.fetchall()]
+
+        if session_ids:
+            # Delete from TRACKING_SESSION_DETAILS first (FK constraint)
+            format_strings = ','.join(['%s'] * len(session_ids))
+            cursor.execute(f"DELETE FROM TRACKING_SESSION_DETAILS WHERE sessionID IN ({format_strings})", tuple(session_ids))
+            # Delete from TRACKING_SESSION
+            cursor.execute(f"DELETE FROM TRACKING_SESSION WHERE sessionID IN ({format_strings})", tuple(session_ids))
+            connection.commit()
+            return jsonify({"success": True, "message": "All session data deleted."})
+        else:
+            return jsonify({"success": True, "message": "No sessions found to delete."})
+    except Exception as e:
+        connection.rollback()
+        return jsonify({"success": False, "message": str(e)}), 500
+    finally:
+        cursor.close()
+        connection.close()

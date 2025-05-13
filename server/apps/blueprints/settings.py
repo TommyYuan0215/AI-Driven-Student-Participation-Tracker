@@ -165,8 +165,49 @@ def update_emotion_save_interval():
     finally:
         cursor.close()
         connection.close()
-    
+        
+@settings_route.route('/get_thresholds', methods=['GET'])
+def get_thresholds():
+    user_id = session.get('user_id')
+    if not user_id:
+        return jsonify({"success": False, "message": "User not logged in"}), 400
 
+    connection = get_db_connection()
+    cursor = connection.cursor(dictionary=True)
+    try:
+        cursor.execute(
+            "SELECT thresholdLackingFocus, thresholdBored FROM EDUCATOR WHERE userID = %s",
+            (user_id,)
+        )
+        result = cursor.fetchone()
+        if not result:
+            return jsonify({"success": False, "message": "Thresholds not found"}), 404
+        return jsonify({"success": True, "thresholds": result})
+    finally:
+        cursor.close()
+        connection.close()
+        
+@settings_route.route('/update_thresholds', methods=['POST'])
+def update_thresholds():
+    user_id = session.get('user_id')
+    data = request.get_json()
+    lacking = data.get('thresholdLackingFocus')
+    bored = data.get('thresholdBored')
+    if not user_id or lacking is None or bored is None:
+        return jsonify({"success": False, "message": "Missing data"}), 400
+
+    connection = get_db_connection()
+    cursor = connection.cursor()
+    try:
+        cursor.execute(
+            "UPDATE EDUCATOR SET thresholdLackingFocus = %s, thresholdBored = %s WHERE userID = %s",
+            (lacking, bored, user_id)
+        )
+        connection.commit()
+        return jsonify({"success": True, "message": "Thresholds updated"})
+    finally:
+        cursor.close()
+        connection.close()
 
 # ------------------Account Settings------------------ #
 """Helper function to verify the current password"""  

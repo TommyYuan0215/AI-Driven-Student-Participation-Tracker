@@ -16,7 +16,8 @@ export function useTrackingSession(
   sessionId,
   userId,
   socketRef,
-  mediaStreamRef
+  mediaStreamRef,
+  stopScreenShare
 ) {
   const [isTracking, setIsTracking] = useState(false);
   const [sessionElapsedTime, setSessionElapsedTime] = useState(0);
@@ -56,6 +57,7 @@ export function useTrackingSession(
         const response = await axios.get("/settings/get_emotion_save_interval");
         if (response.data.success) {
           setIntervalFromDb(response.data.emotionSaveInterval);
+          console.log("Interval from DB:", response.data.emotionSaveInterval);
         } else {
           console.error("Failed to fetch interval from DB");
         }
@@ -67,42 +69,28 @@ export function useTrackingSession(
     fetchInterval();
   }, []);
 
-  // Handle tracking state - FIXED dependency array to prevent timer reset
+  // Handle tracking state - ensure intervalFromDb is a dependency
   useEffect(() => {
-    if (isTracking) {
+    if (isTracking && intervalFromDb > 0) {
       hasStoppedTracking.current = false;
-      
+
       // Only start tracking timer if it's not already running
       if (!trackingIntervalRef.current) {
         // Reset tracking time and start counter
         setTrackingElapsedTime(0);
         currentElapsedTimeRef.current = 0;
-        
+
         trackingIntervalRef.current = setInterval(() => {
           currentElapsedTimeRef.current += 1;
           setTrackingElapsedTime(currentElapsedTimeRef.current);
         }, 1000);
       }
 
-      // Separate interval for sending data
+      // Set up data sending interval based on intervalFromDb
       if (!dataIntervalRef.current) {
         dataIntervalRef.current = setInterval(() => {
-          if (currentElapsedTimeRef.current > 0 && 
-              currentElapsedTimeRef.current % intervalFromDb === 0) {
-            // Capture current counts before sending
-            const currentCounts = {
-              interested: interestedCount,
-              bored: boredCount,
-              lackingFocus: lackingFocusCount
-            };
-            console.log("Current counts at interval:", currentCounts);
-            
-            // Only send if we have any counts
-            if (currentCounts.interested > 0 || currentCounts.bored > 0 || currentCounts.lackingFocus > 0) {
-              debouncedSendTrackingData();
-            }
-          }
-        }, 1000);
+          debouncedSendTrackingData();
+        }, intervalFromDb * 1000);
       }
 
       return () => {
@@ -132,7 +120,7 @@ export function useTrackingSession(
         hasStoppedTracking.current = true;
       }
     }
-  }, [isTracking]); // REMOVED emotion counts from dependencies to prevent timer resets
+  }, [isTracking, intervalFromDb]);
 
   // Separate effect to handle emotion data sending
   useEffect(() => {
@@ -393,6 +381,14 @@ export function useTrackingSession(
     return formattedTime.trim();
   };
 
+  const handleStopScreenShare = () => {
+    if (isTracking) {
+      stopScreenShare(handleTracking);
+    } else {
+      stopScreenShare();
+    }
+  };
+
   return {
     isTracking,
     sessionElapsedTime,
@@ -405,5 +401,6 @@ export function useTrackingSession(
     handleTracking,
     handleEndMonitoringSession,
     formatElapsedTime,
+    handleStopScreenShare,
   };
 }
