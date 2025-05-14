@@ -5,12 +5,12 @@ import { toast } from "react-toastify";
 const SOCKET_URL = "http://localhost:5000";
 const socketOptions = {
   reconnection: true,
-  reconnectionAttempts: 10,
-  reconnectionDelay: 2000,
-  reconnectionDelayMax: 10000,
-  timeout: 10000,
-  pingTimeout: 20000,
-  pingInterval: 10000,
+  reconnectionAttempts: 15,
+  reconnectionDelay: 2500,
+  reconnectionDelayMax: 15000,
+  timeout: 20000,
+  pingTimeout: 30000,
+  pingInterval: 15000,
 };
 
 export function useSocket() {

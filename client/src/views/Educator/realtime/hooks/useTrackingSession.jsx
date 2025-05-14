@@ -41,6 +41,11 @@ export function useTrackingSession(
   const lastToastTimeRef = useRef(0);
   const TOAST_ERROR_INTERVAL = 5000; // 5 seconds
 
+  // Refs for current counts to be used in sendTrackingData
+  const interestedCountRef = useRef(interestedCount);
+  const boredCountRef = useRef(boredCount);
+  const lackingFocusCountRef = useRef(lackingFocusCount);
+
   // Session timer effect
   useEffect(() => {
     const interval = setInterval(() => {
@@ -69,6 +74,19 @@ export function useTrackingSession(
     fetchInterval();
   }, []);
 
+  // Sync refs with state whenever state changes
+  useEffect(() => {
+    interestedCountRef.current = interestedCount;
+  }, [interestedCount]);
+
+  useEffect(() => {
+    boredCountRef.current = boredCount;
+  }, [boredCount]);
+
+  useEffect(() => {
+    lackingFocusCountRef.current = lackingFocusCount;
+  }, [lackingFocusCount]);
+
   // Handle tracking state - ensure intervalFromDb is a dependency
   useEffect(() => {
     if (isTracking && intervalFromDb > 0) {
@@ -88,8 +106,10 @@ export function useTrackingSession(
 
       // Set up data sending interval based on intervalFromDb
       if (!dataIntervalRef.current) {
+        console.log(`Setting up data sending interval. isTracking: ${isTracking}, intervalFromDb: ${intervalFromDb}`);
         dataIntervalRef.current = setInterval(() => {
-          debouncedSendTrackingData();
+          console.log("[TrackingSession] Data sending interval FIRED. Attempting to call sendTrackingData DIRECTLY.");
+          sendTrackingData(); 
         }, intervalFromDb * 1000);
       }
 
@@ -122,18 +142,14 @@ export function useTrackingSession(
     }
   }, [isTracking, intervalFromDb]);
 
-  // Separate effect to handle emotion data sending
+  // useEffect for logging actual state changes (IMPORTANT FOR DEBUGGING)
   useEffect(() => {
-    // Only run this if tracking is active
     if (!isTracking) return;
-    
-    // This effect handles changes to emotion counts without affecting the timer
-    console.log("Emotion counts updated:", {
+    console.log("EMOTION STATE UPDATED (actual state):", {
       interested: interestedCount,
       bored: boredCount,
       lackingFocus: lackingFocusCount
     });
-    
   }, [interestedCount, boredCount, lackingFocusCount, isTracking]);
 
   // Socket event for tracking updates
@@ -178,13 +194,12 @@ export function useTrackingSession(
     };
   }, []);
 
-  // Update emotion counts when tracking data changes
+  // Update emotion counts STATE when tracking data changes
   useEffect(() => {
     if (Array.isArray(trackingData) && trackingData.length > 0) {
-      // Keep track of previous counts
-      const prevInterested = interestedCount;
-      const prevBored = boredCount;
-      const prevLackingFocus = lackingFocusCount;
+      const prevInterested = interestedCountRef.current; // Read from ref for comparison
+      const prevBored = boredCountRef.current;
+      const prevLackingFocus = lackingFocusCountRef.current;
 
       let interested = 0;
       let bored = 0;
@@ -193,20 +208,15 @@ export function useTrackingSession(
       trackingData.forEach((face) => {
         if (face.label) {
           const emotion = face.label.toLowerCase();
-          console.log("Processing emotion:", emotion);
-          if (emotion === "interested") {
-            interested++;
-          } else if (emotion === "bored") {
-            bored++;
-          } else if (emotion === "lacking_focus") {
-            lackingFocus++;
-          }
+          if (emotion === "interested") interested++;
+          else if (emotion === "bored") bored++;
+          else if (emotion === "lacking_focus") lackingFocus++;
         }
       });
 
-      console.log("Updated counts:", { interested, bored, lackingFocus });
+      // Log candidate values before setting state
+      console.log("Updated counts (candidate values for state):", { interested, bored, lackingFocus });
       
-      // Only update if we have new counts and they're different from previous
       if ((interested > 0 || bored > 0 || lackingFocus > 0) && 
           (interested !== prevInterested || bored !== prevBored || lackingFocus !== prevLackingFocus)) {
         setInterestedCount(interested);
@@ -214,40 +224,28 @@ export function useTrackingSession(
         setLackingFocusCount(lackingFocus);
       }
     }
-  }, [trackingData]);
+  }, [trackingData]); // Removed state dependencies to prevent loops, relying on refs for prev values
 
-  // Debounced sendTrackingData to avoid duplicate sends
-  const debouncedSendTrackingData = debounce(() => {
-    console.log("Current counts before sending:", {
-      interested: interestedCount,
-      bored: boredCount,
-      lackingFocus: lackingFocusCount
-    });
-    sendTrackingData();
-  }, 300);
-
-  // Improved error handling and toast spam prevention
   const sendTrackingData = async () => {
     try {
-      // Add milliseconds to timestamp to ensure uniqueness
       const now = new Date();
       const timestamp = now.toISOString().slice(0, 19).replace('T', ' ');
       const uniqueId = `${sessionId}_${now.getTime()}`;
 
-      // Get the current counts directly from state
-      const currentInterested = interestedCount;
-      const currentBored = boredCount;
-      const currentLackingFocus = lackingFocusCount;
+      // Get the current counts from REFs for reliability in interval callback
+      const currentInterestedFromRef = interestedCountRef.current;
+      const currentBoredFromRef = boredCountRef.current;
+      const currentLackingFocusFromRef = lackingFocusCountRef.current;
 
-      console.log("Sending counts:", {
-        interested: currentInterested,
-        bored: currentBored,
-        lackingFocus: currentLackingFocus
+      console.log("SENDING COUNTS (from REFs):", {
+        interested: currentInterestedFromRef,
+        bored: currentBoredFromRef,
+        lackingFocus: currentLackingFocusFromRef
       });
 
-      // Only send if we have any counts
-      if (currentInterested === 0 && currentBored === 0 && currentLackingFocus === 0) {
-        console.log("Skipping send - no counts to send");
+      // REINSTATE THE CHECK: Only send if we have any counts
+      if (currentInterestedFromRef === 0 && currentBoredFromRef === 0 && currentLackingFocusFromRef === 0) {
+        console.log("Skipping send - no counts to send (from REFs).");
         return;
       }
 
@@ -255,29 +253,26 @@ export function useTrackingSession(
         sessionID: sessionId,
         userID: userId,
         timestamp: timestamp,
-        interestedCount: currentInterested,
-        boredCount: currentBored,
-        lackingFocusCount: currentLackingFocus,
+        interestedCount: currentInterestedFromRef,
+        boredCount: currentBoredFromRef,
+        lackingFocusCount: currentLackingFocusFromRef,
         uniqueId: uniqueId
       };
 
-      console.log("Sending tracking data:", payload);
+      console.log("Sending tracking data (payload built from REFs):", payload);
 
       const response = await axios.post(
         "/tracking_session/tracking_emotion",
         payload,
         {
-          headers: {
-            'Content-Type': 'application/json'
-          },
+          headers: { 'Content-Type': 'application/json' },
           timeout: 5000
         }
       );
       
       if (response.data && response.data.message) {
         console.log("Server response:", response.data);
-        // Show success toast only if we have counts
-        if (currentInterested > 0 || currentBored > 0 || currentLackingFocus > 0) {
+        if (currentInterestedFromRef > 0 || currentBoredFromRef > 0 || currentLackingFocusFromRef > 0) {
           toast.success("Tracking data recorded!");
         }
       } else {
