@@ -268,7 +268,7 @@ input:checked + .slider:before {
 }
 
 .content-wrapper.expanded {
-  margin-left: -300px;
+  margin-left: 0;
   width: 100%;
 }
 
