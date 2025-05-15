@@ -1,16 +1,18 @@
 # MySQL connection configuration
 db_config_init = {
-    'host': 'mysql',
-    'port': 3306,
-    'user': 'root',
-    'password': 'root'
+    'host': 'aispt-tanjunlin0215-aispt.h.aivencloud.com',
+    'port': 12100,
+    'user': 'avnadmin',
+    'password': 'AVNS_C9D2eUJ0PchDTyo53ND',
+    'ssl_ca': 'services/ca.pem'
 }
 
 db_config = {
-    'host': 'mysql',
-    'port': 3306,
-    'user': 'root',
-    'password': 'root',
-    'database': 'AISPT'
+    'host': 'aispt-tanjunlin0215-aispt.h.aivencloud.com',
+    'port': 12100,
+    'user': 'avnadmin',
+    'password': 'AVNS_C9D2eUJ0PchDTyo53ND',
+    'database': 'defaultdb',
+    'ssl_ca': 'services/ca.pem'
 }
 
