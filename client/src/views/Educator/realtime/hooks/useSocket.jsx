@@ -9,17 +9,16 @@ const socketOptions = {
   reconnectionDelay: 2500,
   reconnectionDelayMax: 15000,
   timeout: 20000,
-  pingTimeout: 30000,
-  pingInterval: 15000,
+  pingTimeout: 60000,
+  pingInterval: 25000,
 };
 
 export function useSocket() {
   const [isConnected, setIsConnected] = useState(false);
   const [connectionAttempts, setConnectionAttempts] = useState(0);
   const socketRef = useRef(null);
-  const pingIntervalRef = useRef(null);
   const reconnectTimeoutRef = useRef(null);
-  const maxReconnectAttempts = 5;
+  const maxReconnectAttempts = 15;
 
   useEffect(() => {
     const createSocketConnection = () => {
@@ -37,16 +36,6 @@ export function useSocket() {
         toast.success("Tracking server connected");
         setIsConnected(true);
         setConnectionAttempts(0);
-
-        if (pingIntervalRef.current) {
-          clearInterval(pingIntervalRef.current);
-        }
-
-        pingIntervalRef.current = setInterval(() => {
-          if (socketRef.current && socketRef.current.connected) {
-            socketRef.current.emit("ping");
-          }
-        }, 10000);
       });
 
       socketRef.current.on("pong", () => {
@@ -73,11 +62,6 @@ export function useSocket() {
         console.warn("Disconnected from tracking server:", reason);
         toast.warn("Disconnected from tracking server");
         setIsConnected(false);
-
-        if (pingIntervalRef.current) {
-          clearInterval(pingIntervalRef.current);
-          pingIntervalRef.current = null;
-        }
 
         if (
           reason !== "io client disconnect" &&
@@ -106,12 +90,6 @@ export function useSocket() {
         socketRef.current.disconnect();
         socketRef.current = null;
       }
-
-      if (pingIntervalRef.current) {
-        clearInterval(pingIntervalRef.current);
-        pingIntervalRef.current = null;
-      }
-
       if (reconnectTimeoutRef.current) {
         clearTimeout(reconnectTimeoutRef.current);
         reconnectTimeoutRef.current = null;

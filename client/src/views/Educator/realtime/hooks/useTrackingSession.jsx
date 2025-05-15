@@ -160,14 +160,8 @@ export function useTrackingSession(
       const faces = data?.faces || [];
       console.log("Received tracking update:", faces);
 
-      // Update tracking data without resetting
-      setTrackingData(prevData => {
-        // If no faces detected, keep previous data
-        if (faces.length === 0) {
-          return prevData;
-        }
-        return faces;
-      });
+      // Always update tracking data with the latest faces array
+      setTrackingData(faces);
 
       // Update student stats if faces are detected
       if (faces.length > 0) {
