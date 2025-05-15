@@ -12,6 +12,9 @@ export default defineConfig({
     },
     host: "0.0.0.0",  // Allows access from outside the container
     port: 5173, 
+    allowedHosts: [
+      'ai-driven-student-participation-tracker.onrender.com'
+    ],
     proxy: {
       '/database': {
         target: 'http://localhost:5000',
