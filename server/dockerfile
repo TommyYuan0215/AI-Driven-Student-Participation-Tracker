@@ -25,6 +25,7 @@ EXPOSE 5000
 ENV FLASK_APP=server.py
 ENV FLASK_RUN_HOST=0.0.0.0
 ENV FLASK_ENV=development 
+ENV DB_MODE=local
 
 # Run the Flask app
 CMD ["gunicorn", "-k", "eventlet", "-w", "1", "-b", "0.0.0.0:5000", "--reload", "server:app"]

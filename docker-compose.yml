@@ -17,6 +17,7 @@ services:
       - DATABASE_PASSWORD=root
       - DATABASE_NAME=aispt
       - FLASK_ENV=development
+      - DB_MODE=local
       - GUNICORN_CMD_ARGS="--reload"
     networks:
       - mynetwork

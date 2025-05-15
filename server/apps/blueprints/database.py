@@ -1,6 +1,6 @@
 from flask import Blueprint, jsonify
 from werkzeug.security import generate_password_hash
-from apps.services.config import db_config
+from apps.services.config import get_db_config
 import mysql.connector
 from apps.services.db_helper import get_db_connection, get_db_connection_init
 
@@ -8,7 +8,7 @@ from apps.services.db_helper import get_db_connection, get_db_connection_init
 databases_route = Blueprint('database', __name__)
 
 # Supportive Databases for AISPT
-schemaName = db_config['database'] + "_system_data"
+schemaName = get_db_config()['database'] + "_system_data"
 
 def initialize_database():
     # Initialize the database and table when the app starts
@@ -26,7 +26,7 @@ def create_database_if_not_exists():
     cursor = connection.cursor(dictionary=True)
 
     # SQL query to create the database if it doesn't exist
-    create_db_query = f"CREATE DATABASE IF NOT EXISTS {db_config['database']}"
+    create_db_query = f"CREATE DATABASE IF NOT EXISTS {get_db_config()['database']}"
     cursor.execute(create_db_query)
     connection.commit()
     
