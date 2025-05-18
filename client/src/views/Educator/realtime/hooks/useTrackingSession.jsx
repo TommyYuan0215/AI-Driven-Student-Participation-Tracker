@@ -14,7 +14,6 @@ function debounce(fn, delay) {
 
 export function useTrackingSession(
   sessionId,
-  userId,
   socketRef,
   mediaStreamRef,
   stopScreenShare
@@ -26,6 +25,16 @@ export function useTrackingSession(
   const [trackingData, setTrackingData] = useState([]);
   const [studentStats, setStudentStats] = useState({});
 
+  // Threshold notification states
+  const [thresholdSettings, setThresholdSettings] = useState({
+    bored: 3,
+    lackingFocus: 3
+  });
+  const [notificationInterval, setNotificationInterval] = useState(60);
+  const lastNotificationTimeRef = useRef(0);
+  const notificationHistoryRef = useRef([]);
+  const MAX_NOTIFICATION_HISTORY = 5;
+
   // Emotion counts
   const [interestedCount, setInterestedCount] = useState(0);
   const [boredCount, setBoredCount] = useState(0);
@@ -36,12 +45,13 @@ export function useTrackingSession(
   const dataIntervalRef = useRef(null);
   const hasStoppedTracking = useRef(false);
   const currentElapsedTimeRef = useRef(0);
+  const lastSaveTimeRef = useRef(0);
 
   // Toast spam prevention
   const lastToastTimeRef = useRef(0);
-  const TOAST_ERROR_INTERVAL = 5000; // 5 seconds
+  const TOAST_ERROR_INTERVAL = 5000;
 
-  // Refs for current counts to be used in sendTrackingData
+  // Refs for current counts
   const interestedCountRef = useRef(interestedCount);
   const boredCountRef = useRef(boredCount);
   const lackingFocusCountRef = useRef(lackingFocusCount);
@@ -55,26 +65,33 @@ export function useTrackingSession(
     return () => clearInterval(interval);
   }, []);
 
-  // Fetch interval settings from backend
+  // Fetch settings
   useEffect(() => {
-    const fetchInterval = async () => {
+    const fetchSettings = async () => {
       try {
-        const response = await axios.get("/settings/get_emotion_save_interval");
-        if (response.data.success) {
-          setIntervalFromDb(response.data.emotionSaveInterval);
-          console.log("Interval from DB:", response.data.emotionSaveInterval);
-        } else {
-          console.error("Failed to fetch interval from DB");
+        const [intervalResponse, thresholdResponse] = await Promise.all([
+          axios.get("/settings/get_emotion_save_interval"),
+          axios.get("/settings/get_emotion_thresholds")
+        ]);
+
+        if (intervalResponse.data.success) {
+          setIntervalFromDb(intervalResponse.data.emotionSaveInterval);
+          console.log("Interval from DB:", intervalResponse.data.emotionSaveInterval);
+        }
+
+        if (thresholdResponse.data.success) {
+          setThresholdSettings(thresholdResponse.data.thresholds);
+          console.log("Threshold settings:", thresholdResponse.data.thresholds);
         }
       } catch (error) {
-        console.error("Error fetching interval:", error);
+        console.error("Error fetching settings:", error);
       }
     };
 
-    fetchInterval();
+    fetchSettings();
   }, []);
 
-  // Sync refs with state whenever state changes
+  // Sync refs with state
   useEffect(() => {
     interestedCountRef.current = interestedCount;
   }, [interestedCount]);
@@ -87,30 +104,26 @@ export function useTrackingSession(
     lackingFocusCountRef.current = lackingFocusCount;
   }, [lackingFocusCount]);
 
-  // Handle tracking state - ensure intervalFromDb is a dependency
+  // Handle tracking state
   useEffect(() => {
     if (isTracking && intervalFromDb > 0) {
       hasStoppedTracking.current = false;
 
-      // Only start tracking timer if it's not already running
       if (!trackingIntervalRef.current) {
-        // Reset tracking time and start counter
         setTrackingElapsedTime(0);
         currentElapsedTimeRef.current = 0;
 
         trackingIntervalRef.current = setInterval(() => {
           currentElapsedTimeRef.current += 1;
           setTrackingElapsedTime(currentElapsedTimeRef.current);
-        }, 1000);
-      }
 
-      // Set up data sending interval based on intervalFromDb
-      if (!dataIntervalRef.current) {
-        console.log(`Setting up data sending interval. isTracking: ${isTracking}, intervalFromDb: ${intervalFromDb}`);
-        dataIntervalRef.current = setInterval(() => {
-          console.log("[TrackingSession] Data sending interval FIRED. Attempting to call sendTrackingData DIRECTLY.");
-          sendTrackingData(); 
-        }, intervalFromDb * 1000);
+          // Check if it's time to save data
+          const now = Date.now();
+          if (now - lastSaveTimeRef.current >= intervalFromDb * 1000) {
+            sendTrackingData();
+            lastSaveTimeRef.current = now;
+          }
+        }, 1000);
       }
 
       return () => {
@@ -118,39 +131,19 @@ export function useTrackingSession(
           clearInterval(trackingIntervalRef.current);
           trackingIntervalRef.current = null;
         }
-        if (dataIntervalRef.current) {
-          clearInterval(dataIntervalRef.current);
-          dataIntervalRef.current = null;
-        }
       };
     } else {
-      // Stop the tracking timer
       if (trackingIntervalRef.current) {
         clearInterval(trackingIntervalRef.current);
         trackingIntervalRef.current = null;
       }
-      if (dataIntervalRef.current) {
-        clearInterval(dataIntervalRef.current);
-        dataIntervalRef.current = null;
-      }
 
-      // Show toast message if tracking was active
       if (!hasStoppedTracking.current && trackingElapsedTime > 0) {
         toast.info("Tracking stopped");
         hasStoppedTracking.current = true;
       }
     }
   }, [isTracking, intervalFromDb]);
-
-  // useEffect for logging actual state changes (IMPORTANT FOR DEBUGGING)
-  useEffect(() => {
-    if (!isTracking) return;
-    console.log("EMOTION STATE UPDATED (actual state):", {
-      interested: interestedCount,
-      bored: boredCount,
-      lackingFocus: lackingFocusCount
-    });
-  }, [interestedCount, boredCount, lackingFocusCount, isTracking]);
 
   // Socket event for tracking updates
   useEffect(() => {
@@ -160,10 +153,8 @@ export function useTrackingSession(
       const faces = data?.faces || [];
       console.log("Received tracking update:", faces);
 
-      // Always update tracking data with the latest faces array
       setTrackingData(faces);
 
-      // Update student stats if faces are detected
       if (faces.length > 0) {
         const newStats = faces.reduce((stats, face) => {
           if (face.label) {
@@ -188,92 +179,149 @@ export function useTrackingSession(
     };
   }, []);
 
-  // Update emotion counts STATE when tracking data changes
+  // Update emotion counts when tracking data changes
   useEffect(() => {
     if (Array.isArray(trackingData) && trackingData.length > 0) {
-      const prevInterested = interestedCountRef.current; // Read from ref for comparison
-      const prevBored = boredCountRef.current;
-      const prevLackingFocus = lackingFocusCountRef.current;
-
-      let interested = 0;
-      let bored = 0;
-      let lackingFocus = 0;
-
-      trackingData.forEach((face) => {
+      const counts = trackingData.reduce((acc, face) => {
         if (face.label) {
-          const emotion = face.label.toLowerCase();
-          if (emotion === "interested") interested++;
-          else if (emotion === "bored") bored++;
-          else if (emotion === "lacking_focus") lackingFocus++;
+          acc[face.label] = (acc[face.label] || 0) + 1;
         }
+        return acc;
+      }, {});
+
+      setInterestedCount(counts["Interested"] || 0);
+      setBoredCount(counts["Bored"] || 0);
+      setLackingFocusCount(counts["Lacking_Focus"] || 0);
+    }
+  }, [trackingData]);
+
+  // Check thresholds and notify
+  const checkThresholdsAndNotify = () => {
+    const currentTime = Date.now();
+    if (currentTime - lastNotificationTimeRef.current < notificationInterval * 1000) {
+      return;
+    }
+
+    const notifications = [];
+
+    if (boredCountRef.current >= thresholdSettings.bored) {
+      notifications.push({
+        type: "bored",
+        count: boredCountRef.current,
+        message: `${boredCountRef.current} students appear bored`
+      });
+    }
+
+    if (lackingFocusCountRef.current >= thresholdSettings.lackingFocus) {
+      notifications.push({
+        type: "lackingFocus",
+        count: lackingFocusCountRef.current,
+        message: `${lackingFocusCountRef.current} students appear to be lacking focus`
+      });
+    }
+
+    if (notifications.length > 0) {
+      const shouldNotify = notifications.some(notification => {
+        const recentNotification = notificationHistoryRef.current.find(
+          n => n.type === notification.type && n.count === notification.count
+        );
+        return !recentNotification;
       });
 
-      // Log candidate values before setting state
-      console.log("Updated counts (candidate values for state):", { interested, bored, lackingFocus });
-      
-      if ((interested > 0 || bored > 0 || lackingFocus > 0) && 
-          (interested !== prevInterested || bored !== prevBored || lackingFocus !== prevLackingFocus)) {
-        setInterestedCount(interested);
-        setBoredCount(bored);
-        setLackingFocusCount(lackingFocus);
+      if (shouldNotify) {
+        notificationHistoryRef.current = [
+          ...notifications,
+          ...notificationHistoryRef.current
+        ].slice(0, MAX_NOTIFICATION_HISTORY);
+
+        notifications.forEach(notification => {
+          toast.info(notification.message, {
+            autoClose: 5000,
+            position: "top-center",
+            className: `notification-${notification.type}`
+          });
+        });
+
+        lastNotificationTimeRef.current = currentTime;
       }
     }
-  }, [trackingData]); // Removed state dependencies to prevent loops, relying on refs for prev values
+  };
 
+  // Effect to handle threshold notifications
+  useEffect(() => {
+    if (!isTracking) return;
+
+    const notificationInterval = setInterval(() => {
+      checkThresholdsAndNotify();
+    }, 5000); // Check every 5 seconds
+
+    return () => clearInterval(notificationInterval);
+  }, [isTracking, thresholdSettings, notificationInterval]);
+
+  // Send tracking data to server
   const sendTrackingData = async () => {
     try {
-      const now = new Date();
-      const timestamp = now.toISOString().slice(0, 19).replace('T', ' ');
-      const uniqueId = `${sessionId}_${now.getTime()}`;
-
-      // Get the current counts from REFs for reliability in interval callback
       const currentInterestedFromRef = interestedCountRef.current;
       const currentBoredFromRef = boredCountRef.current;
       const currentLackingFocusFromRef = lackingFocusCountRef.current;
 
-      console.log("SENDING COUNTS (from REFs):", {
-        interested: currentInterestedFromRef,
-        bored: currentBoredFromRef,
-        lackingFocus: currentLackingFocusFromRef
-      });
-
-      // REINSTATE THE CHECK: Only send if we have any counts
-      if (currentInterestedFromRef === 0 && currentBoredFromRef === 0 && currentLackingFocusFromRef === 0) {
-        console.log("Skipping send - no counts to send (from REFs).");
-        return;
-      }
-
+      const timestamp = new Date().toISOString().slice(0, 19).replace("T", " ");
       const payload = {
         sessionID: sessionId,
-        userID: userId,
         timestamp: timestamp,
         interestedCount: currentInterestedFromRef,
         boredCount: currentBoredFromRef,
         lackingFocusCount: currentLackingFocusFromRef,
-        uniqueId: uniqueId
       };
 
-      console.log("Sending tracking data (payload built from REFs):", payload);
+      // Add retry logic with exponential backoff
+      let retries = 3;
+      let lastError = null;
+      let delay = 1000; // Start with 1 second delay
 
-      const response = await axios.post(
-        "/tracking_session/tracking_emotion",
-        payload,
-        {
-          headers: { 'Content-Type': 'application/json' },
-          timeout: 5000
+      while (retries > 0) {
+        try {
+          // Ensure socket is connected before sending
+          if (!socketRef.current?.connected) {
+            console.log("Socket not connected, waiting for connection...");
+            await new Promise(resolve => setTimeout(resolve, 2000));
+            continue;
+          }
+
+          const response = await axios.post(
+            "/tracking_session/tracking_emotion",
+            payload,
+            {
+              headers: { 'Content-Type': 'application/json' },
+              timeout: 15000,
+              retry: 3,
+              retryDelay: 1000
+            }
+          );
+          
+          if (response.data && response.data.message) {
+            console.log("Server response:", response.data);
+            if (currentInterestedFromRef > 0 || currentBoredFromRef > 0 || currentLackingFocusFromRef > 0) {
+              toast.success("Tracking data recorded!");
+            }
+            return; // Success, exit the retry loop
+          }
+        } catch (error) {
+          lastError = error;
+          retries--;
+          
+          if (retries > 0) {
+            console.log(`Retrying... ${retries} attempts left. Waiting ${delay}ms`);
+            await new Promise(resolve => setTimeout(resolve, delay));
+            delay *= 2; // Exponential backoff
+          }
         }
-      );
-      
-      if (response.data && response.data.message) {
-        console.log("Server response:", response.data);
-        if (currentInterestedFromRef > 0 || currentBoredFromRef > 0 || currentLackingFocusFromRef > 0) {
-          toast.success("Tracking data recorded!");
-        }
-      } else {
-        throw new Error(response.data?.error || "Failed to record tracking data");
       }
+
+      // If we get here, all retries failed
+      throw lastError;
+
     } catch (error) {
-      // Enhanced error logging
       console.error("Tracking error details:", {
         error: error.message,
         response: error.response?.data,
@@ -286,7 +334,6 @@ export function useTrackingSession(
         }
       });
       
-      // More specific error messages based on error type
       let errorMessage = "Failed to send tracking data";
       
       if (error.code === 'ECONNABORTED') {
@@ -301,7 +348,6 @@ export function useTrackingSession(
         errorMessage = error.response.data.error;
       }
 
-      // Rate limit toast errors
       const now = Date.now();
       if (now - lastToastTimeRef.current > TOAST_ERROR_INTERVAL) {
         toast.error(`Error: ${errorMessage}`);
@@ -337,7 +383,6 @@ export function useTrackingSession(
         if (response.status === 200) {
           toast.success(response.data.message);
 
-          // Reset counts after session ends
           setInterestedCount(0);
           setBoredCount(0);
           setLackingFocusCount(0);
@@ -361,13 +406,7 @@ export function useTrackingSession(
     const hrs = Math.floor(seconds / 3600);
     const mins = Math.floor((seconds % 3600) / 60);
     const secs = seconds % 60;
-
-    let formattedTime = "";
-    if (hrs > 0) formattedTime += `${hrs} hr `;
-    if (mins > 0) formattedTime += `${mins} min `;
-    if (secs > 0 || formattedTime === "") formattedTime += `${secs} seconds`;
-
-    return formattedTime.trim();
+    return `${hrs.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
   const handleStopScreenShare = () => {

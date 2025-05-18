@@ -441,9 +441,7 @@ function UserTrendingDashboard({ isEmbedded = false }) {
       <PageTitleBreadcrumb
         title="User Growth Trend"
         path={location.pathname}
-        isAddNew={true}
-        btnTitle="Generate Report"
-        btnIcon="bi-file-earmark-text"
+        isAddNew={false}
       />
       <div className="m-4 card px-3">
         <div

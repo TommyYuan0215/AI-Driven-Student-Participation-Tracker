@@ -18,7 +18,16 @@ services:
       - DATABASE_NAME=aispt
       - FLASK_ENV=development
       - DB_MODE=local
-      - GUNICORN_CMD_ARGS="--reload"
+      - CUDA_VISIBLE_DEVICES=-1
+      - TF_FORCE_GPU_ALLOW_GROWTH=false
+      - TF_CPP_MIN_LOG_LEVEL=2
+      - GUNICORN_CMD_ARGS=--workers=1 --threads=2 --timeout=120 --reload
+    deploy:
+      resources:
+        limits:
+          memory: 4G
+        reservations:
+          memory: 2G
     networks:
       - mynetwork
 

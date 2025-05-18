@@ -141,45 +141,37 @@ export function useVideoProcessing(
       }
 
       if (!socketRef.current || !socketRef.current.connected) {
-        console.warn(
-          "Socket not available or not connected! Skipping frame send."
-        );
+        console.warn("Socket not available or not connected! Skipping frame send.");
         consecutiveFailures++;
 
         if (consecutiveFailures >= maxConsecutiveFailures) {
           if (captureIntervalRef.current) {
             clearInterval(captureIntervalRef.current);
           }
-          const newInterval = captureInterval * 2;
+          const newInterval = Math.min(captureInterval * 2, 1000); // Cap at 1 second
           captureInterval = newInterval;
           captureIntervalRef.current = setInterval(captureFrame, newInterval);
           consecutiveFailures = 0;
-          console.warn("Reduced frame rate due to connection issues");
+          console.warn(`Reduced frame rate to ${1000/newInterval} FPS due to connection issues`);
         }
         return;
       }
 
       const currentTime = Date.now();
-      if (
-        framePendingRef.current &&
-        currentTime - lastFrameSentTimeRef.current > 500
-      ) {
+      if (framePendingRef.current && currentTime - lastFrameSentTimeRef.current > 1000) {
         console.warn("Forcing reset of pending frame flag due to timeout");
         framePendingRef.current = false;
       }
 
       if (framePendingRef.current) {
-        console.log("Frame pending, skipping this capture");
         return;
       }
 
       try {
         consecutiveFailures = 0;
 
-        if (
-          canvas.width !== videoElement.videoWidth * scaleFactor ||
-          canvas.height !== videoElement.videoHeight * scaleFactor
-        ) {
+        if (canvas.width !== videoElement.videoWidth * scaleFactor ||
+            canvas.height !== videoElement.videoHeight * scaleFactor) {
           canvas.width = videoElement.videoWidth * scaleFactor;
           canvas.height = videoElement.videoHeight * scaleFactor;
         }
@@ -198,6 +190,14 @@ export function useVideoProcessing(
           },
           detectMultiple: true,
           timestamp: Date.now(),
+        }, (ack) => {
+          // Handle acknowledgment
+          if (ack && ack.success) {
+            framePendingRef.current = false;
+          } else {
+            console.warn("Frame not acknowledged by server");
+            framePendingRef.current = false;
+          }
         });
 
         if (frameTimeoutRef.current) {
@@ -209,7 +209,8 @@ export function useVideoProcessing(
             console.warn("Frame acknowledgment timed out");
             framePendingRef.current = false;
           }
-        }, 1000);
+        }, 2000); // Increased timeout to 2 seconds
+
       } catch (error) {
         console.error("Error capturing video frame:", error);
         framePendingRef.current = false;
@@ -219,11 +220,11 @@ export function useVideoProcessing(
           if (captureIntervalRef.current) {
             clearInterval(captureIntervalRef.current);
           }
-          const newInterval = captureInterval * 2;
+          const newInterval = Math.min(captureInterval * 2, 1000); // Cap at 1 second
           captureInterval = newInterval;
           captureIntervalRef.current = setInterval(captureFrame, newInterval);
           consecutiveFailures = 0;
-          console.warn("Reduced frame rate due to capture errors");
+          console.warn(`Reduced frame rate to ${1000/newInterval} FPS due to capture errors`);
         }
       }
     };

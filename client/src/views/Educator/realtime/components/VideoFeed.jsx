@@ -8,7 +8,7 @@ function VideoFeed({
   isShareScreen,
   isTracking,
   trackingData,
-  updateBoundingBoxes, // Add this new prop
+  updateBoundingBoxes,
 }) {
   // Update bounding boxes when tracking data or tracking state changes
   useEffect(() => {
@@ -18,14 +18,12 @@ function VideoFeed({
       // Make sure all boxes are hidden when tracking is off
       const hideBoxes = () => {
         if (videoContainerRef.current) {
-          const boxes =
-            videoContainerRef.current.querySelectorAll('[id^="face-box-"]');
+          const boxes = videoContainerRef.current.querySelectorAll('[id^="face-box-"]');
           boxes.forEach((box) => {
             box.style.display = "none";
           });
         }
       };
-
       hideBoxes();
     }
   }, [isTracking, trackingData, updateBoundingBoxes]);
@@ -33,44 +31,51 @@ function VideoFeed({
   return (
     <div
       ref={videoContainerRef}
-      className="camera-container h-100 d-flex align-items-center justify-content-center border rounded bg-light position-relative"
-      style={{ minHeight: "85vh", backgroundColor: "#000" }}
+      className="video-container position-relative d-flex align-items-center justify-content-center"
+      style={{ 
+        minHeight: "85vh",
+        backgroundColor: "#000",
+        overflow: "hidden"
+      }}
     >
-      <video
-        ref={screenRef}
-        className="position-absolute w-100 h-100"
-        autoPlay
-        playsInline
-        muted
-        style={{
-          objectFit: "contain",
-          visibility: isShareScreen ? "visible" : "hidden",
-        }}
-      />
+      {/* Camera Video */}
       <video
         ref={cameraRef}
-        className="position-absolute w-100 h-100"
+        className="position-absolute"
+        style={{
+          width: "100%",
+          height: "100%",
+          objectFit: "contain",
+          display: isCameraOn ? "block" : "none"
+        }}
         autoPlay
         playsInline
         muted
-        style={{
-          objectFit: "contain",
-          visibility: isCameraOn ? "visible" : "hidden",
-          backgroundColor: "#000000",
-        }}
       />
 
-      {/* The bounding boxes are now managed by the updateBoundingBoxes function */}
-      {/* and are created/updated dynamically as DOM elements */}
+      {/* Screen Share Video */}
+      <video
+        ref={screenRef}
+        className="position-absolute"
+        style={{
+          width: "100%",
+          height: "100%",
+          objectFit: "contain",
+          display: isShareScreen ? "block" : "none"
+        }}
+        autoPlay
+        playsInline
+        muted
+      />
 
+      {/* No Video Message */}
       {!isCameraOn && !isShareScreen && (
-        <div className="text-center text-muted">
-          <span className="d-flex justify-content-center align-items-center">
-            <i className="bi bi-cast fs-1"></i>
-            &emsp;
+        <div className="text-center text-white">
+          <div className="d-flex justify-content-center align-items-center mb-3">
+            <i className="bi bi-cast fs-1 me-3"></i>
             <i className="bi bi-camera fs-1"></i>
-          </span>
-          <p className="mt-2">
+          </div>
+          <p className="mb-0">
             Click 'Start Share Screen' or 'Start Camera' to begin
           </p>
         </div>

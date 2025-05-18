@@ -21,10 +21,6 @@ function RealTimeMonitoring() {
   const location = useLocation();
   const navigate = useNavigate();
 
-  // Session user data
-  const { userData } = useSession(navigate);
-  const currentUserID = userData?.userID;
-
   // Initialize hooks - order matters!
   const { socketRef, isConnected, connectionAttempts, setConnectionAttempts } =
     useSocket();
@@ -52,7 +48,7 @@ function RealTimeMonitoring() {
     handleEndMonitoringSession: endSession,
     formatElapsedTime,
     handleStopScreenShare,
-  } = useTrackingSession(sessionId, currentUserID, socketRef, mediaStreamRef, stopScreenShare);
+  } = useTrackingSession(sessionId, socketRef, mediaStreamRef, stopScreenShare);
 
   // Then use isTracking in video processing
   const {

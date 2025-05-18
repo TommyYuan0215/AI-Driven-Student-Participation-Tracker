@@ -119,11 +119,13 @@ def create_table_if_not_exists():
         create_content_slideshow_table = '''
         CREATE TABLE IF NOT EXISTS CONTENT_SLIDESHOW (
             slideshowID VARCHAR(12) NOT NULL,
+            userID VARCHAR(12) NOT NULL,
             slideshowTitle VARCHAR(255) NOT NULL,
             slideshowDescription TEXT,
             slideshowImage LONGBLOB,
             slideshowStatus INT(2) DEFAULT 1,
-            PRIMARY KEY (slideshowID)
+            PRIMARY KEY (slideshowID),
+            FOREIGN KEY (userID) REFERENCES USER_ACCOUNT(userID) ON DELETE CASCADE ON UPDATE CASCADE
         )
         '''
         try:
@@ -168,15 +170,17 @@ def create_table_if_not_exists():
         except mysql.connector.Error as err:
             print(f"Error creating CONTENT_ANNOUNCEMENT_SEQ table: {err}")
         
-        # SQL query to create the content_slideshow table if it doesn't exist
+        # SQL query to create the content_announcement table if it doesn't exist
         create_content_announcement_table = '''
         CREATE TABLE IF NOT EXISTS CONTENT_ANNOUNCEMENT (
             announcementID VARCHAR(12) NOT NULL,
+            userID VARCHAR(12) NOT NULL,
             announcementTitle VARCHAR(255),
             announcementDescription TEXT,
             announcementStatus INT(2) DEFAULT 1,
             createAt DATETIME DEFAULT CURRENT_TIMESTAMP,
-            PRIMARY KEY (announcementID)
+            PRIMARY KEY (announcementID),
+            FOREIGN KEY (userID) REFERENCES USER_ACCOUNT(userID) ON DELETE CASCADE ON UPDATE CASCADE
         )
         '''
         try:
@@ -186,7 +190,7 @@ def create_table_if_not_exists():
         except mysql.connector.Error as err:
             print(f"Error creating CONTENT_ANNOUNCEMENT table: {err}")
             
-        # Create Trigger for Content Slideshow Table
+        # Create Trigger for Content Announcement Table
         create_content_announcement_trigger = f'''
             CREATE TRIGGER CONTENT_ANNOUNCEMENT_TRIGGER
             BEFORE INSERT ON CONTENT_ANNOUNCEMENT
@@ -286,14 +290,12 @@ def create_table_if_not_exists():
         create_tracking_session_details_table = '''
         CREATE TABLE IF NOT EXISTS TRACKING_SESSION_DETAILS (
             sessionID CHAR(36) NOT NULL,
-            educatorID VARCHAR(12) NOT NULL,
             timestamp DATETIME,
             interested INT,
             bored INT,
             lackingfocus INT,
-            PRIMARY KEY (sessionID, educatorID, timestamp),
-            FOREIGN KEY (sessionID) REFERENCES TRACKING_SESSION(sessionID) ON DELETE CASCADE ON UPDATE CASCADE,
-            FOREIGN KEY (educatorID) REFERENCES TRACKING_SESSION(educatorID) ON DELETE CASCADE ON UPDATE CASCADE
+            PRIMARY KEY (sessionID, timestamp),
+            FOREIGN KEY (sessionID) REFERENCES TRACKING_SESSION(sessionID) ON DELETE CASCADE ON UPDATE CASCADE
         )
         '''
         

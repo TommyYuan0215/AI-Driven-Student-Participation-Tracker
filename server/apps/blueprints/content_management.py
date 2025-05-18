@@ -70,6 +70,7 @@ def update_slideshow_status():
 def add_slideshow():
     data = request.form
     
+    userID = data.get('userID')
     slideshowTitle = data.get('slideshowTitle')
     slideshowDesc = data.get('slideshowDesc')
     slideshowImage = request.files.get('slideshowImage')
@@ -103,8 +104,8 @@ def add_slideshow():
         
         # Insert into database
         cursor.execute(
-            "INSERT INTO CONTENT_SLIDESHOW (slideshowTitle, slideshowDescription, slideshowImage) VALUES (%s, %s, %s)",
-            (slideshowTitle, slideshowDesc, slideshowImage_data)
+            "INSERT INTO CONTENT_SLIDESHOW (userID, slideshowTitle, slideshowDescription, slideshowImage) VALUES (%s, %s, %s, %s)",
+            (userID, slideshowTitle, slideshowDesc, slideshowImage_data)
         )
         
         connection.commit()
@@ -233,7 +234,7 @@ def get_announcement():
         # Fetch all slideshows from database
         cursor.execute("SELECT * FROM CONTENT_ANNOUNCEMENT")
         
-        announcement = cursor.fetchall()        
+        announcement = cursor.fetchall()
 
         return jsonify({
             "status": "success",
@@ -282,6 +283,8 @@ def update_announcement_status():
 def add_announcement():
     data = request.form
     
+    userID = data.get('userID')
+    print("userID received:", userID)
     announcementTitle = data.get('announcementTitle')
     announcementDesc = data.get('announcementDesc')
     
@@ -303,8 +306,8 @@ def add_announcement():
         
         # Insert into database
         cursor.execute(
-            "INSERT INTO CONTENT_ANNOUNCEMENT (announcementTitle, announcementDescription) VALUES (%s, %s)",
-            (announcementTitle, announcementDesc) 
+            "INSERT INTO CONTENT_ANNOUNCEMENT (userID, announcementTitle, announcementDescription) VALUES (%s ,%s, %s)",
+            (userID, announcementTitle, announcementDesc) 
         )
         
         connection.commit()

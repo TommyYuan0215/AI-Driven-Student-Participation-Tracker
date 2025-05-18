@@ -387,3 +387,79 @@ def reset_account_photo():
     finally:
         cursor.close()
         connection.close()
+
+@settings_route.route('/get_emotion_thresholds', methods=['GET'])
+def get_emotion_thresholds():
+    user_id = session.get('user_id')
+    if not user_id:
+        return jsonify({"success": False, "message": "User not logged in"}), 400
+
+    connection = get_db_connection()
+    cursor = connection.cursor(dictionary=True)
+    try:
+        cursor.execute(
+            """
+            SELECT 
+                thresholdBored as bored,
+                thresholdLackingFocus as lackingFocus
+            FROM EDUCATOR 
+            WHERE userID = %s
+            """,
+            (user_id,)
+        )
+        result = cursor.fetchone()
+            
+        return jsonify({
+            "success": True,
+            "thresholds": {
+                "bored": result["bored"],
+                "lackingFocus": result["lackingFocus"]
+            }
+        }), 200
+        
+    except Exception as e:
+        return jsonify({"success": False, "message": f"Error retrieving thresholds: {str(e)}"}), 500
+    finally:
+        cursor.close()
+        connection.close()
+
+@settings_route.route('/update_emotion_thresholds', methods=['POST'])
+def update_emotion_thresholds():
+    user_id = session.get('user_id')
+    if not user_id:
+        return jsonify({"success": False, "message": "User not logged in"}), 400
+
+    data = request.get_json()
+    thresholds = data.get("thresholds", {})
+    
+    if not thresholds:
+        return jsonify({"success": False, "message": "No thresholds provided"}), 400
+        
+    connection = get_db_connection()
+    cursor = connection.cursor()
+    
+    try:
+        cursor.execute(
+            """
+            UPDATE EDUCATOR 
+            SET 
+                thresholdBored = %s,
+                thresholdLackingFocus = %s
+            WHERE userID = %s
+            """,
+            (thresholds.get("bored"), thresholds.get("lackingFocus"), user_id)
+        )
+        
+        connection.commit()
+        
+        return jsonify({
+            "success": True,
+            "message": "Thresholds updated successfully"
+        }), 200
+        
+    except Exception as e:
+        connection.rollback()
+        return jsonify({"success": False, "message": f"Error updating thresholds: {str(e)}"}), 500
+    finally:
+        cursor.close()
+        connection.close()

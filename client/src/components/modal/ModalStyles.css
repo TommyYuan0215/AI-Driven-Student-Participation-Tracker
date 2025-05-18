@@ -1,0 +1,12 @@
+/* Modal Styles */
+.modal {
+  z-index: 2000 !important;
+}
+
+.modal-backdrop {
+  z-index: 2000 !important;
+}
+
+.modal-dialog {
+  z-index: 2000 !important;
+}

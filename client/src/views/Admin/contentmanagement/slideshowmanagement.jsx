@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { Table, Button, Pagination } from "react-bootstrap";
+import { useNavigate } from "react-router-dom";
 import ModelComponent from "../../../components/modal/XLargeModelComponent";
 import LoadingSpinner from "../../../components/common/LoadingSpinnerComponent";
 import SlideshowForm from "../../../components/form/SlideshowForm";
@@ -8,8 +9,12 @@ import axios from "../../../utils/axiosUtils";
 import { toast } from "react-toastify";
 import { useLoadingState } from "../../../hooks/useLoadingState";
 import ContentManagementStatusBadge from "../../../components/customized/ContentManagementStatusBadge";
+import useSession from "../../../hooks/useSession";
 
 function SlideshowManagement() {
+  const navigate = useNavigate();
+  const {userData, isLoggedIn} = useSession(navigate);
+
   const {
     data: slideshowData,
     loading,
@@ -184,6 +189,7 @@ function SlideshowManagement() {
     }
 
     const formDataToSend = new FormData();
+    formDataToSend.append("userID", userData.userID);
     formDataToSend.append("slideshowTitle", slideshowTitle);
     formDataToSend.append("slideshowDesc", slideshowDesc);
     formDataToSend.append("slideshowImage", slideshowImage);

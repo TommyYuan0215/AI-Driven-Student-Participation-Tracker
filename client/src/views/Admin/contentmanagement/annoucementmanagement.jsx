@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
-import { Table, Container, Button, Form, Pagination } from "react-bootstrap";
+import { Table, Button, Pagination } from "react-bootstrap";
+import { useNavigate } from "react-router-dom";
 import PageTitleBreadcrumb from "../../../components/layout/PageTitleBreadcrumbLayout";
 import LoadingSpinner from "../../../components/common/LoadingSpinnerComponent";
 import LargeModelComponent from "../../../components/modal/LargeModelComponent";
@@ -8,8 +9,12 @@ import AnnouncementForm from "../../../components/form/AnnouncementForm";
 import { toast } from "react-toastify";
 import axios from "../../../utils/axiosUtils";
 import ContentManagementStatusBadge from "../../../components/customized/ContentManagementStatusBadge";
+import useSession from "../../../hooks/useSession";
 
 function AnnouncementManagement() {
+  const navigate = useNavigate();
+  const {userData, isLoggedIn} = useSession(navigate);
+
   const {
     data: announcementList,
     loading,
@@ -140,6 +145,7 @@ function AnnouncementManagement() {
     }
 
     const formDataToSend = new FormData();
+    formDataToSend.append("userID", userData.userID);
     formDataToSend.append("announcementTitle", announcementTitle);
     formDataToSend.append("announcementDesc", announcementDesc);
 

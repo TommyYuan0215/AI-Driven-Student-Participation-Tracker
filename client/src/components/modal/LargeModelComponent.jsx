@@ -1,4 +1,5 @@
 import { Modal } from "react-bootstrap";
+import "./ModalStyles.css";
 
 function LargeModelComponent(props) {
   const { title, children, ...restProps } = props;
@@ -9,6 +10,7 @@ function LargeModelComponent(props) {
       size="lg"
       aria-labelledby="contained-modal-title-vcenter"
       centered
+      className="modal-lg"
     >
       <Modal.Header closeButton>
         <Modal.Title>{title}</Modal.Title>
