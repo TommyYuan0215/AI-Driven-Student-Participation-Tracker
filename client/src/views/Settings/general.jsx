@@ -230,7 +230,6 @@ function GeneralSettings() {
   // Determine which accordion section to open by default
   let defaultActiveKey = "0"; // Basic Settings by default
   if (isLoggedIn && userData?.userType === 1) defaultActiveKey = "2"; // Educator
-  else if (isLoggedIn && userData?.userType === 0) defaultActiveKey = "1"; // Admin
 
   return (
     <>
@@ -279,17 +278,6 @@ function GeneralSettings() {
               </section>
             </Accordion.Body>
           </Accordion.Item>
-
-
-          {/* Admin Section */}
-          {isLoggedIn && userData?.userType === 0 && (
-            <Accordion.Item eventKey="1">
-              <Accordion.Header>Admin Settings</Accordion.Header>
-              <Accordion.Body>
-                <p>Admin-specific settings can go here...</p>
-              </Accordion.Body>
-            </Accordion.Item>
-          )}
 
           {/* Educator Section */}
           {isLoggedIn && userData?.userType === 1 && (
