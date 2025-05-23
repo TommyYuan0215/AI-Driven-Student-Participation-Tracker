@@ -22,24 +22,42 @@ function EmotionStatistics({ studentStats, isTracking }) {
         <h4 className="text-center">Emotion Statistics</h4>
         <hr />
         {data.length > 0 ? (
-          <ResponsiveContainer width="100%" height={200}>
-            <PieChart>
-              <Pie
-                data={data}
-                dataKey="value"
-                nameKey="name"
-                cx="50%"
-                cy="50%"
-                outerRadius={80}
-              >
-                {data.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={entry.color} />
-                ))}
-              </Pie>
-              <Tooltip />
-              <Legend verticalAlign="bottom" layout="horizontal" />
-            </PieChart>
-          </ResponsiveContainer>
+          <div style={{ display: "flex", flexDirection: "row", alignItems: "center", justifyContent: "center" }}>
+            <ResponsiveContainer width={180} height={200}>
+              <PieChart>
+                <Pie
+                  data={data}
+                  dataKey="value"
+                  nameKey="name"
+                  cx="50%"
+                  cy="50%"
+                  outerRadius={80}
+                >
+                  {data.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.color} />
+                  ))}
+                </Pie>
+                <Tooltip />
+              </PieChart>
+            </ResponsiveContainer>
+            <div style={{ marginLeft: 16 }}>
+              <Legend
+                layout="vertical"
+                verticalAlign="middle"
+                align="left"
+                payload={data.map((item, index) => ({
+                  id: item.name,
+                  type: "circle",
+                  value: (
+                    <span style={{ color: item.color, fontWeight: "bold" }}>
+                      {item.name}
+                    </span>
+                  ),
+                  color: item.color,
+                }))}
+              />
+            </div>
+          </div>
         ) : (
           <p className="text-muted text-center mt-3">
             Start tracking to see statistics

@@ -14,7 +14,7 @@ face_app = FaceAnalysis(name="buffalo_l", providers=['CPUExecutionProvider'])
 face_app.prepare(ctx_id=-1, det_size=(640, 640))
 
 # Load emotion recognition model
-model_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "models", "emotion_recognition_model.h5"))
+model_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "models", "emotion_recognition_model.keras"))
 model = tf.keras.models.load_model(model_path, compile=False)
 
 previous_boxes = {}
@@ -68,12 +68,12 @@ def create_tracking_server(socketio):
                 faces_batch = np.vstack(all_faces)  # shape: (num_faces, 224, 224, 3)
                 predictions = model.predict(faces_batch)
                 classes = ["Bored", "Interested", "Lacking_Focus"]
+                
+                results = []
                 for i, (prediction, box) in enumerate(zip(predictions, all_boxes)):
                     predicted_label = classes[np.argmax(prediction)]
-                    confidence = float(np.max(prediction))
                     results.append({
                         "label": predicted_label,
-                        "confidence": confidence,
                         "box": box,
                         "id": i
                     })
@@ -96,17 +96,24 @@ def preprocess_image(image_data, detect_multiple=True):
             print("❌ Error: Image decoding failed!")
             return None, None
 
-        # RetinaFace expects BGR images (OpenCV default)
+        # CRITICAL FIX: Convert BGR to RGB
+        img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+        print(f"\n🔄 Converted to RGB - Image shape: {img.shape}, dtype: {img.dtype}")
+
+        # RetinaFace detection (still works with RGB)
         faces = face_app.get(img)
         if not faces:
             print("⚠️ No faces detected")
             return None, None
 
+        print(f"Number of faces detected: {len(faces)}")
+
         all_faces = []
         all_boxes = []
 
-        for face in faces:
+        for i, face in enumerate(faces):
             x1, y1, x2, y2 = [int(coord) for coord in face.bbox]
+            
             # Expand the box a bit
             expand = 0.2
             w = x2 - x1
@@ -119,8 +126,20 @@ def preprocess_image(image_data, detect_multiple=True):
             face_crop = img[y1:y2, x1:x2]
             if face_crop.size == 0:
                 continue
+                
+            print(f"\nFace {i} original crop shape: {face_crop.shape}")
+            
+            # Resize to 224x224 (ResNet50 input size)
             face_crop = cv2.resize(face_crop, (224, 224), interpolation=cv2.INTER_AREA)
-            face_crop = face_crop.astype("float32") / 255.0
+            
+            # CRITICAL FIX: Match your training preprocessing exactly
+            face_crop = face_crop.astype('float32')
+            
+            print(f"Face {i} final preprocessing:")
+            print(f"  Shape: {face_crop.shape}")
+            print(f"  Dtype: {face_crop.dtype}")
+            print(f"  Range: [{face_crop.min():.3f}, {face_crop.max():.3f}]")
+            
             all_faces.append(np.expand_dims(face_crop, axis=0))
             all_boxes.append([x1, y1, x2 - x1, y2 - y1])
 
@@ -128,4 +147,6 @@ def preprocess_image(image_data, detect_multiple=True):
 
     except Exception as e:
         print("❌ Error processing image:", str(e))
+        import traceback
+        traceback.print_exc()
         return None, None

@@ -199,33 +199,9 @@ export function useVideoProcessing(
             framePendingRef.current = false;
           }
         });
-
-        if (frameTimeoutRef.current) {
-          clearTimeout(frameTimeoutRef.current);
-        }
-
-        frameTimeoutRef.current = setTimeout(() => {
-          if (framePendingRef.current) {
-            console.warn("Frame acknowledgment timed out");
-            framePendingRef.current = false;
-          }
-        }, 2000); // Increased timeout to 2 seconds
-
       } catch (error) {
-        console.error("Error capturing video frame:", error);
+        console.error("Error capturing frame:", error);
         framePendingRef.current = false;
-        consecutiveFailures++;
-
-        if (consecutiveFailures >= maxConsecutiveFailures) {
-          if (captureIntervalRef.current) {
-            clearInterval(captureIntervalRef.current);
-          }
-          const newInterval = Math.min(captureInterval * 2, 1000); // Cap at 1 second
-          captureInterval = newInterval;
-          captureIntervalRef.current = setInterval(captureFrame, newInterval);
-          consecutiveFailures = 0;
-          console.warn(`Reduced frame rate to ${1000/newInterval} FPS due to capture errors`);
-        }
       }
     };
 

@@ -16,42 +16,47 @@ export default defineConfig({
       'ai-driven-student-participation-tracker.onrender.com'
     ],
     proxy: {
-      '/database': {
-        target: 'http://localhost:5000',
-        changeOrigin: true,
-        secure: false,
-      },
-      '/tracking': {
-        target: 'http://localhost:5000',
-        changeOrigin: true,
-        secure: false,
-      },
-      '/tracking_session': {
-        target: 'http://localhost:5000',
-        changeOrigin: true,
-        secure: false,
-      },
-      '/credential': {
-        target: 'http://localhost:5000',
-        changeOrigin: true,
-        secure: false,
-      },
-      '/usermanagement': {
-        target: 'http://localhost:5000',
-        changeOrigin: true,
-        secure: false,
-      },
-      '/contentmanagement': {
-        target: 'http://localhost:5000',
-        changeOrigin: true,
-        secure: false,
-      },
-      '/settings': {
-        target: 'http://localhost:5000',
-        changeOrigin: true,
-        secure: false,
-      },
-      '/report_generator': {
+      // '/database': {
+      //   target: 'http://localhost:5000',
+      //   changeOrigin: true,
+      //   secure: false,
+      // },
+      // '/tracking': {
+      //   target: 'http://localhost:5000',
+      //   changeOrigin: true,
+      //   secure: false,
+      // },
+      // '/tracking_session': {
+      //   target: 'http://localhost:5000',
+      //   changeOrigin: true,
+      //   secure: false,
+      // },
+      // '/credential': {
+      //   target: 'http://localhost:5000',
+      //   changeOrigin: true,
+      //   secure: false,
+      // },
+      // '/usermanagement': {
+      //   target: 'http://localhost:5000',
+      //   changeOrigin: true,
+      //   secure: false,
+      // },
+      // '/contentmanagement': {
+      //   target: 'http://localhost:5000',
+      //   changeOrigin: true,
+      //   secure: false,
+      // },
+      // '/settings': {
+      //   target: 'http://localhost:5000',
+      //   changeOrigin: true,
+      //   secure: false,
+      // },
+      // '/report_generator': {
+      //   target: 'http://localhost:5000',
+      //   changeOrigin: true,
+      //   secure: false,
+      // },
+      '/api': {
         target: 'http://localhost:5000',
         changeOrigin: true,
         secure: false,

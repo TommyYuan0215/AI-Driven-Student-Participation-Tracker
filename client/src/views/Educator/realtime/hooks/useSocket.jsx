@@ -7,13 +7,13 @@ const SOCKET_URL = "http://localhost:5000";
 // Socket configuration
 const SOCKET_CONFIG = {
   reconnection: true,
-  reconnectionAttempts: 15,
-  reconnectionDelay: 2500,
+  reconnectionAttempts: 10,
+  reconnectionDelay: 1000,
   reconnectionDelayMax: 15000,
   timeout: 60000,
   pingTimeout: 120000,
   pingInterval: 25000,
-  transports: ['websocket', 'polling'],
+  transports: ['websocket'],
   forceNew: true,
   autoConnect: true,
   upgrade: true,

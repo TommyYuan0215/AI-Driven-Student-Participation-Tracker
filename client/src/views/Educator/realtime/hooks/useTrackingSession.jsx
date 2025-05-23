@@ -131,13 +131,20 @@ export function useTrackingSession(
           clearInterval(trackingIntervalRef.current);
           trackingIntervalRef.current = null;
         }
+        if (dataIntervalRef.current) {
+          clearInterval(dataIntervalRef.current);
+          dataIntervalRef.current = null;
+        }
       };
     } else {
       if (trackingIntervalRef.current) {
         clearInterval(trackingIntervalRef.current);
         trackingIntervalRef.current = null;
       }
-
+      if (dataIntervalRef.current) {
+        clearInterval(dataIntervalRef.current);
+        dataIntervalRef.current = null;
+      }
       if (!hasStoppedTracking.current && trackingElapsedTime > 0) {
         toast.info("Tracking stopped");
         hasStoppedTracking.current = true;
@@ -156,17 +163,16 @@ export function useTrackingSession(
       setTrackingData(faces);
 
       if (faces.length > 0) {
-        const newStats = faces.reduce((stats, face) => {
+        // Count each emotion state
+        const newStats = {};
+        faces.forEach(face => {
           if (face.label) {
-            stats[face.label] = (stats[face.label] || 0) + 1;
+            // Increment count for each emotion
+            newStats[face.label] = (newStats[face.label] || 0) + 1;
           }
-          return stats;
-        }, {});
+        });
 
-        setStudentStats(prev => ({
-          ...prev,
-          ...newStats,
-        }));
+        setStudentStats(newStats);
       }
     };
 
@@ -204,7 +210,10 @@ export function useTrackingSession(
 
     const notifications = [];
 
-    if (boredCountRef.current >= thresholdSettings.bored) {
+    if (
+      thresholdSettings.bored > 0 &&
+      boredCountRef.current >= thresholdSettings.bored
+    ) {
       notifications.push({
         type: "bored",
         count: boredCountRef.current,
@@ -212,7 +221,10 @@ export function useTrackingSession(
       });
     }
 
-    if (lackingFocusCountRef.current >= thresholdSettings.lackingFocus) {
+    if (
+      thresholdSettings.lackingFocus > 0 &&
+      lackingFocusCountRef.current >= thresholdSettings.lackingFocus
+    ) {
       notifications.push({
         type: "lackingFocus",
         count: lackingFocusCountRef.current,
@@ -260,6 +272,7 @@ export function useTrackingSession(
 
   // Send tracking data to server
   const sendTrackingData = async () => {
+    if (!isTracking) return; // Prevent sending if not tracking
     try {
       const currentInterestedFromRef = interestedCountRef.current;
       const currentBoredFromRef = boredCountRef.current;
@@ -287,6 +300,9 @@ export function useTrackingSession(
             await new Promise(resolve => setTimeout(resolve, 2000));
             continue;
           }
+
+          // Prevent sending if not tracking (double guard)
+          if (!isTracking) return;
 
           const response = await axios.post(
             "/tracking_session/tracking_emotion",
