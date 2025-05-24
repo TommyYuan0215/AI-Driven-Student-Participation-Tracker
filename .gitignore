@@ -13,6 +13,7 @@ client/dist/
 client/dist-ssr/
 client/*.local
 client/*package-lock.json
+client/.vite/
 
 # Ignore server dependencies & builds
 server/.venv/

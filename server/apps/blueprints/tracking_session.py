@@ -52,6 +52,11 @@ def get_tracking_session():
         
 @tracking_session_route.route("/get_tracking_session_public", methods=["GET"])
 def get_tracking_session_public():
+    user_id = request.args.get("userID")  # Get userID from query params
+    
+    if not user_id:
+        return jsonify({"error": "userID is required"}), 400
+    
     connection = get_db_connection()
     cursor = connection.cursor(dictionary=True)
 
@@ -70,11 +75,11 @@ def get_tracking_session_public():
         INNER JOIN 
             USER_ACCOUNT ua ON e.userID = ua.userID
         WHERE 
-            e.privacyStatus = '1'
+            e.privacyStatus = '1' AND ua.userID != %s
         ORDER BY
             t.sessionStart DESC
         '''
-        cursor.execute(get_sessions_query)
+        cursor.execute(get_sessions_query, (user_id,))
         trackingsessions = cursor.fetchall()
         
         for session in trackingsessions:

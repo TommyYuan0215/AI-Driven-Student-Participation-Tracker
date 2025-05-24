@@ -19,7 +19,7 @@ function StatisticsDashboard({
     : "/tracking_session/get_tracking_session";
 
   const params = isPublic
-    ? {} // No userID for public sessions
+    ? { userID: userData?.userID } // Add userID for public sessions
     : isAdmin
     ? {} // Admin can see all sessions
     : { userID: userData?.userID }; // Add userID for private sessions

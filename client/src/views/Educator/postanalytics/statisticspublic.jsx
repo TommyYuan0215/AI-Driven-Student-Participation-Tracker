@@ -1,10 +1,12 @@
 import React from "react";
 import PageTitleBreadcrumb from "../../../components/layout/PageTitleBreadcrumbLayout";
 import { useNavigate } from "react-router-dom";
+import useSession from "../../../hooks/useSession";
 import StatisticsDashboard from "../../../components/dashboard/StatisticsDashboardComponent";
 
 function EducatorPublicStatistics() {
   const navigate = useNavigate();
+  const { userData } = useSession(navigate);
   const navigateToDetails = (sessionID) => {
     navigate(`datatrend`, { state: { sessionID } });
   };
@@ -17,6 +19,7 @@ function EducatorPublicStatistics() {
       />
 
       <StatisticsDashboard
+        userData={userData}
         isPublic={true}
         navigateToDetails={navigateToDetails}
       />
