@@ -1,9 +1,9 @@
 // StatisticsDashboard.js
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Table, Button, Pagination } from "react-bootstrap";
 import LoadingSpinner from "../common/LoadingSpinnerComponent";
 import { useLoadingState } from "../../hooks/useLoadingState";
-import { useNavigate } from "react-router-dom";
+import axios from "../../utils/axiosUtils";
 
 function StatisticsDashboard({
   isPublic = false,
@@ -30,6 +30,52 @@ function StatisticsDashboard({
     loading,
     refetch,
   } = useLoadingState(endpoint, params);
+
+  // State for cumulative statistics
+  const [cumulativeStats, setCumulativeStats] = useState({
+    interested: 0,
+    bored: 0,
+    lackingFocus: 0
+  });
+
+  // Calculate cumulative statistics when tracking session list changes
+  useEffect(() => {
+    const calculateCumulativeStats = async () => {
+      if (!trackingsessionList || trackingsessionList.length === 0) return;
+
+      let totalInterested = 0;
+      let totalBored = 0;
+      let totalLackingFocus = 0;
+
+      // Fetch emotion data for each session
+      for (const session of trackingsessionList) {
+        try {
+          const response = await axios.get("/tracking_session/get_tracking_emotion", {
+            params: { sessionID: session.sessionID }
+          });
+          
+          // Sum up all entries for this session
+          if (response.data && response.data.length > 0) {
+            response.data.forEach(entry => {
+              totalInterested += parseInt(entry.interestedCount) || 0;
+              totalBored += parseInt(entry.boredCount) || 0;
+              totalLackingFocus += parseInt(entry.lackingFocusCount) || 0;
+            });
+          }
+        } catch (error) {
+          console.error(`Error fetching emotion data for session ${session.sessionID}:`, error);
+        }
+      }
+
+      setCumulativeStats({
+        interested: totalInterested,
+        bored: totalBored,
+        lackingFocus: totalLackingFocus
+      });
+    };
+
+    calculateCumulativeStats();
+  }, [trackingsessionList]);
 
   // To handle sort function
   const [sortConfig, setSortConfig] = useState({ key: null, direction: "asc" });
@@ -61,13 +107,18 @@ function StatisticsDashboard({
   });
 
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 25;
+  const [itemsPerPage, setItemsPerPage] = useState(10);
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
   const trackingsessionListPagination = sortedSessionList.slice(
     indexOfFirstItem,
     indexOfLastItem
   );
+
+  // Format number to remove leading zeros
+  const formatNumber = (num) => {
+    return num.toString().replace(/^0+/, '') || '0';
+  };
 
   return (
     <>
@@ -99,7 +150,7 @@ function StatisticsDashboard({
                         style={{ fontSize: "2rem", color: "magenta" }}
                       ></i>
                       <h5 className="card-title">Total Sessions Created</h5>
-                      <h3>{trackingsessionList.length}</h3>
+                      <h3>{formatNumber(trackingsessionList.length)}</h3>
                     </div>
                   </div>
                 </div>
@@ -112,7 +163,7 @@ function StatisticsDashboard({
                         style={{ fontSize: "2rem", color: "green" }}
                       ></i>
                       <h5 className="card-title">Interested (Cumulative)</h5>
-                      <h3>{0}</h3>
+                      <h3>{formatNumber(cumulativeStats.interested)}</h3>
                     </div>
                   </div>
                 </div>
@@ -125,7 +176,7 @@ function StatisticsDashboard({
                         style={{ fontSize: "2rem", color: "orange" }}
                       ></i>
                       <h5 className="card-title">Bored (Cumulative)</h5>
-                      <h3>{0}</h3>
+                      <h3>{formatNumber(cumulativeStats.bored)}</h3>
                     </div>
                   </div>
                 </div>
@@ -138,7 +189,7 @@ function StatisticsDashboard({
                         style={{ fontSize: "2rem", color: "red" }}
                       ></i>
                       <h5 className="card-title">Lacking Focus (Cumulative)</h5>
-                      <h3>{0}</h3>
+                      <h3>{formatNumber(cumulativeStats.lackingFocus)}</h3>
                     </div>
                   </div>
                 </div>
@@ -147,6 +198,27 @@ function StatisticsDashboard({
 
             <section className="px-1">
               <h5 className="mb-3">Session History</h5>
+              <div className="d-flex justify-content-between align-items-center mb-3">
+                <div>
+                  Showing {indexOfFirstItem + 1} to {Math.min(indexOfLastItem, trackingsessionList.length)} of {trackingsessionList.length} entries
+                </div>
+                <div className="d-flex align-items-center">
+                  <span className="me-2">Items per page:</span>
+                  <select 
+                    className="form-select form-select-sm" 
+                    value={itemsPerPage}
+                    onChange={(e) => {
+                      setItemsPerPage(Number(e.target.value));
+                      setCurrentPage(1); // Reset to first page when changing items per page
+                    }}
+                    style={{ width: "70px" }}
+                  >
+                    <option value={10}>10</option>
+                    <option value={25}>25</option>
+                    <option value={50}>50</option>
+                  </select>
+                </div>
+              </div>
 
               <Table striped bordered hover responsive>
                 <thead>

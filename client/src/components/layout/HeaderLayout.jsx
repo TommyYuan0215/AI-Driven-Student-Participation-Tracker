@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Nav, Navbar, NavDropdown } from "react-bootstrap";
+import { Nav, Navbar, NavDropdown, Button } from "react-bootstrap";
 import "../../App.css";
 import ModelComponent from "../modal/LoginModelComponent";
 import LoginForm from "../form/LoginForm";
@@ -26,7 +26,7 @@ function ProfileIcon({ userData, showName = true }) {
   );
 }
 
-function Header() {
+function Header({ showSidebar, toggleSidebar, showSidebarToggle }) {
   const [modalType, setModalType] = useState(null); // "login" or "signup"
   const navigate = useNavigate(); // Use navigate here
   const { userData, isLoggedIn } = useSession(navigate);
@@ -37,7 +37,32 @@ function Header() {
 
   return (
     <div className="header-gradient-background">
-      <Navbar expand="lg" className="ps-4 pe-4">
+      <Navbar expand="lg" className="ps-4 pe-4 d-flex align-items-center">
+        {/* Sidebar Toggle Button (if showSidebarToggle is true) */}
+        {showSidebarToggle && typeof toggleSidebar === "function" && (
+          <Button
+            title={showSidebar ? "Hide Sidebar" : "Show Sidebar"}
+            className="sidebar-toggle me-3 d-none d-md-inline-flex align-items-center"
+            onClick={toggleSidebar}
+            variant="light"
+            size="sm"
+            aria-label="Toggle sidebar"
+            style={{
+              boxShadow: "none",
+              height: "48px",
+              width: "48px",
+              padding: 0,
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center"
+            }}
+          >
+            <i
+              className={`bi ${showSidebar ? "bi bi-x-lg" : "bi-list"}`}
+              style={{ fontSize: "2rem", color: "grey" }}
+            ></i>
+          </Button>
+        )}
         <Navbar.Brand
           href={isLoggedIn ? userData.redirect : "/"}
           className="fw-bolder custom-navbar-brand"

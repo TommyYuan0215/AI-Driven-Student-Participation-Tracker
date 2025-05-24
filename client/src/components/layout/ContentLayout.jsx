@@ -3,9 +3,8 @@ import { Outlet } from "react-router-dom";
 
 function ContentLayout() {
   return (
-    <div className="content-container">
-      {/* Main Content */}
-      <div className="content-wrapper">
+    <div className="content-container-full">
+      <div className="content-wrapper-full">
         <Outlet />
       </div>
     </div>

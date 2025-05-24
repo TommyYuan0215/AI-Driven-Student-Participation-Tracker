@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
-import { Table, Container, Button, Form, Pagination } from "react-bootstrap";
+import { Table, Button, Pagination } from "react-bootstrap";
+import { useNavigate } from "react-router-dom";
 import PageTitleBreadcrumb from "../../../components/layout/PageTitleBreadcrumbLayout";
 import LoadingSpinner from "../../../components/common/LoadingSpinnerComponent";
 import LargeModelComponent from "../../../components/modal/LargeModelComponent";
@@ -7,9 +8,13 @@ import { useLoadingState } from "../../../hooks/useLoadingState";
 import AnnouncementForm from "../../../components/form/AnnouncementForm";
 import { toast } from "react-toastify";
 import axios from "../../../utils/axiosUtils";
-import AnnouncementStatusBadge from "../../../components/customized/AnnouncementStatusBadge";
+import ContentManagementStatusBadge from "../../../components/customized/ContentManagementStatusBadge";
+import useSession from "../../../hooks/useSession";
 
 function AnnouncementManagement() {
+  const navigate = useNavigate();
+  const {userData, isLoggedIn} = useSession(navigate);
+
   const {
     data: announcementList,
     loading,
@@ -47,7 +52,7 @@ function AnnouncementManagement() {
 
   // Pagination function
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 25;
+  const [itemsPerPage, setItemsPerPage] = useState(10);
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
   const createdAnnouncement = sortedAnnouncement.slice(
@@ -112,13 +117,10 @@ function AnnouncementManagement() {
       );
 
       if (response.data.success) {
-        toast.success("Announcement status updated successfully!");
-        // Optionally, refresh the data here
-        await refetch(); // Call your function to refetch the updated announcement data
+        toast.success(response.data.message);
+        await refetch();
       } else {
-        toast.error(
-          response.data.message || "Failed to update announcement status."
-        );
+        toast.error(response.data.message);
       }
     } catch (error) {
       console.error("Error updating status:", error);
@@ -143,6 +145,7 @@ function AnnouncementManagement() {
     }
 
     const formDataToSend = new FormData();
+    formDataToSend.append("userID", userData.userID);
     formDataToSend.append("announcementTitle", announcementTitle);
     formDataToSend.append("announcementDesc", announcementDesc);
 
@@ -293,7 +296,28 @@ function AnnouncementManagement() {
             <LoadingSpinner text="Loading announcement list..." />
           ) : (
             <>
-              <Table striped bordered hover responsive>
+              <div className="d-flex justify-content-between align-items-center mb-3">
+                <div>
+                  Showing {indexOfFirstItem + 1} to {Math.min(indexOfLastItem, announcementList.length)} of {announcementList.length} entries
+                </div>
+                <div className="d-flex align-items-center">
+                  <span className="me-2">Items per page:</span>
+                  <select 
+                    className="form-select form-select-sm" 
+                    value={itemsPerPage}
+                    onChange={(e) => {
+                      setItemsPerPage(Number(e.target.value));
+                      setCurrentPage(1); // Reset to first page when changing items per page
+                    }}
+                    style={{ width: "70px" }}
+                  >
+                    <option value={10}>10</option>
+                    <option value={25}>25</option>
+                    <option value={50}>50</option>
+                  </select>
+                </div>
+              </div>
+              <Table striped bordered hover responsive className="align-middle">
                 <thead>
                   <tr className="text-center">
                     <th style={{ width: "50px" }}>#</th>
@@ -342,17 +366,17 @@ function AnnouncementManagement() {
                       <td>{announcement.announcementTitle}</td>
                       <td>{announcement.announcementDescription}</td>
                       <td className="text-center">
-                        <AnnouncementStatusBadge
-                          announcementStatus={announcement.announcementStatus}
+                        <ContentManagementStatusBadge
+                          contentStatus={announcement.announcementStatus}
                         />
                       </td>
-                      <td>
+                      <td className="text-center">
                         <Button
                           variant={
                             announcement.announcementStatus === 1
                               ? "secondary"
                               : "success"
-                          } // Red for active, green for inactive
+                          }
                           size="sm"
                           onClick={() =>
                             handleToggleStatus(

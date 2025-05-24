@@ -6,7 +6,7 @@ import StatisticsDashboard from "../../../components/dashboard/StatisticsDashboa
 function EducatorPublicStatistics() {
   const navigate = useNavigate();
   const navigateToDetails = (sessionID) => {
-    navigate(`trend`, { state: { sessionID } });
+    navigate(`datatrend`, { state: { sessionID } });
   };
 
   return (

@@ -12,27 +12,55 @@ export default defineConfig({
     },
     host: "0.0.0.0",  // Allows access from outside the container
     port: 5173, 
+    allowedHosts: [
+      'ai-driven-student-participation-tracker.onrender.com'
+    ],
     proxy: {
-      '/credential': {
+      // '/database': {
+      //   target: 'http://localhost:5000',
+      //   changeOrigin: true,
+      //   secure: false,
+      // },
+      // '/tracking': {
+      //   target: 'http://localhost:5000',
+      //   changeOrigin: true,
+      //   secure: false,
+      // },
+      // '/tracking_session': {
+      //   target: 'http://localhost:5000',
+      //   changeOrigin: true,
+      //   secure: false,
+      // },
+      // '/credential': {
+      //   target: 'http://localhost:5000',
+      //   changeOrigin: true,
+      //   secure: false,
+      // },
+      // '/usermanagement': {
+      //   target: 'http://localhost:5000',
+      //   changeOrigin: true,
+      //   secure: false,
+      // },
+      // '/contentmanagement': {
+      //   target: 'http://localhost:5000',
+      //   changeOrigin: true,
+      //   secure: false,
+      // },
+      // '/settings': {
+      //   target: 'http://localhost:5000',
+      //   changeOrigin: true,
+      //   secure: false,
+      // },
+      // '/report_generator': {
+      //   target: 'http://localhost:5000',
+      //   changeOrigin: true,
+      //   secure: false,
+      // },
+      '/api': {
         target: 'http://localhost:5000',
         changeOrigin: true,
         secure: false,
       },
-      '/database': {
-        target: 'http://localhost:5000',
-        changeOrigin: true,
-        secure: false,
-      },
-      '/test': {
-        target: 'http://localhost:5000',
-        changeOrigin: true,
-        secure: false,
-      },
-      '/usermanagement': {
-        target: 'http://localhost:5000',
-        changeOrigin: true,
-        secure: false,
-      }
-    }
+    },
   }
 });

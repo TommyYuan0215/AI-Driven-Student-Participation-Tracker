@@ -3,7 +3,7 @@ import { Outlet } from "react-router-dom";
 import NavContentLayout from "../../components/layout/NavContentLayout";
 import AdminNavigation, { sidebarItems } from "./AdminNavigation";
 
-function AdminPage() {
+function AdminPage({ showSidebar, toggleSidebar }) {
   // State to manage the active tab
   const [activeTab, setActiveTab] = useState(
     sidebarItems[0]?.id || "dashboard"
@@ -14,7 +14,12 @@ function AdminPage() {
   };
 
   return (
-    <NavContentLayout sidebarItems={sidebarItems} mainContentItems={[]}>
+    <NavContentLayout
+      sidebarItems={sidebarItems}
+      showSidebar={showSidebar}
+      toggleSidebar={toggleSidebar}
+      mainContentItems={[]}
+    >
       {/* Admin navigation will be rendered here */}
       <AdminNavigation activeTab={activeTab} onTabChange={handleTabChange} />
 

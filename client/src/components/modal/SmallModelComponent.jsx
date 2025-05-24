@@ -1,4 +1,5 @@
 import { Modal } from "react-bootstrap";
+import "./ModalStyles.css";
 
 function SmallModelComponent(props) {
   const { title, children, ...restProps } = props;
@@ -9,6 +10,7 @@ function SmallModelComponent(props) {
       size="sm"
       aria-labelledby="contained-modal-title-vcenter"
       centered
+      className="modal-sm"
     >
       <Modal.Header closeButton>
         <Modal.Title>{title}</Modal.Title>

@@ -14,6 +14,7 @@ export function useVideoProcessing(
   const frameTimeoutRef = useRef(null);
   const lastFrameSentTimeRef = useRef(0);
   const captureIntervalRef = useRef(null);
+  const isInitializedRef = useRef(false);
 
   // Function to hide all bounding boxes
   const hideAllBoxes = () => {
@@ -36,10 +37,12 @@ export function useVideoProcessing(
   useEffect(() => {
     console.log("Tracking state changed:", isTracking);
 
-    if (isTracking) {
+    if (isTracking && !isInitializedRef.current) {
       console.log("Tracking started");
-    } else {
+      isInitializedRef.current = true;
+    } else if (!isTracking) {
       console.log("Tracking stopped, cleaning up");
+      isInitializedRef.current = false;
 
       // Cancel animation frame when tracking stops
       if (animationFrameRef.current) {
@@ -138,45 +141,37 @@ export function useVideoProcessing(
       }
 
       if (!socketRef.current || !socketRef.current.connected) {
-        console.warn(
-          "Socket not available or not connected! Skipping frame send."
-        );
+        console.warn("Socket not available or not connected! Skipping frame send.");
         consecutiveFailures++;
 
         if (consecutiveFailures >= maxConsecutiveFailures) {
           if (captureIntervalRef.current) {
             clearInterval(captureIntervalRef.current);
           }
-          const newInterval = captureInterval * 2;
+          const newInterval = Math.min(captureInterval * 2, 1000); // Cap at 1 second
           captureInterval = newInterval;
           captureIntervalRef.current = setInterval(captureFrame, newInterval);
           consecutiveFailures = 0;
-          console.warn("Reduced frame rate due to connection issues");
+          console.warn(`Reduced frame rate to ${1000/newInterval} FPS due to connection issues`);
         }
         return;
       }
 
       const currentTime = Date.now();
-      if (
-        framePendingRef.current &&
-        currentTime - lastFrameSentTimeRef.current > 500
-      ) {
+      if (framePendingRef.current && currentTime - lastFrameSentTimeRef.current > 1000) {
         console.warn("Forcing reset of pending frame flag due to timeout");
         framePendingRef.current = false;
       }
 
       if (framePendingRef.current) {
-        console.log("Frame pending, skipping this capture");
         return;
       }
 
       try {
         consecutiveFailures = 0;
 
-        if (
-          canvas.width !== videoElement.videoWidth * scaleFactor ||
-          canvas.height !== videoElement.videoHeight * scaleFactor
-        ) {
+        if (canvas.width !== videoElement.videoWidth * scaleFactor ||
+            canvas.height !== videoElement.videoHeight * scaleFactor) {
           canvas.width = videoElement.videoWidth * scaleFactor;
           canvas.height = videoElement.videoHeight * scaleFactor;
         }
@@ -195,33 +190,18 @@ export function useVideoProcessing(
           },
           detectMultiple: true,
           timestamp: Date.now(),
-        });
-
-        if (frameTimeoutRef.current) {
-          clearTimeout(frameTimeoutRef.current);
-        }
-
-        frameTimeoutRef.current = setTimeout(() => {
-          if (framePendingRef.current) {
-            console.warn("Frame acknowledgment timed out");
+        }, (ack) => {
+          // Handle acknowledgment
+          if (ack && ack.success) {
+            framePendingRef.current = false;
+          } else {
+            console.warn("Frame not acknowledged by server");
             framePendingRef.current = false;
           }
-        }, 1000);
+        });
       } catch (error) {
-        console.error("Error capturing video frame:", error);
+        console.error("Error capturing frame:", error);
         framePendingRef.current = false;
-        consecutiveFailures++;
-
-        if (consecutiveFailures >= maxConsecutiveFailures) {
-          if (captureIntervalRef.current) {
-            clearInterval(captureIntervalRef.current);
-          }
-          const newInterval = captureInterval * 2;
-          captureInterval = newInterval;
-          captureIntervalRef.current = setInterval(captureFrame, newInterval);
-          consecutiveFailures = 0;
-          console.warn("Reduced frame rate due to capture errors");
-        }
       }
     };
 

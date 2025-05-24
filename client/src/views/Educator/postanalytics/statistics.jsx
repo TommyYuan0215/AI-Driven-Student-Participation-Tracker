@@ -8,7 +8,7 @@ function EducatorStatistics() {
   const navigate = useNavigate();
   const { userData } = useSession(navigate);
   const navigateToDetails = (sessionID) => {
-    navigate(`trend`, { state: { sessionID } });
+    navigate(`datatrend`, { state: { sessionID } });
   };
 
   return (

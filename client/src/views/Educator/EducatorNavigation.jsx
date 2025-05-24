@@ -6,7 +6,7 @@ const sidebarItems = [
   {
     id: "dashboard",
     label: "Dashboard",
-    path: "/views/educator/dashboard",
+    path: "/educator/dashboard",
     icon: "bi bi-house",
   },
   {
@@ -16,24 +16,24 @@ const sidebarItems = [
     subItems: [
       {
         label: "Statistics Dashboard",
-        path: "/views/educator/postanalytics/statistics",
+        path: "/educator/postanalytics/statistics",
         icon: "bi bi-bar-chart-line",
         subItems: [
           {
             label: "Trend Data Analysis",
-            path: "/views/educator/postanalytics/statistics/trend",
+            path: "/educator/postanalytics/statistics/datatrend",
             icon: "bi bi-graph-up-arrow",
           },
         ],
       },
       {
         label: "Statistics Dashboard (Public)",
-        path: "/views/educator/postanalytics/statisticspublic",
+        path: "/educator/postanalytics/statisticspublic",
         icon: "bi bi-bar-chart-line",
         subItems: [
           {
             label: "Trend Data Analysis",
-            path: "/views/educator/postanalytics/statisticspublic/trend",
+            path: "/educator/postanalytics/statisticspublic/datatrend",
             icon: "bi bi-graph-up-arrow",
           },
         ],
@@ -47,12 +47,12 @@ const sidebarItems = [
     subItems: [
       {
         label: "General Settings",
-        path: "/views/educator/settings/general",
+        path: "/educator/settings/general",
         icon: "bi bi-sliders",
       },
       {
         label: "Account Settings",
-        path: "/views/educator/settings/account",
+        path: "/educator/settings/account",
         icon: "bi bi-person",
       },
     ],

@@ -4,7 +4,7 @@ import NavContentLayout from "../../components/layout/NavContentLayout";
 import ContentLayout from "../../components/layout/ContentLayout";
 import EducationNavigation, { sidebarItems } from "./EducatorNavigation";
 
-function EducatorPage() {
+function EducatorPage({ showSidebar, toggleSidebar }) {
   // State to manage the active tab
   const [activeTab, setActiveTab] = useState(
     sidebarItems[0]?.id || "dashboard"
@@ -17,7 +17,7 @@ function EducatorPage() {
   // Check condition, if is realtimemonitoring.jsx, change layout
   const location = useLocation();
   const isTrackingPage = location.pathname.startsWith(
-    "/views/educator/tracking"
+    "/educator/tracking"
   );
 
   return isTrackingPage ? (
@@ -28,7 +28,12 @@ function EducatorPage() {
       </div>
     </ContentLayout>
   ) : (
-    <NavContentLayout sidebarItems={sidebarItems} mainContentItems={[]}>
+    <NavContentLayout
+      sidebarItems={sidebarItems}
+      showSidebar={showSidebar}
+      toggleSidebar={toggleSidebar}
+      mainContentItems={[]}
+    >
       <EducationNavigation
         activeTab={activeTab}
         onTabChange={handleTabChange}

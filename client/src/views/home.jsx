@@ -37,15 +37,19 @@ function Home() {
     []
   );
 
+  const filterSlideshowData = slideshowData.filter((a) => {
+    return Number(a.slideshowStatus) !== 0;
+  });
+
   return (
     <div>
       <section>
         {loading ? (
           <LoadingSpinner text="Loading slideshow data..." />
         ) : (
-          slideshowData.length > 0 && (
+          filterSlideshowData.length > 0 && (
             <Carousel>
-              {slideshowData.map((slide) => (
+              {filterSlideshowData.map((slide) => (
                 <Carousel.Item key={slide.slideshowID}>
                   <Slideshow
                     imageUrl={`data:image/jpeg;base64,${slide.slideshowImage}`}

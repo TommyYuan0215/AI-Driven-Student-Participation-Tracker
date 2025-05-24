@@ -10,6 +10,7 @@ function PageTitleBreadcrumb({
   onclickToggle = () => {},
   btnTitle = "Add New",
   btnIcon = "",
+  customButton = null,
 }) {
   const breadcrumbItems = getBreadcrumbItems(path);
 
@@ -31,7 +32,10 @@ function PageTitleBreadcrumb({
             ))}
           </Breadcrumb>
 
-          {isAddNew && (
+          {/* Render custom button if provided, otherwise fallback to default */}
+          {customButton ? (
+            customButton
+          ) : isAddNew ? (
             <Button
               variant="primary"
               onClick={onclickToggle}
@@ -40,7 +44,7 @@ function PageTitleBreadcrumb({
               <i className={`bi ${btnIcon ? btnIcon : "bi-plus-lg"}`}></i>
               <span className="ms-2">{btnTitle}</span>
             </Button>
-          )}
+          ) : null}
         </div>
       </div>
     </div>

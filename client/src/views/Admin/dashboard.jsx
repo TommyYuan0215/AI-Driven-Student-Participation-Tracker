@@ -8,6 +8,9 @@ import { PieChart, Pie, Cell, Tooltip, Legend } from "recharts";
 import PageTitleBreadcrumb from "../../components/layout/PageTitleBreadcrumbLayout";
 import ProfileCard from "../../components/card/ProfileCard";
 import AnnouncementCard from "../../components/card/AnnouncementCard";
+import UserTrendingDashboard from "./datamanagement/usertrending";
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer } from "recharts";
+import { useEmotionTrends } from "../../hooks/useEmotionTrends";
 
 function AdminDashboard() {
   const navigate = useNavigate();
@@ -20,7 +23,15 @@ function AdminDashboard() {
   const [userStats, setUserStats] = useState({ active: 0, inactive: 0 });
 
   const handlePieChartClick = () => {
-    navigate("/views/admin/usermanagement");
+    navigate("/admin/usermanagement");
+  };
+
+  const handleTrendChartClick = () => {
+    navigate("/admin/datamanagement/usertrend");
+  };
+
+  const handleEngagementTrendClick = () => {
+    navigate("/admin/datamanagement/statisticsadmin");
   };
 
   useEffect(() => {
@@ -35,6 +46,9 @@ function AdminDashboard() {
       setUserStats(stats);
     }
   }, [userList]);
+
+  // Use real engagement trend data
+  const { trendData: engagementTrendData, loading: trendLoading } = useEmotionTrends();
 
   if (!isLoggedIn) {
     navigate("/");
@@ -56,11 +70,11 @@ function AdminDashboard() {
         path={location.pathname}
       />
       <div className="px-3">
-        <section className="px-1">
+        <section className="px-1 py-4">
           {loading ? (
             <LoadingSpinner text="Loading dashboard..." />
           ) : (
-            <>
+            <div>
               <div className="row">
                 {/* User Profile Area  */}
                 <div className="col-md-4">
@@ -75,6 +89,61 @@ function AdminDashboard() {
               <br />
 
               <div className="row">
+                <div className="col-md-6">
+                  <div className="card">
+                    <div
+                      className="card-header"
+                      style={{ backgroundColor: "#3B3486", color: "#ffffff" }}
+                    >
+                      <span className="ms-1">
+                        <b>User Growth Trend (Current Month)</b>
+                      </span>
+                    </div>
+                    <div
+                      className="card-body p-0"
+                      onClick={handleTrendChartClick}
+                      style={{ cursor: "pointer", height: "320px" }}
+                    >
+                      {/* Embed the UserTrendingDashboard component here */}
+                      <UserTrendingDashboard isEmbedded={true} />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="col-md-6">
+                  <div className="card">
+                    <div
+                      className="card-header"
+                      style={{ backgroundColor: "#3B3486", color: "#ffffff" }}
+                    >
+                      <span className="ms-1">
+                        <b>Engagement Trend (Emotions Over Time)</b>
+                      </span>
+                    </div>
+                    <div className="card-body p-0" style={{ height: "320px", cursor: "pointer" }} onClick={handleEngagementTrendClick}>
+                      {trendLoading ? (
+                        <LoadingSpinner text="Loading engagement trends..." />
+                      ) : (
+                        <ResponsiveContainer width="100%" height="100%">
+                          <LineChart data={engagementTrendData} margin={{ top: 20, right: 40, left: 10, bottom: 10 }}>
+                            <CartesianGrid strokeDasharray="3 3" />
+                            <XAxis dataKey="date" />
+                            <YAxis allowDecimals={false} label={{ value: "Count", angle: -90, position: "left" }} />
+                            <Tooltip />
+                            <Legend />
+                            <Line type="monotone" dataKey="interested" name="Interested" stroke="#198754" strokeWidth={2} activeDot={{ r: 5 }} />
+                            <Line type="monotone" dataKey="bored" name="Bored" stroke="#de1e82" strokeWidth={2} activeDot={{ r: 5 }} />
+                            <Line type="monotone" dataKey="lackingFocus" name="Lacking Focus" stroke="#f39c12" strokeWidth={2} activeDot={{ r: 5 }} />
+                          </LineChart>
+                        </ResponsiveContainer>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <br />
+              <div className="row">
                 {/* User Account Status  */}
                 <div className="col-md-3">
                   <div className="card">
@@ -82,14 +151,14 @@ function AdminDashboard() {
                       className="card-header"
                       style={{ backgroundColor: "#3B3486", color: "#ffffff" }}
                     >
-                      <span className="ms-3">
-                        <b>User Account Authorization Status</b>
+                      <span className="ms-1">
+                        <b>Authorization Status</b>
                       </span>
                     </div>
                     <div className="card-body d-flex justify-content-center">
                       <PieChart
                         width={250}
-                        height={200}
+                        height={250}
                         onClick={handlePieChartClick}
                       >
                         <Pie
@@ -98,8 +167,8 @@ function AdminDashboard() {
                           cy="50%"
                           labelLine={false}
                           label={false}
-                          innerRadius={40}
-                          outerRadius={80}
+                          innerRadius={60}
+                          outerRadius={100}
                           dataKey="value"
                         >
                           {data.map((entry, index) => (
@@ -115,47 +184,8 @@ function AdminDashboard() {
                     </div>
                   </div>
                 </div>
-
-                <div className="col-md-3">
-                  <div className="card">
-                    <div
-                      className="card-header"
-                      style={{ backgroundColor: "#3B3486", color: "#ffffff" }}
-                    >
-                      <span className="ms-3">
-                        <b>B</b>
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="col-md-3">
-                  <div className="card">
-                    <div
-                      className="card-header"
-                      style={{ backgroundColor: "#3B3486", color: "#ffffff" }}
-                    >
-                      <span className="ms-3">
-                        <b>C</b>
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="col-md-3">
-                  <div className="card">
-                    <div
-                      className="card-header"
-                      style={{ backgroundColor: "#3B3486", color: "#ffffff" }}
-                    >
-                      <span className="ms-3">
-                        <b>D</b>
-                      </span>
-                    </div>
-                  </div>
-                </div>
               </div>
-            </>
+            </div>
           )}
         </section>
       </div>
