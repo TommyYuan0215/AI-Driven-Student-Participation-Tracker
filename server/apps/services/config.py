@@ -22,14 +22,14 @@ db_config_remote = {
 # MySQL local connection configuration
 LOCAL_DB_NAME = 'AISPT'
 db_config_local_init = {
-    'host': 'host.docker.internal',
+    'host': 'mysql',
     'port': 3306,
     'user': 'root',
     'password': 'root'
 }
 
 db_config_local = {
-    'host': 'host.docker.internal',
+    'host': 'mysql',
     'port': 3306,
     'user': 'root',
     'password': 'root',

@@ -444,30 +444,32 @@ function UserTrendingDashboard({ isEmbedded = false }) {
         isAddNew={false}
       />
       <div className="m-4 card px-3">
-        <div
-          className={"px-3 m-4"}
-          style={{
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-          }}
-        >
-          <Form.Label className="me-2 mb-0" style={{ width: "10%" }}>
-            Filter by Month:
-          </Form.Label>
-          <Form.Select
-            style={{ width: "90%" }}
-            value={selectedMonth}
-            onChange={(e) => setSelectedMonth(e.target.value)}
+        {userList && userList.length > 0 && (
+          <div
+            className={"px-3 m-4"}
+            style={{
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+            }}
           >
-            <option value="all">All Time</option>
-            {availableMonths.map((month) => (
-              <option key={month} value={month}>
-                {formatMonthDisplay(month)}
-              </option>
-            ))}
-          </Form.Select>
-        </div>
+            <Form.Label className="me-2 mb-0" style={{ width: "10%" }}>
+              Filter by Month:
+            </Form.Label>
+            <Form.Select
+              style={{ width: "90%" }}
+              value={selectedMonth}
+              onChange={(e) => setSelectedMonth(e.target.value)}
+            >
+              <option value="all">All Time</option>
+              {availableMonths.map((month) => (
+                <option key={month} value={month}>
+                  {formatMonthDisplay(month)}
+                </option>
+              ))}
+            </Form.Select>
+          </div>
+        )}
         {renderUserTrendContent()}
       </div>
     </>

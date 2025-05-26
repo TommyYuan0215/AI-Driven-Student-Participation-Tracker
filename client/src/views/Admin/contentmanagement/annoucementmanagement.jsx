@@ -294,7 +294,7 @@ function AnnouncementManagement() {
         <section className="px-1 py-4">
           {loading ? (
             <LoadingSpinner text="Loading announcement list..." />
-          ) : (
+          ) : announcementList.length > 0 ? (
             <>
               <div className="d-flex justify-content-between align-items-center mb-3">
                 <div>
@@ -489,6 +489,19 @@ function AnnouncementManagement() {
                 />
               </Pagination>
             </>
+          ) : (
+            <div
+              className="d-flex justify-content-center align-items-center"
+              style={{ minHeight: "calc(100vh - 250px)" }}
+            >
+              <div className="text-center">
+                <i className="bi bi-megaphone text-muted fs-1"></i>
+                <h3 className="text-muted mt-3">No announcements available</h3>
+                <p className="text-muted">
+                  Click the add button to create a new announcement.
+                </p>
+              </div>
+            </div>
           )}
           ;
         </section>
