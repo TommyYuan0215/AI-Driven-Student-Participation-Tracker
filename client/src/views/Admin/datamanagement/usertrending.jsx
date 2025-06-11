@@ -259,12 +259,13 @@ function UserTrendingDashboard({ isEmbedded = false }) {
 
     if (!userList || userList.length === 0) {
       return (
-        <div className="text-center my-3 text-muted">
+        <div className="text-center my-5 py-5 text-muted">
           <i
             className="bi bi-emoji-neutral"
-            style={{ fontSize: "2rem", opacity: 0.7 }}
+            style={{ fontSize: "3rem", opacity: 0.7 }}
           ></i>
-          <h6 className="mt-2">No user data available</h6>
+          <h5 className="mt-3">No user data available</h5>
+          <p className="small">Start adding users to see the growth trend</p>
         </div>
       );
     }
@@ -317,8 +318,13 @@ function UserTrendingDashboard({ isEmbedded = false }) {
         {/* --- Chart controls --- */}
         <section className="px-3 py-2">
           {filteredUserData.length === 0 ? (
-            <div className="text-center my-3">
-              <p className="small">No data available for the selected period</p>
+            <div className="text-center my-5 py-5 text-muted">
+              <i
+                className="bi bi-emoji-neutral"
+                style={{ fontSize: "3rem", opacity: 0.7 }}
+              ></i>
+              <h5 className="mt-3">No data available for the selected period</h5>
+              <p className="small">Try selecting a different time period</p>
             </div>
           ) : (
             <ResponsiveContainer width="100%" height={isEmbedded ? 250 : 500}>
@@ -381,8 +387,13 @@ function UserTrendingDashboard({ isEmbedded = false }) {
       <>
         <section className="px-3 py-2">
           {filteredUserData.length === 0 ? (
-            <div className="text-center my-3">
-              <p className="small">No data available for the selected period</p>
+            <div className="text-center my-5 py-5 text-muted">
+              <i
+                className="bi bi-emoji-neutral"
+                style={{ fontSize: "3rem", opacity: 0.7 }}
+              ></i>
+              <h5 className="mt-3">No data available for the selected period</h5>
+              <p className="small">Try selecting a different time period</p>
             </div>
           ) : (
             <ResponsiveContainer width="100%" height={300}>
