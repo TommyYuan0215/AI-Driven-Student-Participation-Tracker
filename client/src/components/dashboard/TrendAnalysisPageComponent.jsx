@@ -98,9 +98,12 @@ const TrendAnalysisPageComponent = forwardRef(({
           </section>
 
           {/* Line Chart - Shows ALL data regardless of pagination */}
-          <section className="px-3 py-4" ref={chartRef}>
-            <ResponsiveContainer width="100%" height={500}>
-              <LineChart data={chartData}>
+          <section className="px-3 py-4" ref={chartRef} style={{ minHeight: '600px', width: '100%' }}>
+            <ResponsiveContainer width="100%" height={600}>
+              <LineChart 
+                data={chartData}
+                margin={{ top: 20, right: 30, left: 40, bottom: 40 }}
+              >
                 <CartesianGrid strokeDasharray="3 2" />
                 <XAxis
                   dataKey="timestamp"
@@ -120,19 +123,36 @@ const TrendAnalysisPageComponent = forwardRef(({
                     position: "left",
                     offset: -20,
                   }}
+                  domain={[0, 25]}
+                  allowDataOverflow={false}
+                  tickCount={8}
+                  width={60}
                 />
                 <Tooltip
                   labelFormatter={(value) =>
                     new Date(value).toLocaleTimeString()
                   }
+                  formatter={(value) => [value, 'Count']}
+                  contentStyle={{ 
+                    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                    border: '1px solid #ccc',
+                    borderRadius: '4px',
+                    padding: '8px'
+                  }}
                 />
-                <Legend verticalAlign="top" height={36} />
+                <Legend 
+                  verticalAlign="top" 
+                  height={36}
+                  wrapperStyle={{ paddingBottom: '20px' }}
+                />
                 <Line
                   type="monotone"
                   dataKey="Interested"
                   stroke="#82ca9d"
                   strokeWidth={2}
                   dot={false}
+                  isAnimationActive={true}
+                  animationDuration={1000}
                 />
                 <Line
                   type="monotone"
@@ -140,6 +160,8 @@ const TrendAnalysisPageComponent = forwardRef(({
                   stroke="#ff7300"
                   strokeWidth={2}
                   dot={false}
+                  isAnimationActive={true}
+                  animationDuration={1000}
                 />
                 <Line
                   type="monotone"
@@ -147,6 +169,8 @@ const TrendAnalysisPageComponent = forwardRef(({
                   stroke="#ff0000"
                   strokeWidth={2}
                   dot={false}
+                  isAnimationActive={true}
+                  animationDuration={1000}
                 />
               </LineChart>
             </ResponsiveContainer>

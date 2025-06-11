@@ -1,4 +1,56 @@
-import { useRef, useEffect, useCallback, useState } from "react";
+import { useRef, useEffect, useCallback, useState, useMemo } from "react";
+
+// Configuration with validation
+const createConfig = () => {
+  const config = {
+    SCALE_FACTOR: 0.5,
+    BASE_CAPTURE_INTERVAL: 100, // 10 FPS
+    MAX_CAPTURE_INTERVAL: 1000, // 1 FPS minimum
+    MAX_CONSECUTIVE_FAILURES: 5,
+    FRAME_TIMEOUT: 2000, // 2 seconds
+    JPEG_QUALITY: 0.6,
+    MAX_PROCESSING_TIME_SAMPLES: 10,
+    DEBOUNCE_DELAY: 100,
+    BACKOFF_MULTIPLIER: 1.5,
+    MAX_RETRY_ATTEMPTS: 3,
+    CANVAS_CLEANUP_INTERVAL: 30000, // 30 seconds
+    LOG_LEVEL: process.env.NODE_ENV === 'development' ? 'debug' : 'warn'
+  };
+
+  // Validate configuration
+  if (config.SCALE_FACTOR <= 0 || config.SCALE_FACTOR > 1) {
+    console.warn('Invalid SCALE_FACTOR, using default 0.5');
+    config.SCALE_FACTOR = 0.5;
+  }
+
+  if (config.JPEG_QUALITY <= 0 || config.JPEG_QUALITY > 1) {
+    console.warn('Invalid JPEG_QUALITY, using default 0.6');
+    config.JPEG_QUALITY = 0.6;
+  }
+
+  return config;
+};
+
+// Logging utility
+const createLogger = (level) => ({
+  debug: level === 'debug' ? console.log : () => {},
+  info: ['debug', 'info'].includes(level) ? console.info : () => {},
+  warn: ['debug', 'info', 'warn'].includes(level) ? console.warn : () => {},
+  error: console.error
+});
+
+// Debounce utility
+const debounce = (func, wait) => {
+  let timeout;
+  return function executedFunction(...args) {
+    const later = () => {
+      clearTimeout(timeout);
+      func(...args);
+    };
+    clearTimeout(timeout);
+    timeout = setTimeout(later, wait);
+  };
+};
 
 export function useVideoProcessing(
   isTracking,
@@ -7,13 +59,19 @@ export function useVideoProcessing(
   cameraRef,
   screenRef
 ) {
+  // Memoized configuration and logger
+  const CONFIG = useMemo(() => createConfig(), []);
+  const logger = useMemo(() => createLogger(CONFIG.LOG_LEVEL), [CONFIG.LOG_LEVEL]);
+
   // Enhanced state management
   const [isProcessing, setIsProcessing] = useState(false);
   const [processingStats, setProcessingStats] = useState({
     framesProcessed: 0,
     framesSent: 0,
     errors: 0,
-    avgProcessingTime: 0
+    avgProcessingTime: 0,
+    successRate: 0,
+    lastError: null
   });
 
   // Refs for DOM elements and processing state
@@ -35,34 +93,80 @@ export function useVideoProcessing(
   const currentVideoElementRef = useRef(null);
   const resizeObserverRef = useRef(null);
   const pendingFrameTimeoutRef = useRef(null);
+  const retryAttemptsRef = useRef(0);
+  const canvasCleanupIntervalRef = useRef(null);
+  const metricsRef = useRef({
+    totalFrames: 0,
+    successfulFrames: 0,
+    errors: []
+  });
 
-  // Configuration constants
-  const CONFIG = {
-    SCALE_FACTOR: 0.5,
-    BASE_CAPTURE_INTERVAL: 100, // 10 FPS
-    MAX_CAPTURE_INTERVAL: 1000, // 1 FPS minimum
-    MAX_CONSECUTIVE_FAILURES: 5,
-    FRAME_TIMEOUT: 2000, // 2 seconds
-    JPEG_QUALITY: 0.6,
-    MAX_PROCESSING_TIME_SAMPLES: 10,
-    DEBOUNCE_DELAY: 100
-  };
-
-  // Enhanced canvas management
+  // Enhanced canvas management with cleanup
   const initializeCanvas = useCallback(() => {
     if (!canvasRef.current) {
       canvasRef.current = document.createElement("canvas");
       ctxRef.current = canvasRef.current.getContext("2d", {
         alpha: false,
-        willReadFrequently: false
+        willReadFrequently: false,
+        desynchronized: true // Better performance
       });
+      
+      logger.debug("Canvas initialized");
     }
     return { canvas: canvasRef.current, ctx: ctxRef.current };
+  }, [logger]);
+
+  // Canvas cleanup utility
+  const cleanupCanvas = useCallback(() => {
+    if (canvasRef.current && ctxRef.current) {
+      try {
+        ctxRef.current.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
+        // Reset canvas dimensions to free memory
+        canvasRef.current.width = 1;
+        canvasRef.current.height = 1;
+        logger.debug("Canvas cleaned up");
+      } catch (error) {
+        logger.error("Error cleaning up canvas:", error);
+      }
+    }
+  }, [logger]);
+
+  // Enhanced error tracking
+  const recordError = useCallback((error, context = '') => {
+    const errorRecord = {
+      timestamp: Date.now(),
+      error: error.message || error,
+      context,
+      stack: error.stack
+    };
+    
+    metricsRef.current.errors.push(errorRecord);
+    
+    // Keep only last 50 errors to prevent memory leak
+    if (metricsRef.current.errors.length > 50) {
+      metricsRef.current.errors.shift();
+    }
+    
+    setProcessingStats(prev => ({
+      ...prev,
+      errors: prev.errors + 1,
+      lastError: errorRecord,
+      successRate: metricsRef.current.totalFrames > 0 ? 
+        (metricsRef.current.successfulFrames / metricsRef.current.totalFrames) * 100 : 0
+    }));
   }, []);
 
-  // Function to clean up all bounding boxes
+  // Exponential backoff calculation
+  const getBackoffInterval = useCallback((failureCount) => {
+    return Math.min(
+      CONFIG.BASE_CAPTURE_INTERVAL * Math.pow(CONFIG.BACKOFF_MULTIPLIER, failureCount),
+      CONFIG.MAX_CAPTURE_INTERVAL
+    );
+  }, [CONFIG]);
+
+  // Function to clean up all bounding boxes with better DOM management
   const hideAllBoxes = useCallback(() => {
-    console.log("Hiding all boxes");
+    logger.debug("Hiding all boxes");
 
     if (boxRef.current) {
       boxRef.current.style.display = "none";
@@ -72,37 +176,40 @@ export function useVideoProcessing(
       const boxes = videoContainerRef.current.querySelectorAll('[id^="face-box-"]');
       boxes.forEach((box) => {
         box.style.display = "none";
-        box.remove(); // Clean up DOM
+        // Use requestAnimationFrame for better performance
+        requestAnimationFrame(() => {
+          if (box.parentNode) {
+            box.remove();
+          }
+        });
       });
     }
 
     activeBoxesRef.current.clear();
-  }, []);
+  }, [logger]);
 
-  // Enhanced cleanup function
+  // Enhanced cleanup function with better resource management
   const cleanup = useCallback(() => {
-    console.log("Cleaning up video processing");
+    logger.info("Cleaning up video processing");
 
     // Clear all timeouts and intervals
-    if (animationFrameRef.current) {
-      cancelAnimationFrame(animationFrameRef.current);
-      animationFrameRef.current = null;
-    }
-
-    if (captureIntervalRef.current) {
-      clearInterval(captureIntervalRef.current);
-      captureIntervalRef.current = null;
-    }
-
-    if (frameTimeoutRef.current) {
-      clearTimeout(frameTimeoutRef.current);
-      frameTimeoutRef.current = null;
-    }
-
-    if (pendingFrameTimeoutRef.current) {
-      clearTimeout(pendingFrameTimeoutRef.current);
-      pendingFrameTimeoutRef.current = null;
-    }
+    [
+      animationFrameRef,
+      captureIntervalRef,
+      frameTimeoutRef,
+      pendingFrameTimeoutRef,
+      canvasCleanupIntervalRef
+    ].forEach(ref => {
+      if (ref.current) {
+        if (ref === animationFrameRef) {
+          cancelAnimationFrame(ref.current);
+        } else {
+          clearTimeout(ref.current);
+          clearInterval(ref.current);
+        }
+        ref.current = null;
+      }
+    });
 
     // Disconnect resize observer
     if (resizeObserverRef.current) {
@@ -110,21 +217,35 @@ export function useVideoProcessing(
       resizeObserverRef.current = null;
     }
 
-    // Reset state
+    // Clean up canvas
+    cleanupCanvas();
+
+    // Reset state and refs
     framePendingRef.current = false;
     consecutiveFailuresRef.current = 0;
+    retryAttemptsRef.current = 0;
+    currentVideoElementRef.current = null;
+    processingTimeRef.current = [];
+    
+    // Reset metrics
+    metricsRef.current = {
+      totalFrames: 0,
+      successfulFrames: 0,
+      errors: []
+    };
+    
     setIsProcessing(false);
     
     // Hide all boxes
     hideAllBoxes();
-  }, [hideAllBoxes]);
+  }, [hideAllBoxes, cleanupCanvas, logger]);
 
   // Handle tracking state changes with better lifecycle management
   useEffect(() => {
-    console.log("Tracking state changed:", isTracking);
+    logger.debug("Tracking state changed:", isTracking);
 
     if (isTracking && !isInitializedRef.current) {
-      console.log("Initializing tracking");
+      logger.info("Initializing tracking");
       isInitializedRef.current = true;
       setIsProcessing(false);
       
@@ -133,63 +254,93 @@ export function useVideoProcessing(
         framesProcessed: 0,
         framesSent: 0,
         errors: 0,
-        avgProcessingTime: 0
+        avgProcessingTime: 0,
+        successRate: 0,
+        lastError: null
       });
+
+      // Start periodic canvas cleanup
+      canvasCleanupIntervalRef.current = setInterval(cleanupCanvas, CONFIG.CANVAS_CLEANUP_INTERVAL);
+      
     } else if (!isTracking) {
-      console.log("Stopping tracking");
+      logger.info("Stopping tracking");
       isInitializedRef.current = false;
       cleanup();
     }
 
     return cleanup;
-  }, [isTracking, cleanup]);
+  }, [isTracking, cleanup, cleanupCanvas, CONFIG.CANVAS_CLEANUP_INTERVAL, logger]);
 
-  // Enhanced video element validation
+  // Enhanced video element validation with better error messages
   const validateVideoElement = useCallback((videoElement) => {
     if (!videoElement) {
-      console.error("No video element found");
-      return false;
+      logger.error("No video element found");
+      return { valid: false, reason: "No video element" };
     }
 
-    if (videoElement.readyState < 2) { // HAVE_CURRENT_DATA
-      console.warn("Video element not ready");
-      return false;
+    if (videoElement.readyState < 2) {
+      logger.warn("Video element not ready, readyState:", videoElement.readyState);
+      return { valid: false, reason: "Video not ready" };
     }
 
     if (videoElement.videoWidth === 0 || videoElement.videoHeight === 0) {
-      console.warn("Video dimensions not available");
-      return false;
+      logger.warn("Video dimensions not available:", { 
+        width: videoElement.videoWidth, 
+        height: videoElement.videoHeight 
+      });
+      return { valid: false, reason: "Invalid dimensions" };
     }
 
-    return true;
-  }, []);
+    if (videoElement.ended || videoElement.paused) {
+      logger.warn("Video is not playing:", { 
+        ended: videoElement.ended, 
+        paused: videoElement.paused 
+      });
+      return { valid: false, reason: "Video not playing" };
+    }
 
-  // Enhanced frame capture with better error handling
+    return { valid: true, reason: null };
+  }, [logger]);
+
+  // Debounced video validation
+  const debouncedValidateVideo = useCallback(
+    debounce((videoElement, callback) => {
+      const result = validateVideoElement(videoElement);
+      callback(result);
+    }, CONFIG.DEBOUNCE_DELAY),
+    [validateVideoElement, CONFIG.DEBOUNCE_DELAY]
+  );
+
+  // Enhanced frame capture with better error handling and retry logic
   const captureFrame = useCallback(() => {
     if (!isTracking) {
-      console.warn("Tracking is OFF. Stopping frame capture.");
+      logger.warn("Tracking is OFF. Stopping frame capture.");
       return false;
     }
 
     if (!socketRef.current?.connected) {
-      console.warn("Socket not connected. Skipping frame.");
+      logger.warn("Socket not connected. Skipping frame.");
       consecutiveFailuresRef.current++;
       return false;
     }
 
     const videoElement = isCameraOn ? cameraRef.current : screenRef.current;
-    if (!validateVideoElement(videoElement)) {
+    const validation = validateVideoElement(videoElement);
+    
+    if (!validation.valid) {
       consecutiveFailuresRef.current++;
+      recordError(new Error(`Video validation failed: ${validation.reason}`), 'captureFrame');
       return false;
     }
 
     currentVideoElementRef.current = videoElement;
 
-    // Check if frame is already pending
+    // Enhanced frame pending check
     const currentTime = Date.now();
     if (framePendingRef.current) {
-      if (currentTime - lastFrameSentTimeRef.current > CONFIG.FRAME_TIMEOUT) {
-        console.warn("Frame timeout detected, resetting pending state");
+      const timeSinceLastFrame = currentTime - lastFrameSentTimeRef.current;
+      if (timeSinceLastFrame > CONFIG.FRAME_TIMEOUT) {
+        logger.warn("Frame timeout detected, resetting pending state");
         framePendingRef.current = false;
         if (pendingFrameTimeoutRef.current) {
           clearTimeout(pendingFrameTimeoutRef.current);
@@ -212,6 +363,7 @@ export function useVideoProcessing(
       if (canvas.width !== scaledWidth || canvas.height !== scaledHeight) {
         canvas.width = scaledWidth;
         canvas.height = scaledHeight;
+        logger.debug("Canvas resized:", { width: scaledWidth, height: scaledHeight });
       }
 
       // Clear and draw frame
@@ -222,12 +374,14 @@ export function useVideoProcessing(
       
       framePendingRef.current = true;
       lastFrameSentTimeRef.current = currentTime;
+      metricsRef.current.totalFrames++;
 
       // Set timeout for pending frame
       pendingFrameTimeoutRef.current = setTimeout(() => {
         if (framePendingRef.current) {
-          console.warn("Frame acknowledgment timeout");
+          logger.warn("Frame acknowledgment timeout");
           framePendingRef.current = false;
+          recordError(new Error("Frame acknowledgment timeout"), 'captureFrame');
         }
       }, CONFIG.FRAME_TIMEOUT);
 
@@ -241,103 +395,141 @@ export function useVideoProcessing(
           originalHeight: videoElement.videoHeight
         },
         detectMultiple: true,
+        isSharedScreen: !isCameraOn && !!screenRef.current,
         timestamp: currentTime,
         scaleFactor: CONFIG.SCALE_FACTOR,
-        quality: CONFIG.JPEG_QUALITY
+        quality: CONFIG.JPEG_QUALITY,
+        retryAttempt: retryAttemptsRef.current
       };
 
-      socketRef.current.emit("video_frame", frameData, (ack) => {
-        if (pendingFrameTimeoutRef.current) {
-          clearTimeout(pendingFrameTimeoutRef.current);
-          pendingFrameTimeoutRef.current = null;
-        }
-
-        framePendingRef.current = false;
-        consecutiveFailuresRef.current = 0;
-
-        const processingTime = performance.now() - startTime;
+      // Enhanced socket emission with error handling
+      const emitPromise = new Promise((resolve, reject) => {
+        socketRef.current.emit("video_frame", frameData, (ack) => {
+          resolve(ack);
+        });
         
-        // Update processing stats
-        setProcessingStats(prev => {
-          const newStats = {
-            ...prev,
-            framesProcessed: prev.framesProcessed + 1,
-            framesSent: ack?.success ? prev.framesSent + 1 : prev.framesSent,
-            errors: ack?.success ? prev.errors : prev.errors + 1
-          };
+        // Handle socket errors
+        socketRef.current.once('error', (error) => {
+          reject(error);
+        });
+      });
 
-          // Calculate average processing time
-          processingTimeRef.current.push(processingTime);
-          if (processingTimeRef.current.length > CONFIG.MAX_PROCESSING_TIME_SAMPLES) {
-            processingTimeRef.current.shift();
+      emitPromise
+        .then((ack) => {
+          if (pendingFrameTimeoutRef.current) {
+            clearTimeout(pendingFrameTimeoutRef.current);
+            pendingFrameTimeoutRef.current = null;
+          }
+
+          framePendingRef.current = false;
+          consecutiveFailuresRef.current = 0;
+          retryAttemptsRef.current = 0;
+
+          const processingTime = performance.now() - startTime;
+          
+          if (ack?.success) {
+            metricsRef.current.successfulFrames++;
           }
           
-          newStats.avgProcessingTime = processingTimeRef.current.reduce((a, b) => a + b, 0) / processingTimeRef.current.length;
-          
-          return newStats;
-        });
+          // Update processing stats
+          setProcessingStats(prev => {
+            const newStats = {
+              ...prev,
+              framesProcessed: prev.framesProcessed + 1,
+              framesSent: ack?.success ? prev.framesSent + 1 : prev.framesSent,
+              errors: ack?.success ? prev.errors : prev.errors + 1
+            };
 
-        if (!ack?.success) {
-          console.warn("Frame not acknowledged by server:", ack?.error);
-        }
-      });
+            // Calculate average processing time
+            processingTimeRef.current.push(processingTime);
+            if (processingTimeRef.current.length > CONFIG.MAX_PROCESSING_TIME_SAMPLES) {
+              processingTimeRef.current.shift();
+            }
+            
+            newStats.avgProcessingTime = processingTimeRef.current.reduce((a, b) => a + b, 0) / processingTimeRef.current.length;
+            newStats.successRate = metricsRef.current.totalFrames > 0 ? 
+              (metricsRef.current.successfulFrames / metricsRef.current.totalFrames) * 100 : 0;
+            
+            return newStats;
+          });
+
+          if (!ack?.success) {
+            recordError(new Error(ack?.error || "Frame not acknowledged"), 'socketResponse');
+            logger.warn("Frame not acknowledged by server:", ack?.error);
+          }
+        })
+        .catch((error) => {
+          logger.error('Socket emission error:', error);
+          framePendingRef.current = false;
+          consecutiveFailuresRef.current++;
+          recordError(error, 'socketEmission');
+        });
 
       return true;
 
     } catch (error) {
-      console.error("Error capturing frame:", error);
+      logger.error("Error capturing frame:", error);
       framePendingRef.current = false;
       consecutiveFailuresRef.current++;
-      
-      setProcessingStats(prev => ({
-        ...prev,
-        errors: prev.errors + 1
-      }));
+      recordError(error, 'captureFrame');
       
       return false;
     }
-  }, [isTracking, isCameraOn, socketRef, cameraRef, screenRef, validateVideoElement, initializeCanvas]);
+  }, [
+    isTracking, 
+    isCameraOn, 
+    socketRef, 
+    cameraRef, 
+    screenRef, 
+    validateVideoElement, 
+    initializeCanvas, 
+    CONFIG, 
+    logger, 
+    recordError
+  ]);
 
-  // Enhanced capture management with adaptive frame rate
+  // Enhanced capture management with adaptive frame rate and retry logic
   const manageCaptureInterval = useCallback(() => {
     if (consecutiveFailuresRef.current >= CONFIG.MAX_CONSECUTIVE_FAILURES) {
-      // Reduce frame rate on consecutive failures
-      const currentInterval = captureIntervalRef.current ? 
-        CONFIG.BASE_CAPTURE_INTERVAL * Math.pow(2, Math.floor(consecutiveFailuresRef.current / CONFIG.MAX_CONSECUTIVE_FAILURES)) :
-        CONFIG.BASE_CAPTURE_INTERVAL;
-      
-      const newInterval = Math.min(currentInterval, CONFIG.MAX_CAPTURE_INTERVAL);
+      const backoffInterval = getBackoffInterval(Math.floor(consecutiveFailuresRef.current / CONFIG.MAX_CONSECUTIVE_FAILURES));
       
       if (captureIntervalRef.current) {
         clearInterval(captureIntervalRef.current);
       }
       
-      console.warn(`Adjusting capture interval to ${newInterval}ms due to failures`);
+      logger.warn(`Adjusting capture interval to ${backoffInterval}ms due to failures`);
       
       captureIntervalRef.current = setInterval(() => {
         if (captureFrame()) {
           consecutiveFailuresRef.current = Math.max(0, consecutiveFailuresRef.current - 1);
+        } else if (retryAttemptsRef.current < CONFIG.MAX_RETRY_ATTEMPTS) {
+          retryAttemptsRef.current++;
+          logger.debug(`Retry attempt ${retryAttemptsRef.current}/${CONFIG.MAX_RETRY_ATTEMPTS}`);
         }
-      }, newInterval);
+      }, backoffInterval);
     }
-  }, [captureFrame]);
+  }, [captureFrame, getBackoffInterval, CONFIG, logger]);
 
   // Enhanced initialization with better video handling
   const initializeCapturing = useCallback((videoElement) => {
-    if (!validateVideoElement(videoElement)) {
-      console.error("Cannot initialize capturing - invalid video element");
+    const validation = validateVideoElement(videoElement);
+    if (!validation.valid) {
+      logger.error("Cannot initialize capturing - invalid video element:", validation.reason);
       return;
     }
 
-    console.log("Initializing video capture");
+    logger.info("Initializing video capture");
     setIsProcessing(true);
 
     // Ensure video is playing
     if (videoElement.paused) {
-      console.warn("Video is paused. Attempting to play...");
+      logger.warn("Video is paused. Attempting to play...");
       videoElement
         .play()
-        .catch((e) => console.error("Couldn't play video:", e));
+        .catch((e) => {
+          logger.error("Couldn't play video:", e);
+          recordError(e, 'videoPlay');
+        });
     }
 
     // Clear any existing intervals
@@ -346,8 +538,9 @@ export function useVideoProcessing(
       captureIntervalRef.current = null;
     }
 
-    // Reset failure counter
+    // Reset counters
     consecutiveFailuresRef.current = 0;
+    retryAttemptsRef.current = 0;
 
     // Initialize canvas
     initializeCanvas();
@@ -357,7 +550,7 @@ export function useVideoProcessing(
       resizeObserverRef.current = new ResizeObserver((entries) => {
         for (const entry of entries) {
           if (entry.target === videoElement) {
-            console.log("Video element resized, updating canvas");
+            logger.debug("Video element resized, updating canvas");
             // Canvas will be updated on next frame capture
           }
         }
@@ -373,33 +566,45 @@ export function useVideoProcessing(
       }
     }, CONFIG.BASE_CAPTURE_INTERVAL);
 
-  }, [validateVideoElement, initializeCanvas, captureFrame, manageCaptureInterval]);
+  }, [validateVideoElement, initializeCanvas, captureFrame, manageCaptureInterval, CONFIG, logger, recordError]);
 
   // Enhanced start function with better video readiness checking
   const startSendingVideo = useCallback(() => {
     if (!isTracking) {
-      console.log("Can't start sending video - tracking is off");
+      logger.info("Can't start sending video - tracking is off");
       return;
     }
 
     const videoElement = isCameraOn ? cameraRef.current : screenRef.current;
 
     if (!videoElement) {
-      console.error("No video element found!");
+      logger.error("No video element found!");
+      recordError(new Error("No video element found"), 'startSendingVideo');
       return;
     }
 
     const checkVideoReady = () => {
-      if (validateVideoElement(videoElement)) {
-        initializeCapturing(videoElement);
-      } else {
-        console.log("Video not ready, checking again...");
-        setTimeout(checkVideoReady, 100);
-      }
+      debouncedValidateVideo(videoElement, (validation) => {
+        if (validation.valid) {
+          initializeCapturing(videoElement);
+        } else {
+          logger.debug("Video not ready, checking again...", validation.reason);
+          setTimeout(checkVideoReady, 100);
+        }
+      });
     };
 
     checkVideoReady();
-  }, [isTracking, isCameraOn, cameraRef, screenRef, validateVideoElement, initializeCapturing]);
+  }, [
+    isTracking, 
+    isCameraOn, 
+    cameraRef, 
+    screenRef, 
+    debouncedValidateVideo, 
+    initializeCapturing, 
+    logger, 
+    recordError
+  ]);
 
   // Enhanced bounding box calculation with better error handling
   const calculateBoxPosition = useCallback((box, videoElement) => {
@@ -436,12 +641,13 @@ export function useVideoProcessing(
         height: Math.max(0, height * scale),
       };
     } catch (error) {
-      console.error("Error calculating box position:", error);
+      logger.error("Error calculating box position:", error);
+      recordError(error, 'calculateBoxPosition');
       return { left: 0, top: 0, width: 0, height: 0 };
     }
-  }, []);
+  }, [CONFIG.SCALE_FACTOR, logger, recordError]);
 
-  // Enhanced bounding box updates with better DOM management
+  // Enhanced bounding box updates with better DOM management and accessibility
   const updateBoundingBoxes = useCallback((trackingData) => {
     if (!isTracking || !videoContainerRef.current) {
       hideAllBoxes();
@@ -449,7 +655,8 @@ export function useVideoProcessing(
     }
 
     const videoElement = isCameraOn ? cameraRef.current : screenRef.current;
-    if (!validateVideoElement(videoElement)) {
+    const validation = validateVideoElement(videoElement);
+    if (!validation.valid) {
       return;
     }
 
@@ -483,6 +690,8 @@ export function useVideoProcessing(
           boxElement = document.createElement("div");
           boxElement.id = boxId;
           boxElement.className = "position-absolute";
+          boxElement.setAttribute('role', 'img');
+          boxElement.setAttribute('aria-label', 'Face detection box');
           boxElement.style.cssText = `
             border: 3px solid #ff0000;
             z-index: 9999;
@@ -491,10 +700,11 @@ export function useVideoProcessing(
             transition: all 0.1s ease-out;
           `;
 
-          // Add label element
+          // Add label element with accessibility
           const labelElement = document.createElement("div");
           labelElement.id = labelId;
           labelElement.className = "position-absolute px-2 py-1";
+          labelElement.setAttribute('aria-live', 'polite');
           labelElement.style.cssText = `
             top: -28px;
             left: 0;
@@ -517,49 +727,71 @@ export function useVideoProcessing(
         const boxPos = calculateBoxPosition(face.box, videoElement);
         
         if (boxPos.width > 0 && boxPos.height > 0) {
-          boxElement.style.left = `${boxPos.left}px`;
-          boxElement.style.top = `${boxPos.top}px`;
-          boxElement.style.width = `${boxPos.width}px`;
-          boxElement.style.height = `${boxPos.height}px`;
-          boxElement.style.display = "block";
+          // Use requestAnimationFrame for smooth updates
+          requestAnimationFrame(() => {
+            boxElement.style.left = `${boxPos.left}px`;
+            boxElement.style.top = `${boxPos.top}px`;
+            boxElement.style.width = `${boxPos.width}px`;
+            boxElement.style.height = `${boxPos.height}px`;
+            boxElement.style.display = "block";
+          });
 
           // Update label
           const labelElement = document.getElementById(labelId);
           if (labelElement) {
-            // const confidence = face.confidence ? ` (${Math.round(face.confidence * 100)}%)` : "";
+            const confidence = face.confidence ? ` (${Math.round(face.confidence * 100)}%)` : "";
             const label = face.label || "Detecting...";
-            labelElement.textContent = `${label}`;
+            labelElement.textContent = `${label}${confidence}`;
           }
 
           activeBoxesRef.current.add(boxId);
         }
       });
 
-      // Clean up unused boxes
+      // Clean up unused boxes with requestAnimationFrame
       existingBoxes.forEach((box) => {
         if (!activeBoxesRef.current.has(box.id)) {
-          box.remove();
+          requestAnimationFrame(() => {
+            if (box.parentNode) {
+              box.remove();
+            }
+          });
         }
       });
 
     } catch (error) {
-      console.error("Error updating bounding boxes:", error);
+      logger.error("Error updating bounding boxes:", error);
+      recordError(error, 'updateBoundingBoxes');
     }
-  }, [isTracking, isCameraOn, cameraRef, screenRef, validateVideoElement, calculateBoxPosition, hideAllBoxes]);
+  }, [
+    isTracking, 
+    isCameraOn, 
+    cameraRef, 
+    screenRef, 
+    validateVideoElement, 
+    calculateBoxPosition, 
+    hideAllBoxes, 
+    logger, 
+    recordError
+  ]);
 
-  // Cleanup on unmount
+  // Cleanup on unmount with enhanced resource management
   useEffect(() => {
     return () => {
       cleanup();
-      // Clean up canvas
+      // Clean up canvas references
       if (canvasRef.current) {
         canvasRef.current = null;
         ctxRef.current = null;
       }
+      // Clear processing time array
+      processingTimeRef.current = [];
     };
   }, [cleanup]);
 
+  // Enhanced return object with additional utilities
   return {
+    // Core functionality
     videoContainerRef,
     boxRef,
     startSendingVideo,
@@ -567,12 +799,26 @@ export function useVideoProcessing(
     hideAllBoxes,
     updateBoundingBoxes,
     
-    // Enhanced return values
+    // Enhanced state and metrics
     isProcessing,
     processingStats,
-    cleanup,
     
     // Utility functions
+    cleanup,
     validateVideoElement,
+    
+    // New utility functions
+    recordError,
+    cleanupCanvas,
+    
+    // Configuration access
+    config: CONFIG,
+    
+    // Debugging helpers (only in development)
+    ...(CONFIG.LOG_LEVEL === 'debug' && {
+      getMetrics: () => metricsRef.current,
+      getProcessingTimes: () => processingTimeRef.current,
+      getActiveBoxes: () => Array.from(activeBoxesRef.current)
+    })
   };
 }

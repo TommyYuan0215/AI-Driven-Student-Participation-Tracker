@@ -34,4 +34,4 @@ ENV FLASK_ENV=development
 ENV DB_MODE=local
 
 # Run the Flask app with optimized settings for CPU
-CMD ["gunicorn", "-k", "eventlet", "-w", "1", "--threads", "2", "-b", "0.0.0.0:5000", "--timeout", "120", "--reload", "server:app"]
+CMD ["gunicorn", "-k", "eventlet", "-w", "1", "-b", "0.0.0.0:5000", "--timeout", "120", "--reload", "server:app"]
