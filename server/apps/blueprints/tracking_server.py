@@ -10,23 +10,29 @@ import logging
 import time
 import threading
 from collections import defaultdict, deque
+import math
 
 # Configuration
 CONFIG = {
     'DEBUG': False,
-    'FACE_DETECTION_SIZE': (640, 640),  # Increased for better detection
+    'FACE_DETECTION_SIZE': (640, 640),
     'FACE_CROP_SIZE': (224, 224),
     'BOX_EXPAND_RATIO': 0.2,
-    'MAX_FACES': 20,  # Reduced for performance
-    'CONFIDENCE_THRESHOLD': 0.5,  # Increased threshold
-    'MODEL_BATCH_SIZE': 4,  # Reduced batch size
+    'MAX_FACES': 20,
+    'CONFIDENCE_THRESHOLD': 0.3,
+    'MODEL_BATCH_SIZE': 4,
     'MAX_TRACK_AGE': 30,
-    'FRAME_SKIP': 2,  # Process every 2nd frame for performance
+    'FRAME_SKIP': 1,  # Process every frame for smooth tracking
     'MAX_QUEUE_SIZE': 10,
-    'PING_TIMEOUT': 10,  # seconds
-    'PING_INTERVAL': 5,  # seconds
+    'PING_TIMEOUT': 10,
+    'PING_INTERVAL': 5,
     'MAX_RECONNECT_ATTEMPTS': 10,
-    'CONNECTION_TIMEOUT': 10  # seconds
+    'CONNECTION_TIMEOUT': 10,
+    # Tracking stability parameters
+    'TRACKING_DISTANCE_THRESHOLD': 80,  # Increased for better tracking
+    'BOX_SMOOTHING_FACTOR': 0.3,  # Lower = more smoothing
+    'MIN_DETECTION_CONFIDENCE': 0.4,  # Higher threshold for stable detection
+    'TRACK_MEMORY_FRAMES': 5,  # Remember position for missing detections
 }
 
 # Global state with thread safety
@@ -39,30 +45,199 @@ frame_queue = deque(maxlen=CONFIG['MAX_QUEUE_SIZE'])
 # Emotion labels
 EMOTION_LABELS = ["Bored", "Interested", "Lacking_Focus"]
 
+class FaceTracker:
+    """Enhanced face tracker with stable bounding boxes"""
+    def __init__(self):
+        self.tracks = {}  # track_id: TrackData
+        self.next_id = 0
+        self.frame_count = 0
+        self.lock = threading.Lock()
+    
+    def update(self, detections, frame_count):
+        """Update tracker with new detections"""
+        with self.lock:
+            self.frame_count = frame_count
+            
+            # Convert detections to tracking format
+            detection_centers = []
+            detection_boxes = []
+            for det in detections:
+                x, y, w, h = det['box']
+                center = (x + w/2, y + h/2)
+                detection_centers.append(center)
+                detection_boxes.append([x, y, w, h])
+            
+            # Match detections to existing tracks
+            matched_tracks = set()
+            matched_detections = set()
+            
+            # Distance-based matching
+            for det_idx, det_center in enumerate(detection_centers):
+                best_track_id = None
+                best_distance = float('inf')
+                
+                for track_id, track in self.tracks.items():
+                    if track_id in matched_tracks:
+                        continue
+                    
+                    # Skip tracks that are too old
+                    if frame_count - track.last_update > CONFIG['TRACK_MEMORY_FRAMES']:
+                        continue
+                    
+                    distance = self._calculate_distance(det_center, track.predicted_center)
+                    
+                    if distance < CONFIG['TRACKING_DISTANCE_THRESHOLD'] and distance < best_distance:
+                        best_distance = distance
+                        best_track_id = track_id
+                
+                if best_track_id is not None:
+                    # Update existing track
+                    self.tracks[best_track_id].update(
+                        detection_boxes[det_idx], 
+                        det_center, 
+                        frame_count,
+                        detections[det_idx]
+                    )
+                    matched_tracks.add(best_track_id)
+                    matched_detections.add(det_idx)
+            
+            # Create new tracks for unmatched detections
+            for det_idx in range(len(detections)):
+                if det_idx not in matched_detections:
+                    new_track = TrackData(
+                        self.next_id,
+                        detection_boxes[det_idx],
+                        detection_centers[det_idx],
+                        frame_count,
+                        detections[det_idx]
+                    )
+                    self.tracks[self.next_id] = new_track
+                    self.next_id += 1
+            
+            # Remove old tracks
+            tracks_to_remove = []
+            for track_id, track in self.tracks.items():
+                if frame_count - track.last_update > CONFIG['MAX_TRACK_AGE']:
+                    tracks_to_remove.append(track_id)
+            
+            for track_id in tracks_to_remove:
+                del self.tracks[track_id]
+            
+            # Return active tracks
+            active_tracks = []
+            for track in self.tracks.values():
+                if frame_count - track.last_update <= CONFIG['TRACK_MEMORY_FRAMES']:
+                    active_tracks.append(track.get_output())
+            
+            return active_tracks
+    
+    def _calculate_distance(self, p1, p2):
+        """Calculate Euclidean distance between two points"""
+        return math.sqrt((p1[0] - p2[0])**2 + (p1[1] - p2[1])**2)
+    
+    def reset(self):
+        """Reset tracker state"""
+        with self.lock:
+            self.tracks.clear()
+            self.next_id = 0
+            self.frame_count = 0
+
+class TrackData:
+    """Individual track data with smoothing"""
+    def __init__(self, track_id, box, center, frame_count, detection_data):
+        self.id = track_id
+        self.box = box.copy()  # [x, y, w, h]
+        self.center = center
+        self.predicted_center = center
+        self.last_update = frame_count
+        self.detection_data = detection_data
+        self.missed_frames = 0
+        
+        # Smoothing history
+        self.box_history = deque([box], maxlen=5)
+        self.center_history = deque([center], maxlen=5)
+    
+    def update(self, new_box, new_center, frame_count, detection_data):
+        """Update track with new detection"""
+        self.missed_frames = 0
+        self.last_update = frame_count
+        self.detection_data = detection_data
+        
+        # Smooth the bounding box
+        smoothing_factor = CONFIG['BOX_SMOOTHING_FACTOR']
+        
+        # Smooth each coordinate
+        smoothed_box = [
+            self.box[0] * (1 - smoothing_factor) + new_box[0] * smoothing_factor,
+            self.box[1] * (1 - smoothing_factor) + new_box[1] * smoothing_factor,
+            self.box[2] * (1 - smoothing_factor) + new_box[2] * smoothing_factor,
+            self.box[3] * (1 - smoothing_factor) + new_box[3] * smoothing_factor,
+        ]
+        
+        # Smooth center
+        smoothed_center = (
+            self.center[0] * (1 - smoothing_factor) + new_center[0] * smoothing_factor,
+            self.center[1] * (1 - smoothing_factor) + new_center[1] * smoothing_factor,
+        )
+        
+        self.box = smoothed_box
+        self.center = smoothed_center
+        self.predicted_center = smoothed_center
+        
+        # Update history
+        self.box_history.append(smoothed_box)
+        self.center_history.append(smoothed_center)
+    
+    def predict_next_position(self):
+        """Simple prediction for next frame"""
+        if len(self.center_history) >= 2:
+            # Simple velocity-based prediction
+            last_center = self.center_history[-1]
+            prev_center = self.center_history[-2]
+            
+            velocity = (
+                last_center[0] - prev_center[0],
+                last_center[1] - prev_center[1]
+            )
+            
+            self.predicted_center = (
+                last_center[0] + velocity[0],
+                last_center[1] + velocity[1]
+            )
+        else:
+            self.predicted_center = self.center
+    
+    def get_output(self):
+        """Get output data for this track"""
+        return {
+            'id': int(self.id),
+            'box': [int(x) for x in self.box],
+            'label': self.detection_data.get('label', 'Unknown'),
+            'confidence': self.detection_data.get('confidence', 0.0),
+            'detection_confidence': self.detection_data.get('detection_confidence', 0.0),
+            'raw_predictions': self.detection_data.get('raw_predictions', [])
+        }
+
 class TrackingState:
     """Thread-safe tracking state management"""
     def __init__(self):
         self.frame_count = 0
-        self.last_seen = defaultdict(int)
+        self.face_tracker = FaceTracker()
         self.lock = threading.Lock()
-    
-    def update_last_seen(self, face_id):
-        with self.lock:
-            self.last_seen[face_id] = self.frame_count
-    
-    def cleanup_old_tracks(self, max_age=30):
-        with self.lock:
-            current_frame = self.frame_count
-            to_remove = [
-                face_id for face_id, last_frame in self.last_seen.items()
-                if current_frame - last_frame > max_age
-            ]
-            for face_id in to_remove:
-                del self.last_seen[face_id]
     
     def increment_frame(self):
         with self.lock:
             self.frame_count += 1
+    
+    def update_tracks(self, detections):
+        """Update tracking with new detections"""
+        return self.face_tracker.update(detections, self.frame_count)
+    
+    def reset(self):
+        """Reset tracking state"""
+        with self.lock:
+            self.frame_count = 0
+            self.face_tracker.reset()
 
 # Global tracking state
 tracking_state = TrackingState()
@@ -283,49 +458,45 @@ def detect_faces(img):
         if face_app is None:
             logging.error("Face detection model not initialized")
             return []
-            
+        
         faces = face_app.get(img)
         if not faces:
             logging.debug("No faces detected")
             return []
-            
+        
         face_data = []
         for i, face in enumerate(faces[:CONFIG['MAX_FACES']]):
             try:
-                # Check confidence
                 confidence = getattr(face, 'det_score', 1.0)
-                if confidence < CONFIG['CONFIDENCE_THRESHOLD']:
+                if confidence < CONFIG['MIN_DETECTION_CONFIDENCE']:
                     logging.debug(f"Face {i} below confidence threshold: {confidence}")
                     continue
-                    
+                
                 bbox = [float(coord) for coord in face.bbox]
                 expanded_bbox = expand_face_bbox(bbox, img.shape[:2])
-                
                 if expanded_bbox is None:
                     continue
-                    
+                
                 x1, y1, x2, y2 = expanded_bbox
                 face_crop = img[y1:y2, x1:x2]
-                
                 if face_crop.size == 0:
                     logging.debug(f"Empty face crop for face {i}")
                     continue
-                    
+                
                 processed_face = preprocess_face_crop(face_crop)
                 if processed_face is None:
                     continue
-                    
+                
                 face_data.append({
                     'face': processed_face,
-                    'bbox': [int(x1), int(y1), int(x2 - x1), int(y2 - y1)],
-                    'id': int(i),
+                    'box': [int(x1), int(y1), int(x2 - x1), int(y2 - y1)],  # [x, y, w, h]
                     'confidence': float(confidence)
                 })
                 
             except Exception as e:
                 logging.warning(f"Failed to process face {i}: {e}")
                 continue
-                
+        
         logging.debug(f"Detected {len(face_data)} valid faces")
         return face_data
         
@@ -334,7 +505,7 @@ def detect_faces(img):
         return []
 
 def predict_emotions(face_data):
-    """Enhanced emotion prediction with batch processing - no bounding box smoothing."""
+    """Enhanced emotion prediction with batch processing."""
     if not face_data or emotion_model is None:
         return []
         
@@ -357,44 +528,35 @@ def predict_emotions(face_data):
                 # Return empty predictions for this batch
                 predictions.extend([np.zeros(len(EMOTION_LABELS)) for _ in range(len(batch))])
         
-        results = []
+        # Add emotion predictions to face data
         for i, (pred, fd) in enumerate(zip(predictions, face_data)):
             try:
                 predicted_class = np.argmax(pred)
                 confidence = float(pred[predicted_class])
                 
-                # Use original bounding box without smoothing
-                original_box = fd['bbox']
-                
-                # Update tracking state
-                tracking_state.update_last_seen(fd['id'])
-                
-                results.append({
-                    'label': EMOTION_LABELS[predicted_class],
-                    'confidence': confidence,
-                    'box': [int(x) for x in original_box],
-                    'id': int(fd['id']),
-                    'detection_confidence': float(fd['confidence']),
-                    'raw_predictions': [float(p) for p in pred]  # For debugging
-                })
+                fd['label'] = EMOTION_LABELS[predicted_class]
+                fd['emotion_confidence'] = confidence
+                fd['detection_confidence'] = fd['confidence']
+                fd['raw_predictions'] = [float(p) for p in pred]
                 
             except Exception as e:
                 logging.warning(f"Failed to process prediction for face {i}: {e}")
-                continue
-                
-        return results
+                fd['label'] = 'Unknown'
+                fd['emotion_confidence'] = 0.0
+                fd['detection_confidence'] = fd['confidence']
+                fd['raw_predictions'] = [0.0] * len(EMOTION_LABELS)
+        
+        return face_data
         
     except Exception as e:
         logging.error(f"Emotion prediction error: {e}")
         return []
 
 def process_video_frame(frame_data, detect_multiple=True):
-    """Enhanced main processing pipeline with performance optimizations."""
+    """Enhanced main processing pipeline with stable tracking."""
     try:
-        # Frame skipping for performance
+        # Increment frame counter
         tracking_state.increment_frame()
-        if tracking_state.frame_count % CONFIG['FRAME_SKIP'] != 0:
-            return []  # Skip this frame
         
         # Decode image
         img = decode_image(frame_data)
@@ -402,22 +564,22 @@ def process_video_frame(frame_data, detect_multiple=True):
             return []
         
         # Detect faces
-        face_data = detect_faces(img)
-        if not face_data:
-            return []
+        face_detections = detect_faces(img)
+        if not face_detections:
+            # Return empty but let tracker handle missing detections
+            return tracking_state.update_tracks([])
         
         # Limit faces if not detecting multiple
-        if not detect_multiple and face_data:
-            face_data = [face_data[0]]  # Keep only the first face
+        if not detect_multiple and face_detections:
+            face_detections = [face_detections[0]]  # Keep only the first face
         
         # Predict emotions
-        results = predict_emotions(face_data)
+        face_detections_with_emotions = predict_emotions(face_detections)
         
-        # Cleanup old tracks periodically
-        if tracking_state.frame_count % CONFIG['MAX_TRACK_AGE'] == 0:
-            tracking_state.cleanup_old_tracks(CONFIG['MAX_TRACK_AGE'])
+        # Update tracker with new detections
+        tracked_results = tracking_state.update_tracks(face_detections_with_emotions)
         
-        return results
+        return tracked_results
         
     except Exception as e:
         logging.error(f"Frame processing error: {e}")
@@ -457,8 +619,7 @@ def create_tracking_server(socketio):
         logging.info("❌ Client disconnected")
         try:
             # Reset tracking state for this client
-            global tracking_state
-            tracking_state = TrackingState()
+            tracking_state.reset()
             
             # Log disconnection reason if available
             disconnect_reason = getattr(request, 'event', {}).get('message', 'unknown')
@@ -531,7 +692,8 @@ def create_tracking_server(socketio):
                 "emotion_labels": EMOTION_LABELS,
                 "detection_size": CONFIG['FACE_DETECTION_SIZE'],
                 "confidence_threshold": CONFIG['CONFIDENCE_THRESHOLD'],
-                "models_loaded": get_model_info()
+                "tracking_distance_threshold": CONFIG['TRACKING_DISTANCE_THRESHOLD'],
+                "box_smoothing_factor": CONFIG['BOX_SMOOTHING_FACTOR'],
             })
         except Exception as e:
             logging.error(f"Config get error: {e}")
@@ -547,6 +709,10 @@ def create_tracking_server(socketio):
                     if key == 'MAX_FACES' and not (1 <= value <= 50):
                         continue
                     if key == 'CONFIDENCE_THRESHOLD' and not (0.0 <= value <= 1.0):
+                        continue
+                    if key == 'BOX_SMOOTHING_FACTOR' and not (0.0 <= value <= 1.0):
+                        continue
+                    if key == 'TRACKING_DISTANCE_THRESHOLD' and not (10 <= value <= 200):
                         continue
                         
                     CONFIG[key] = value
@@ -569,8 +735,7 @@ def create_tracking_server(socketio):
     def handle_reset_tracking():
         """Reset tracking state."""
         try:
-            global tracking_state
-            tracking_state = TrackingState()
+            tracking_state.reset()
             emit("tracking_reset", {"status": "success"})
             logging.info("Tracking state reset by client request")
         except Exception as e:
@@ -578,32 +743,3 @@ def create_tracking_server(socketio):
             emit("tracking_reset", {"status": "error", "message": str(e)})
 
     return tracking_route
-
-# Utility functions for external use
-def get_model_info():
-    """Get comprehensive information about loaded models."""
-    return {
-        "face_detection": face_app is not None,
-        "emotion_recognition": emotion_model is not None,
-        "emotion_labels": EMOTION_LABELS,
-        "config": CONFIG.copy(),
-        "tracking_stats": {
-            "frame_count": tracking_state.frame_count,
-            "active_tracks": len(tracking_state.last_seen)
-        }
-    }
-
-def reset_tracking_state():
-    """Reset all tracking state."""
-    global tracking_state
-    tracking_state = TrackingState()
-    logging.info("Tracking state reset")
-
-def health_check():
-    """Perform system health check."""
-    return {
-        "status": "healthy" if (face_app is not None and emotion_model is not None) else "degraded",
-        "models": get_model_info(),
-        "memory_usage": "N/A",  # Could add psutil for memory monitoring
-        "timestamp": time.time()
-    }

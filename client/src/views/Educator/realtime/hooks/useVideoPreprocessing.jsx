@@ -739,9 +739,8 @@ export function useVideoProcessing(
           // Update label
           const labelElement = document.getElementById(labelId);
           if (labelElement) {
-            const confidence = face.confidence ? ` (${Math.round(face.confidence * 100)}%)` : "";
             const label = face.label || "Detecting...";
-            labelElement.textContent = `${label}${confidence}`;
+            labelElement.textContent = label;
           }
 
           activeBoxesRef.current.add(boxId);
