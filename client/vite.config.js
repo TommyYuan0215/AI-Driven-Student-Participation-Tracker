@@ -16,50 +16,60 @@ export default defineConfig({
       'ai-driven-student-participation-tracker.onrender.com'
     ],
     proxy: {
-      // '/database': {
-      //   target: 'http://localhost:5000',
-      //   changeOrigin: true,
-      //   secure: false,
-      // },
-      // '/tracking': {
-      //   target: 'http://localhost:5000',
-      //   changeOrigin: true,
-      //   secure: false,
-      // },
-      // '/tracking_session': {
-      //   target: 'http://localhost:5000',
-      //   changeOrigin: true,
-      //   secure: false,
-      // },
-      // '/credential': {
-      //   target: 'http://localhost:5000',
-      //   changeOrigin: true,
-      //   secure: false,
-      // },
-      // '/usermanagement': {
-      //   target: 'http://localhost:5000',
-      //   changeOrigin: true,
-      //   secure: false,
-      // },
-      // '/contentmanagement': {
-      //   target: 'http://localhost:5000',
-      //   changeOrigin: true,
-      //   secure: false,
-      // },
-      // '/settings': {
-      //   target: 'http://localhost:5000',
-      //   changeOrigin: true,
-      //   secure: false,
-      // },
-      // '/report_generator': {
-      //   target: 'http://localhost:5000',
-      //   changeOrigin: true,
-      //   secure: false,
-      // },
-      '/api': {
+      '/socket.io/': {
+        target: 'http://localhost:5000',
+        ws: true, // Proxy WebSocket connections
+        changeOrigin: true,
+        secure: false,
+      },
+      // Optionally, proxy your other backend routes as well:
+      '/database': {
         target: 'http://localhost:5000',
         changeOrigin: true,
         secure: false,
+        ws: true,
+      },
+      '/tracking': {
+        target: 'http://localhost:5000',
+        changeOrigin: true,
+        secure: false,
+        ws: true,
+      },
+      '/tracking_session': {
+        target: 'http://localhost:5000',
+        changeOrigin: true,
+        secure: false,
+        ws: true,
+      },
+      '/credential': {
+        target: 'http://localhost:5000',
+        changeOrigin: true,
+        secure: false,
+        ws: true,
+      },
+      '/usermanagement': {
+        target: 'http://localhost:5000',
+        changeOrigin: true,
+        secure: false,
+        ws: true,
+      },
+      '/contentmanagement': {
+        target: 'http://localhost:5000',
+        changeOrigin: true,
+        secure: false,
+        ws: true,
+      },
+      '/settings': {
+        target: 'http://localhost:5000',
+        changeOrigin: true,
+        secure: false,
+        ws: true,
+      },
+      '/report_generator': {
+        target: 'http://localhost:5000',
+        changeOrigin: true,
+        secure: false,
+        ws: true,
       },
     },
   }

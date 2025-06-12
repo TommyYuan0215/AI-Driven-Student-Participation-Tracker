@@ -123,7 +123,7 @@ function AdminDashboard() {
                     <div className="card-body p-0" style={{ height: "320px", cursor: "pointer" }} onClick={handleEngagementTrendClick}>
                       {trendLoading ? (
                         <LoadingSpinner text="Loading engagement trends..." />
-                      ) : (
+                      ) : engagementTrendData && engagementTrendData.length > 0 ? (
                         <ResponsiveContainer width="100%" height="100%">
                           <LineChart data={engagementTrendData} margin={{ top: 20, right: 40, left: 10, bottom: 10 }}>
                             <CartesianGrid strokeDasharray="3 3" />
@@ -136,6 +136,14 @@ function AdminDashboard() {
                             <Line type="monotone" dataKey="lackingFocus" name="Lacking Focus" stroke="#f39c12" strokeWidth={2} activeDot={{ r: 5 }} />
                           </LineChart>
                         </ResponsiveContainer>
+                      ) : (
+                        <div className="d-flex justify-content-center align-items-center" style={{ height: "100%" }}>
+                          <div className="text-center">
+                            <i className="bi bi-emoji-neutral text-muted fs-1"></i>
+                            <h3 className="text-muted mt-3">No engagement data available</h3>
+                            <p className="text-muted">Tracking hasn't started yet — stay tuned!</p>
+                          </div>
+                        </div>
                       )}
                     </div>
                   </div>
@@ -156,31 +164,41 @@ function AdminDashboard() {
                       </span>
                     </div>
                     <div className="card-body d-flex justify-content-center">
-                      <PieChart
-                        width={250}
-                        height={250}
-                        onClick={handlePieChartClick}
-                      >
-                        <Pie
-                          data={data}
-                          cx="50%"
-                          cy="50%"
-                          labelLine={false}
-                          label={false}
-                          innerRadius={60}
-                          outerRadius={100}
-                          dataKey="value"
+                      {userList && userList.length > 0 ? (
+                        <PieChart
+                          width={250}
+                          height={250}
+                          onClick={handlePieChartClick}
                         >
-                          {data.map((entry, index) => (
-                            <Cell
-                              key={`cell-${index}`}
-                              fill={COLORS[index % COLORS.length]}
-                            />
-                          ))}
-                        </Pie>
-                        <Tooltip />
-                        <Legend verticalAlign="top" height={36} />
-                      </PieChart>
+                          <Pie
+                            data={data}
+                            cx="50%"
+                            cy="50%"
+                            labelLine={false}
+                            label={false}
+                            innerRadius={60}
+                            outerRadius={100}
+                            dataKey="value"
+                          >
+                            {data.map((entry, index) => (
+                              <Cell
+                                key={`cell-${index}`}
+                                fill={COLORS[index % COLORS.length]}
+                              />
+                            ))}
+                          </Pie>
+                          <Tooltip />
+                          <Legend verticalAlign="top" height={36} />
+                        </PieChart>
+                      ) : (
+                        <div className="d-flex justify-content-center align-items-center" style={{ height: "100%" }}>
+                          <div className="text-center">
+                            <i className="bi bi-people text-muted fs-1"></i>
+                            <h3 className="text-muted mt-3">No user data available</h3>
+                            <p className="text-muted">Start adding users to see authorization status</p>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>

@@ -1,7 +1,8 @@
+import eventlet
+eventlet.monkey_patch()
 
 from apps import create_app, socketio
 
-# Create the Flask app using the factory
 app = create_app()
 
 if __name__ == "__main__":

@@ -23,23 +23,21 @@ function EmotionStatistics({ studentStats, isTracking }) {
         <hr />
         {data.length > 0 ? (
           <div style={{ display: "flex", flexDirection: "row", alignItems: "center", justifyContent: "center" }}>
-            <ResponsiveContainer width={180} height={200}>
-              <PieChart>
-                <Pie
-                  data={data}
-                  dataKey="value"
-                  nameKey="name"
-                  cx="50%"
-                  cy="50%"
-                  outerRadius={80}
-                >
-                  {data.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
-                  ))}
-                </Pie>
-                <Tooltip />
-              </PieChart>
-            </ResponsiveContainer>
+            <PieChart width={180} height={200}>
+              <Pie
+                data={data}
+                dataKey="value"
+                nameKey="name"
+                cx="50%"
+                cy="50%"
+                outerRadius={80}
+              >
+                {data.map((entry, index) => (
+                  <Cell key={`cell-${index}`} fill={entry.color} />
+                ))}
+              </Pie>
+              <Tooltip />
+            </PieChart>
             <div style={{ marginLeft: 16 }}>
               <Legend
                 layout="vertical"

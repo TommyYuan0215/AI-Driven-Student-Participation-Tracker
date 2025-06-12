@@ -219,7 +219,7 @@ function UserManagement() {
         <section className="px-1 py-4">
           {loading ? (
             <LoadingSpinner text="Loading users..." />
-          ) : (
+          ) : userList.length > 0 ? (
             <>
               <div className="d-flex justify-content-between align-items-center mb-3">
                 <div>
@@ -415,6 +415,19 @@ function UserManagement() {
                 />
               </Pagination>
             </>
+          ) : (
+            <div
+              className="d-flex justify-content-center align-items-center"
+              style={{ minHeight: "calc(100vh - 250px)" }}
+            >
+              <div className="text-center">
+                <i className="bi bi-people text-muted fs-1"></i>
+                <h3 className="text-muted mt-3">No users available</h3>
+                <p className="text-muted">
+                  Click the add button to create a new user.
+                </p>
+              </div>
+            </div>
           )}
         </section>
 

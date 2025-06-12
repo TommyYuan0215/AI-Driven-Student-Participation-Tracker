@@ -1,4 +1,3 @@
-
 from flask import Flask, session, jsonify
 from flask_socketio import SocketIO
 from flask_session import Session
@@ -7,7 +6,12 @@ from datetime import datetime, timedelta
 
 
 # Create a Global SocketIO to passing the values to other blueprints
-socketio = SocketIO(cors_allowed_origins=["http://localhost:5173"], allow_credentials=True)
+socketio = SocketIO(
+      cors_allowed_origins=["http://localhost:5173"],
+      allow_credentials=True,
+      ping_interval=20,  
+      ping_timeout=40    
+  )
 SESSION_TIMEOUT = timedelta(hours=3)
 
 def create_app():
