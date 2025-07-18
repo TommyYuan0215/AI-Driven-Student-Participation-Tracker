@@ -69,11 +69,12 @@ function Header({ showSidebar, toggleSidebar, showSidebarToggle }) {
           style={{ display: "flex", alignItems: "center" }}
         >
           <img
-            src={"/ai-technology.png"}
+            src={"/Header_Icon.png"}
             alt="brand-icon"
-            style={{ width: "30px", height: "30px" }}
+            style={{ width: "50px", height: "30px" }}
           ></img>{" "}
-          &nbsp; AI-Driven Student Participantion Tracker
+          &nbsp; FocusTrack
+
         </Navbar.Brand>
 
         {/* Navbar toggle for smaller screens */}
