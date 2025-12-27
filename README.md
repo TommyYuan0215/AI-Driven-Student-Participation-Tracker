@@ -235,7 +235,7 @@ Password: admin
 
 1. **Login**
 
-   - Access http://localhost:5173
+   - Access http://localhost:5180
    - Sign in with educator credentials
 
 2. **Real-Time Monitoring**

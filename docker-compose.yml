@@ -5,7 +5,7 @@ services:
     build: ./server
     container_name: backend_container
     ports:
-      - "5000:5000"    # Flask HTTP
+      - "5555:5555"
     volumes:
       - ./server:/app
     depends_on:
@@ -36,7 +36,7 @@ services:
     build: ./client
     container_name: frontend_container
     ports:
-      - "5173:5173"  # Vite dev server
+      - "5180:5180"
     volumes:
       - ./client:/app
       - /app/node_modules
@@ -57,7 +57,7 @@ services:
       MYSQL_ROOT_PASSWORD: root
       MYSQL_DATABASE: AISPT
     ports:
-      - "3306:3306"
+      - "3320:3306"
     volumes:
       - mysql_data:/var/lib/mysql
     networks:

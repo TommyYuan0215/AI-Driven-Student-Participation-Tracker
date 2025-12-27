@@ -25,7 +25,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 
 # Expose Flask's default port
-EXPOSE 5000
+EXPOSE 5555
 
 # Set environment variables for Flask
 ENV FLASK_APP=server.py
@@ -34,4 +34,4 @@ ENV FLASK_ENV=development
 ENV DB_MODE=local
 
 # Run the Flask app with optimized settings for CPU
-CMD ["gunicorn", "-k", "eventlet", "-w", "1", "-b", "0.0.0.0:5000", "--timeout", "120", "--reload", "server:app"]
+CMD ["gunicorn", "-k", "eventlet", "-w", "1", "-b", "0.0.0.0:5555", "--timeout", "120", "--reload", "server:app"]

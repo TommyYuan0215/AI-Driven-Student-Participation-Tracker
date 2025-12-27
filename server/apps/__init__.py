@@ -7,7 +7,7 @@ from datetime import datetime, timedelta
 
 # Create a Global SocketIO to passing the values to other blueprints
 socketio = SocketIO(
-      cors_allowed_origins=["http://localhost:5173"],
+      cors_allowed_origins=["http://localhost:5180"],
       allow_credentials=True,
       ping_interval=20,  
       ping_timeout=40    
@@ -22,7 +22,7 @@ def create_app():
     app.config['SESSION_REFRESH_EACH_REQUEST'] = False  # Prevent auto-refresh
 
     # Allow all origins
-    CORS(app, resources={r"/*": {"origins": ["http://localhost:5173"]}}, supports_credentials=True)
+    CORS(app, resources={r"/*": {"origins": ["http://localhost:5180"]}}, supports_credentials=True)
 
     # Initialize extensions
     socketio.init_app(app)
