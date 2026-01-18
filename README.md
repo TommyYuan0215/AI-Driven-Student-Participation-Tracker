@@ -2,6 +2,15 @@
 
 **By: Tan Jun Lin**
 
+![License](https://img.shields.io/badge/license-MIT-blue.svg)
+![Python](https://img.shields.io/badge/Python-3.8+-3776AB?logo=python&logoColor=white)
+![Flask](https://img.shields.io/badge/Flask-3.1.0-000000?logo=flask&logoColor=white)
+![TensorFlow](https://img.shields.io/badge/TensorFlow-2.19.0-FF6F00?logo=tensorflow&logoColor=white)
+![OpenCV](https://img.shields.io/badge/OpenCV-4.10.0-5C3EE8?logo=opencv&logoColor=white)
+![Socket.IO](https://img.shields.io/badge/Socket.IO-5.11.4-010101?logo=socketdotio&logoColor=white)
+![React](https://img.shields.io/badge/React-18+-61DAFB?logo=react&logoColor=black)
+![MySQL](https://img.shields.io/badge/MySQL-8.0-4479A1?logo=mysql&logoColor=white)
+
 ## Table of Contents
 
 - [Introduction](#introduction)
@@ -69,7 +78,6 @@ This enables educators to identify disengagement early and dynamically modify te
 ### Educational Dashboard 🎓
 
 - **For Educators:**
-
   - Real-time participation monitoring
   - Post-class analytics and insights
   - Class session management
@@ -234,19 +242,16 @@ Password: admin
 ### For Educators
 
 1. **Login**
-
    - Access http://localhost:5180
    - Sign in with educator credentials
 
 2. **Real-Time Monitoring**
-
    - Navigate to "Real-Time Monitoring"
    - Start or join a class session
    - Monitor student participation in real-time
    - View emotion recognition results on the dashboard
 
 3. **Analytics & Reports**
-
    - Go to "Post Analytics" section
    - View participation statistics
    - Analyze emotion trends
@@ -260,18 +265,15 @@ Password: admin
 ### For Administrators
 
 1. **Login**
-
    - Access the admin dashboard using default credentials above
    - Navigate to Admin Controls
 
 2. **User Management**
-
    - Create/edit/delete user accounts
    - Assign roles and permissions
    - View user activity logs
 
 3. **System Analytics**
-
    - Monitor system-wide participation metrics
    - View trend analysis across all classes
    - Access comprehensive data reports
@@ -284,7 +286,6 @@ Password: admin
 ### For Students
 
 1. **Join Class**
-
    - Access the student portal
    - Join class sessions via invite link
 
