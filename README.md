@@ -1,7 +1,5 @@
 # FocusTrack - An AI-Driven Student Participation Tracker
 
-**By: Tan Jun Lin**
-
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 ![Python](https://img.shields.io/badge/Python-3.8+-3776AB?logo=python&logoColor=white)
 ![Flask](https://img.shields.io/badge/Flask-3.1.0-000000?logo=flask&logoColor=white)
