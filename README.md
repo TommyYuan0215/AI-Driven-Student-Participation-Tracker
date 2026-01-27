@@ -213,8 +213,8 @@ This command will:
 
 #### Step 3: Access the Application
 
-- **Frontend:** http://localhost:5173
-- **Backend API:** http://localhost:5000
+- **Frontend:** http://localhost:5180
+- **Backend API:** http://localhost:5555
 
 #### Step 4: Stop the Application
 
