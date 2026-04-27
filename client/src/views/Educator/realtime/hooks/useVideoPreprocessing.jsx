@@ -33,9 +33,9 @@ const createConfig = () => {
 
 // Logging utility
 const createLogger = (level) => ({
-  debug: level === 'debug' ? console.log : () => {},
-  info: ['debug', 'info'].includes(level) ? console.info : () => {},
-  warn: ['debug', 'info', 'warn'].includes(level) ? console.warn : () => {},
+  debug: level === 'debug' ? console.log : () => { },
+  info: ['debug', 'info'].includes(level) ? console.info : () => { },
+  warn: ['debug', 'info', 'warn'].includes(level) ? console.warn : () => { },
   error: console.error
 });
 
@@ -52,6 +52,9 @@ const debounce = (func, wait) => {
   };
 };
 
+const CONFIG = createConfig();
+const logger = createLogger(CONFIG.LOG_LEVEL);
+
 export function useVideoProcessing(
   isTracking,
   isCameraOn,
@@ -59,20 +62,8 @@ export function useVideoProcessing(
   cameraRef,
   screenRef
 ) {
-  // Memoized configuration and logger
-  const CONFIG = useMemo(() => createConfig(), []);
-  const logger = useMemo(() => createLogger(CONFIG.LOG_LEVEL), [CONFIG.LOG_LEVEL]);
-
   // Enhanced state management
   const [isProcessing, setIsProcessing] = useState(false);
-  const [processingStats, setProcessingStats] = useState({
-    framesProcessed: 0,
-    framesSent: 0,
-    errors: 0,
-    avgProcessingTime: 0,
-    successRate: 0,
-    lastError: null
-  });
 
   // Refs for DOM elements and processing state
   const videoContainerRef = useRef(null);
@@ -83,23 +74,17 @@ export function useVideoProcessing(
   const lastFrameSentTimeRef = useRef(0);
   const captureIntervalRef = useRef(null);
   const isInitializedRef = useRef(false);
-  
+
   // Enhanced refs for better control
   const canvasRef = useRef(null);
   const ctxRef = useRef(null);
   const activeBoxesRef = useRef(new Set());
-  const processingTimeRef = useRef([]);
   const consecutiveFailuresRef = useRef(0);
   const currentVideoElementRef = useRef(null);
   const resizeObserverRef = useRef(null);
   const pendingFrameTimeoutRef = useRef(null);
   const retryAttemptsRef = useRef(0);
   const canvasCleanupIntervalRef = useRef(null);
-  const metricsRef = useRef({
-    totalFrames: 0,
-    successfulFrames: 0,
-    errors: []
-  });
 
   // Enhanced canvas management with cleanup
   const initializeCanvas = useCallback(() => {
@@ -110,7 +95,7 @@ export function useVideoProcessing(
         willReadFrequently: false,
         desynchronized: true // Better performance
       });
-      
+
       logger.debug("Canvas initialized");
     }
     return { canvas: canvasRef.current, ctx: ctxRef.current };
@@ -131,29 +116,8 @@ export function useVideoProcessing(
     }
   }, [logger]);
 
-  // Enhanced error tracking
   const recordError = useCallback((error, context = '') => {
-    const errorRecord = {
-      timestamp: Date.now(),
-      error: error.message || error,
-      context,
-      stack: error.stack
-    };
-    
-    metricsRef.current.errors.push(errorRecord);
-    
-    // Keep only last 50 errors to prevent memory leak
-    if (metricsRef.current.errors.length > 50) {
-      metricsRef.current.errors.shift();
-    }
-    
-    setProcessingStats(prev => ({
-      ...prev,
-      errors: prev.errors + 1,
-      lastError: errorRecord,
-      successRate: metricsRef.current.totalFrames > 0 ? 
-        (metricsRef.current.successfulFrames / metricsRef.current.totalFrames) * 100 : 0
-    }));
+    logger.error(`Error in ${context}:`, error);
   }, []);
 
   // Exponential backoff calculation
@@ -225,17 +189,8 @@ export function useVideoProcessing(
     consecutiveFailuresRef.current = 0;
     retryAttemptsRef.current = 0;
     currentVideoElementRef.current = null;
-    processingTimeRef.current = [];
-    
-    // Reset metrics
-    metricsRef.current = {
-      totalFrames: 0,
-      successfulFrames: 0,
-      errors: []
-    };
-    
     setIsProcessing(false);
-    
+
     // Hide all boxes
     hideAllBoxes();
   }, [hideAllBoxes, cleanupCanvas, logger]);
@@ -248,20 +203,10 @@ export function useVideoProcessing(
       logger.info("Initializing tracking");
       isInitializedRef.current = true;
       setIsProcessing(false);
-      
-      // Reset stats
-      setProcessingStats({
-        framesProcessed: 0,
-        framesSent: 0,
-        errors: 0,
-        avgProcessingTime: 0,
-        successRate: 0,
-        lastError: null
-      });
 
       // Start periodic canvas cleanup
       canvasCleanupIntervalRef.current = setInterval(cleanupCanvas, CONFIG.CANVAS_CLEANUP_INTERVAL);
-      
+
     } else if (!isTracking) {
       logger.info("Stopping tracking");
       isInitializedRef.current = false;
@@ -284,17 +229,17 @@ export function useVideoProcessing(
     }
 
     if (videoElement.videoWidth === 0 || videoElement.videoHeight === 0) {
-      logger.warn("Video dimensions not available:", { 
-        width: videoElement.videoWidth, 
-        height: videoElement.videoHeight 
+      logger.warn("Video dimensions not available:", {
+        width: videoElement.videoWidth,
+        height: videoElement.videoHeight
       });
       return { valid: false, reason: "Invalid dimensions" };
     }
 
     if (videoElement.ended || videoElement.paused) {
-      logger.warn("Video is not playing:", { 
-        ended: videoElement.ended, 
-        paused: videoElement.paused 
+      logger.warn("Video is not playing:", {
+        ended: videoElement.ended,
+        paused: videoElement.paused
       });
       return { valid: false, reason: "Video not playing" };
     }
@@ -326,7 +271,7 @@ export function useVideoProcessing(
 
     const videoElement = isCameraOn ? cameraRef.current : screenRef.current;
     const validation = validateVideoElement(videoElement);
-    
+
     if (!validation.valid) {
       consecutiveFailuresRef.current++;
       recordError(new Error(`Video validation failed: ${validation.reason}`), 'captureFrame');
@@ -353,13 +298,13 @@ export function useVideoProcessing(
 
     try {
       const startTime = performance.now();
-      
+
       const { canvas, ctx } = initializeCanvas();
-      
+
       // Update canvas dimensions if needed
       const scaledWidth = Math.floor(videoElement.videoWidth * CONFIG.SCALE_FACTOR);
       const scaledHeight = Math.floor(videoElement.videoHeight * CONFIG.SCALE_FACTOR);
-      
+
       if (canvas.width !== scaledWidth || canvas.height !== scaledHeight) {
         canvas.width = scaledWidth;
         canvas.height = scaledHeight;
@@ -369,12 +314,11 @@ export function useVideoProcessing(
       // Clear and draw frame
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       ctx.drawImage(videoElement, 0, 0, canvas.width, canvas.height);
-      
+
       const imageData = canvas.toDataURL("image/jpeg", CONFIG.JPEG_QUALITY);
-      
+
       framePendingRef.current = true;
       lastFrameSentTimeRef.current = currentTime;
-      metricsRef.current.totalFrames++;
 
       // Set timeout for pending frame
       pendingFrameTimeoutRef.current = setTimeout(() => {
@@ -407,7 +351,7 @@ export function useVideoProcessing(
         socketRef.current.emit("video_frame", frameData, (ack) => {
           resolve(ack);
         });
-        
+
         // Handle socket errors
         socketRef.current.once('error', (error) => {
           reject(error);
@@ -424,34 +368,6 @@ export function useVideoProcessing(
           framePendingRef.current = false;
           consecutiveFailuresRef.current = 0;
           retryAttemptsRef.current = 0;
-
-          const processingTime = performance.now() - startTime;
-          
-          if (ack?.success) {
-            metricsRef.current.successfulFrames++;
-          }
-          
-          // Update processing stats
-          setProcessingStats(prev => {
-            const newStats = {
-              ...prev,
-              framesProcessed: prev.framesProcessed + 1,
-              framesSent: ack?.success ? prev.framesSent + 1 : prev.framesSent,
-              errors: ack?.success ? prev.errors : prev.errors + 1
-            };
-
-            // Calculate average processing time
-            processingTimeRef.current.push(processingTime);
-            if (processingTimeRef.current.length > CONFIG.MAX_PROCESSING_TIME_SAMPLES) {
-              processingTimeRef.current.shift();
-            }
-            
-            newStats.avgProcessingTime = processingTimeRef.current.reduce((a, b) => a + b, 0) / processingTimeRef.current.length;
-            newStats.successRate = metricsRef.current.totalFrames > 0 ? 
-              (metricsRef.current.successfulFrames / metricsRef.current.totalFrames) * 100 : 0;
-            
-            return newStats;
-          });
 
           if (!ack?.success) {
             recordError(new Error(ack?.error || "Frame not acknowledged"), 'socketResponse');
@@ -472,19 +388,19 @@ export function useVideoProcessing(
       framePendingRef.current = false;
       consecutiveFailuresRef.current++;
       recordError(error, 'captureFrame');
-      
+
       return false;
     }
   }, [
-    isTracking, 
-    isCameraOn, 
-    socketRef, 
-    cameraRef, 
-    screenRef, 
-    validateVideoElement, 
-    initializeCanvas, 
-    CONFIG, 
-    logger, 
+    isTracking,
+    isCameraOn,
+    socketRef,
+    cameraRef,
+    screenRef,
+    validateVideoElement,
+    initializeCanvas,
+    CONFIG,
+    logger,
     recordError
   ]);
 
@@ -492,13 +408,13 @@ export function useVideoProcessing(
   const manageCaptureInterval = useCallback(() => {
     if (consecutiveFailuresRef.current >= CONFIG.MAX_CONSECUTIVE_FAILURES) {
       const backoffInterval = getBackoffInterval(Math.floor(consecutiveFailuresRef.current / CONFIG.MAX_CONSECUTIVE_FAILURES));
-      
+
       if (captureIntervalRef.current) {
         clearInterval(captureIntervalRef.current);
       }
-      
+
       logger.warn(`Adjusting capture interval to ${backoffInterval}ms due to failures`);
-      
+
       captureIntervalRef.current = setInterval(() => {
         if (captureFrame()) {
           consecutiveFailuresRef.current = Math.max(0, consecutiveFailuresRef.current - 1);
@@ -556,7 +472,7 @@ export function useVideoProcessing(
         }
       });
     }
-    
+
     resizeObserverRef.current.observe(videoElement);
 
     // Start regular capture
@@ -596,13 +512,13 @@ export function useVideoProcessing(
 
     checkVideoReady();
   }, [
-    isTracking, 
-    isCameraOn, 
-    cameraRef, 
-    screenRef, 
-    debouncedValidateVideo, 
-    initializeCapturing, 
-    logger, 
+    isTracking,
+    isCameraOn,
+    cameraRef,
+    screenRef,
+    debouncedValidateVideo,
+    initializeCapturing,
+    logger,
     recordError
   ]);
 
@@ -615,7 +531,7 @@ export function useVideoProcessing(
     try {
       const [rawX, rawY, rawWidth, rawHeight] = box;
       const scaleFactor = 1 / CONFIG.SCALE_FACTOR;
-      
+
       const x = rawX * scaleFactor;
       const y = rawY * scaleFactor;
       const width = rawWidth * scaleFactor;
@@ -675,15 +591,25 @@ export function useVideoProcessing(
         return;
       }
 
+      // Define color mapping for emotions
+      const EMOTION_COLORS = {
+        'Interested': '#4CAF50',      // Vibrant Green
+        'Bored': '#FFC107',           // Amber/Yellow
+        'Lacking_Focus': '#F44336',    // Soft Red
+        'default': '#2196F3'          // Blue for unknown
+      };
+
       // Update boxes for each face
       trackingData.forEach((face, index) => {
         if (!face.box || !Array.isArray(face.box) || face.box.length !== 4) {
           return;
         }
 
+        const emotion = face.label || 'Detecting...';
+        const color = EMOTION_COLORS[face.label] || EMOTION_COLORS.default;
         const boxId = `face-box-${index}`;
         const labelId = `face-label-${index}`;
-        
+
         // Find or create box element
         let boxElement = document.getElementById(boxId);
         if (!boxElement) {
@@ -691,32 +617,31 @@ export function useVideoProcessing(
           boxElement.id = boxId;
           boxElement.className = "position-absolute";
           boxElement.setAttribute('role', 'img');
-          boxElement.setAttribute('aria-label', 'Face detection box');
           boxElement.style.cssText = `
-            border: 3px solid #ff0000;
+            border: 2px solid ${color};
             z-index: 9999;
             pointer-events: none;
             box-sizing: border-box;
-            transition: all 0.1s ease-out;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.3), inset 0 0 5px ${color}44;
           `;
 
           // Add label element with accessibility
           const labelElement = document.createElement("div");
           labelElement.id = labelId;
           labelElement.className = "position-absolute px-2 py-1";
-          labelElement.setAttribute('aria-live', 'polite');
           labelElement.style.cssText = `
-            top: -28px;
-            left: 0;
-            background-color: #ff0000;
+            top: -30px;
+            left: -2px;
+            background-color: ${color};
             color: white;
-            font-size: 12px;
-            font-weight: bold;
-            border-radius: 4px;
+            font-size: 11px;
+            font-family: 'Inter', system-ui, sans-serif;
+            font-weight: 600;
+            border-radius: 4px 4px 0 0;
             white-space: nowrap;
-            max-width: 200px;
-            overflow: hidden;
-            text-overflow: ellipsis;
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.2);
           `;
 
           boxElement.appendChild(labelElement);
@@ -725,22 +650,24 @@ export function useVideoProcessing(
 
         // Calculate and apply position
         const boxPos = calculateBoxPosition(face.box, videoElement);
-        
+
         if (boxPos.width > 0 && boxPos.height > 0) {
-          // Use requestAnimationFrame for smooth updates
           requestAnimationFrame(() => {
             boxElement.style.left = `${boxPos.left}px`;
             boxElement.style.top = `${boxPos.top}px`;
             boxElement.style.width = `${boxPos.width}px`;
             boxElement.style.height = `${boxPos.height}px`;
             boxElement.style.display = "block";
+            boxElement.style.borderColor = color;
+            boxElement.style.boxShadow = `0 0 15px ${color}33, inset 0 0 5px ${color}22`;
           });
 
-          // Update label
+          // Update label with confidence if available
           const labelElement = document.getElementById(labelId);
           if (labelElement) {
-            const label = face.label || "Detecting...";
-            labelElement.textContent = label;
+            const confidenceStr = face.confidence ? ` - ${Math.round(face.confidence * 100)}%` : '';
+            labelElement.textContent = `${emotion}${confidenceStr}`;
+            labelElement.style.backgroundColor = color;
           }
 
           activeBoxesRef.current.add(boxId);
@@ -763,14 +690,14 @@ export function useVideoProcessing(
       recordError(error, 'updateBoundingBoxes');
     }
   }, [
-    isTracking, 
-    isCameraOn, 
-    cameraRef, 
-    screenRef, 
-    validateVideoElement, 
-    calculateBoxPosition, 
-    hideAllBoxes, 
-    logger, 
+    isTracking,
+    isCameraOn,
+    cameraRef,
+    screenRef,
+    validateVideoElement,
+    calculateBoxPosition,
+    hideAllBoxes,
+    logger,
     recordError
   ]);
 
@@ -783,8 +710,6 @@ export function useVideoProcessing(
         canvasRef.current = null;
         ctxRef.current = null;
       }
-      // Clear processing time array
-      processingTimeRef.current = [];
     };
   }, [cleanup]);
 
@@ -797,27 +722,18 @@ export function useVideoProcessing(
     calculateBoxPosition,
     hideAllBoxes,
     updateBoundingBoxes,
-    
-    // Enhanced state and metrics
+
     isProcessing,
-    processingStats,
-    
+
     // Utility functions
     cleanup,
     validateVideoElement,
-    
+
     // New utility functions
     recordError,
     cleanupCanvas,
-    
+
     // Configuration access
     config: CONFIG,
-    
-    // Debugging helpers (only in development)
-    ...(CONFIG.LOG_LEVEL === 'debug' && {
-      getMetrics: () => metricsRef.current,
-      getProcessingTimes: () => processingTimeRef.current,
-      getActiveBoxes: () => Array.from(activeBoxesRef.current)
-    })
   };
 }

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
-import { Container } from "react-bootstrap";
+import { Container, Badge } from "react-bootstrap";
 import useSession from "../../hooks/useSession";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useLoadingState } from "../../hooks/useLoadingState";
 import LoadingSpinner from "../../components/common/LoadingSpinnerComponent";
 import { PieChart, Pie, Cell, Tooltip, Legend } from "recharts";
@@ -14,25 +14,15 @@ import { useEmotionTrends } from "../../hooks/useEmotionTrends";
 
 function AdminDashboard() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { userData, isLoggedIn } = useSession(navigate);
   const {
     data: userList,
     loading,
-    refetch,
   } = useLoadingState("/usermanagement/get_user_data", []);
+
+  const { trendData: engagementTrendData, loading: trendLoading } = useEmotionTrends();
   const [userStats, setUserStats] = useState({ active: 0, inactive: 0 });
-
-  const handlePieChartClick = () => {
-    navigate("/admin/usermanagement");
-  };
-
-  const handleTrendChartClick = () => {
-    navigate("/admin/datamanagement/usertrend");
-  };
-
-  const handleEngagementTrendClick = () => {
-    navigate("/admin/datamanagement/statisticsadmin");
-  };
 
   useEffect(() => {
     if (userList) {
@@ -47,166 +37,167 @@ function AdminDashboard() {
     }
   }, [userList]);
 
-  // Use real engagement trend data
-  const { trendData: engagementTrendData, loading: trendLoading } = useEmotionTrends();
-
   if (!isLoggedIn) {
     navigate("/");
     return null;
   }
 
-  // Pie chart data
-  const data = [
+  const authData = [
     { name: "Authorized", value: userStats.active },
     { name: "Unauthorized", value: userStats.inactive },
   ];
 
-  const COLORS = ["#3b2ee2", "#de1e82"];
+  const AUTH_COLORS = ["#6366f1", "#f43f5e"];
 
   return (
-    <Container>
-      <PageTitleBreadcrumb
-        title={`Welcome back, ${userData.userName} 👋`}
-        path={location.pathname}
+    <Container className="py-2 fade-in">
+      <PageTitleBreadcrumb 
+        title="System Overview" 
+        path={location.pathname} 
+        icon="bi-shield-lock"
       />
-      <div className="px-3">
-        <section className="px-1 py-4">
-          {loading ? (
-            <LoadingSpinner text="Loading dashboard..." />
-          ) : (
-            <div>
-              <div className="row">
-                {/* User Profile Area  */}
-                <div className="col-md-4">
-                  <ProfileCard userData={userData} />
+
+      {loading ? (
+        <LoadingSpinner text="Loading command center..." />
+      ) : (
+        <div className="px-1">
+          {/* Core Info: Profile & Announcements */}
+          <div className="row g-4 mb-5">
+            <div className="col-lg-4">
+              <ProfileCard userData={userData} />
+            </div>
+            <div className="col-lg-8">
+              <AnnouncementCard />
+            </div>
+          </div>
+
+          {/* Analytics Grid */}
+          <div className="row g-4">
+            {/* User Growth */}
+            <div className="col-lg-8">
+              <div className="card border-0 shadow-sm rounded-4 h-100 overflow-hidden" style={{
+                background: 'var(--bs-body-bg)',
+                border: '1px solid var(--bs-border-color-translucent)'
+              }}>
+                <div className="card-header border-bottom py-3 d-flex align-items-center justify-content-between"
+                  style={{ background: 'var(--bs-tertiary-bg)', borderColor: 'var(--bs-border-color-translucent)' }}
+                >
+                  <div className="d-flex align-items-center">
+                    <div className="bg-primary bg-opacity-10 p-2 rounded-3 me-3">
+                      <i className="bi bi-graph-up text-primary"></i>
+                    </div>
+                    <span className="fw-bold" style={{ letterSpacing: '-0.5px', color: 'var(--bs-emphasis-color)' }}>User Growth Trend</span>
+                  </div>
+                  <button className="btn btn-sm btn-link text-primary p-0 fw-bold small text-decoration-none" onClick={() => navigate("/admin/datamanagement/usertrend")}>
+                    View Report <i className="bi bi-arrow-right ms-1"></i>
+                  </button>
                 </div>
-                {/* Announcement Area  */}
-                <div className="col-md-8">
-                  <AnnouncementCard />
+                <div className="card-body p-0" style={{ height: "350px" }}>
+                  <UserTrendingDashboard isEmbedded={true} />
                 </div>
               </div>
+            </div>
 
-              <br />
-
-              <div className="row">
-                <div className="col-md-6">
-                  <div className="card">
-                    <div
-                      className="card-header"
-                      style={{ backgroundColor: "#3B3486", color: "#ffffff" }}
-                    >
-                      <span className="ms-1">
-                        <b>User Growth Trend (Current Month)</b>
-                      </span>
+            {/* Authorization Status Donut */}
+            <div className="col-lg-4">
+              <div className="card border-0 shadow-sm rounded-4 h-100" style={{
+                background: 'var(--bs-body-bg)',
+                border: '1px solid var(--bs-border-color-translucent)'
+              }}>
+                <div className="card-header border-bottom py-3 d-flex align-items-center justify-content-between"
+                  style={{ background: 'var(--bs-tertiary-bg)', borderColor: 'var(--bs-border-color-translucent)' }}
+                >
+                  <div className="d-flex align-items-center">
+                    <div className="bg-info bg-opacity-10 p-2 rounded-3 me-3">
+                      <i className="bi bi-shield-check text-info"></i>
                     </div>
-                    <div
-                      className="card-body p-0"
-                      onClick={handleTrendChartClick}
-                      style={{ cursor: "pointer", height: "320px" }}
-                    >
-                      {/* Embed the UserTrendingDashboard component here */}
-                      <UserTrendingDashboard isEmbedded={true} />
-                    </div>
+                    <span className="fw-bold" style={{ letterSpacing: '-0.5px', color: 'var(--bs-emphasis-color)' }}>Access Status</span>
                   </div>
                 </div>
-
-                <div className="col-md-6">
-                  <div className="card">
-                    <div
-                      className="card-header"
-                      style={{ backgroundColor: "#3B3486", color: "#ffffff" }}
-                    >
-                      <span className="ms-1">
-                        <b>Engagement Trend (Emotions Over Time)</b>
-                      </span>
-                    </div>
-                    <div className="card-body p-0" style={{ height: "320px", cursor: "pointer" }} onClick={handleEngagementTrendClick}>
-                      {trendLoading ? (
-                        <LoadingSpinner text="Loading engagement trends..." />
-                      ) : engagementTrendData && engagementTrendData.length > 0 ? (
-                        <ResponsiveContainer width="100%" height="100%">
-                          <LineChart data={engagementTrendData} margin={{ top: 20, right: 40, left: 10, bottom: 10 }}>
-                            <CartesianGrid strokeDasharray="3 3" />
-                            <XAxis dataKey="date" />
-                            <YAxis allowDecimals={false} label={{ value: "Count", angle: -90, position: "left" }} />
-                            <Tooltip />
-                            <Legend />
-                            <Line type="monotone" dataKey="interested" name="Interested" stroke="#198754" strokeWidth={2} activeDot={{ r: 5 }} />
-                            <Line type="monotone" dataKey="bored" name="Bored" stroke="#de1e82" strokeWidth={2} activeDot={{ r: 5 }} />
-                            <Line type="monotone" dataKey="lackingFocus" name="Lacking Focus" stroke="#f39c12" strokeWidth={2} activeDot={{ r: 5 }} />
-                          </LineChart>
-                        </ResponsiveContainer>
-                      ) : (
-                        <div className="d-flex justify-content-center align-items-center" style={{ height: "100%" }}>
-                          <div className="text-center">
-                            <i className="bi bi-emoji-neutral text-muted fs-1"></i>
-                            <h3 className="text-muted mt-3">No engagement data available</h3>
-                            <p className="text-muted">Tracking hasn't started yet — stay tuned!</p>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <br />
-              <div className="row">
-                {/* User Account Status  */}
-                <div className="col-md-3">
-                  <div className="card">
-                    <div
-                      className="card-header"
-                      style={{ backgroundColor: "#3B3486", color: "#ffffff" }}
-                    >
-                      <span className="ms-1">
-                        <b>Authorization Status</b>
-                      </span>
-                    </div>
-                    <div className="card-body d-flex justify-content-center">
-                      {userList && userList.length > 0 ? (
-                        <PieChart
-                          width={250}
-                          height={250}
-                          onClick={handlePieChartClick}
+                <div className="card-body d-flex flex-column align-items-center justify-content-center pt-0">
+                  <div className="position-relative d-flex justify-content-center align-items-center" style={{ height: '240px', width: '100%' }}>
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart onClick={() => navigate("/admin/usermanagement")}>
+                        <Pie
+                          data={authData}
+                          innerRadius={70}
+                          outerRadius={95}
+                          paddingAngle={8}
+                          dataKey="value"
+                          stroke="none"
                         >
-                          <Pie
-                            data={data}
-                            cx="50%"
-                            cy="50%"
-                            labelLine={false}
-                            label={false}
-                            innerRadius={60}
-                            outerRadius={100}
-                            dataKey="value"
-                          >
-                            {data.map((entry, index) => (
-                              <Cell
-                                key={`cell-${index}`}
-                                fill={COLORS[index % COLORS.length]}
-                              />
-                            ))}
-                          </Pie>
-                          <Tooltip />
-                          <Legend verticalAlign="top" height={36} />
-                        </PieChart>
-                      ) : (
-                        <div className="d-flex justify-content-center align-items-center" style={{ height: "100%" }}>
-                          <div className="text-center">
-                            <i className="bi bi-people text-muted fs-1"></i>
-                            <h3 className="text-muted mt-3">No user data available</h3>
-                            <p className="text-muted">Start adding users to see authorization status</p>
-                          </div>
-                        </div>
-                      )}
+                          {authData.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={AUTH_COLORS[index]} />
+                          ))}
+                        </Pie>
+                        <Tooltip />
+                      </PieChart>
+                    </ResponsiveContainer>
+                    <div className="position-absolute text-center">
+                      <div className="h2 fw-black mb-0" style={{ color: 'var(--bs-emphasis-color)' }}>{userStats.active + userStats.inactive}</div>
+                      <div className="small text-uppercase fw-bold" style={{ fontSize: '0.6rem', color: 'var(--bs-secondary-color)' }}>Total Users</div>
                     </div>
+                  </div>
+                  <div className="d-flex gap-4 mt-2">
+                    <div className="small fw-bold" style={{ color: 'var(--bs-body-color)' }}><i className="bi bi-circle-fill me-2" style={{ color: AUTH_COLORS[0], fontSize: '0.6rem' }}></i>Authorized</div>
+                    <div className="small fw-bold" style={{ color: 'var(--bs-body-color)' }}><i className="bi bi-circle-fill me-2" style={{ color: AUTH_COLORS[1], fontSize: '0.6rem' }}></i>Unauthorized</div>
                   </div>
                 </div>
               </div>
             </div>
-          )}
-        </section>
-      </div>
+
+            {/* Full Width Engagement Trend */}
+            <div className="col-12">
+              <div className="card border-0 shadow-sm rounded-4 overflow-hidden" style={{
+                background: 'var(--bs-body-bg)',
+                border: '1px solid var(--bs-border-color-translucent)'
+              }}>
+                <div className="card-header border-bottom py-3 d-flex align-items-center justify-content-between"
+                  style={{ background: 'var(--bs-tertiary-bg)', borderColor: 'var(--bs-border-color-translucent)' }}
+                >
+                  <div className="d-flex align-items-center">
+                    <div className="bg-warning bg-opacity-10 p-2 rounded-3 me-3">
+                      <i className="bi bi-activity text-warning"></i>
+                    </div>
+                    <span className="fw-bold" style={{ letterSpacing: '-0.5px', color: 'var(--bs-emphasis-color)' }}>Global Engagement Trend</span>
+                  </div>
+                  <button className="btn btn-sm btn-link text-primary p-0 fw-bold small text-decoration-none" onClick={() => navigate("/admin/datamanagement/statisticsadmin")}>
+                    View Detailed <i className="bi bi-arrow-right ms-1"></i>
+                  </button>
+                </div>
+                <div className="card-body p-4" style={{ height: "400px" }}>
+                  {trendLoading ? (
+                    <LoadingSpinner text="Analyzing trends..." />
+                  ) : (
+                    <ResponsiveContainer width="100%" height="100%">
+                      <LineChart data={engagementTrendData}>
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--bs-border-color)" />
+                        <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fill: 'var(--bs-secondary-color)', fontSize: 12 }} dy={10} />
+                        <YAxis axisLine={false} tickLine={false} tick={{ fill: 'var(--bs-secondary-color)', fontSize: 12 }} />
+                        <Tooltip
+                          contentStyle={{
+                            backgroundColor: 'var(--bs-body-bg)',
+                            borderRadius: '12px',
+                            border: '1px solid var(--bs-border-color)',
+                            boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)',
+                            color: 'var(--bs-body-color)'
+                          }}
+                          itemStyle={{ color: 'var(--bs-body-color)' }}
+                        />
+                        <Legend iconType="circle" />
+                        <Line type="monotone" dataKey="interested" name="Interested" stroke="#10b981" strokeWidth={3} dot={{ r: 4, strokeWidth: 2, fill: 'var(--bs-body-bg)' }} activeDot={{ r: 6 }} />
+                        <Line type="monotone" dataKey="bored" name="Bored" stroke="#f43f5e" strokeWidth={3} dot={{ r: 4, strokeWidth: 2, fill: 'var(--bs-body-bg)' }} activeDot={{ r: 6 }} />
+                        <Line type="monotone" dataKey="lackingFocus" name="Lacking Focus" stroke="#f59e0b" strokeWidth={3} dot={{ r: 4, strokeWidth: 2, fill: 'var(--bs-body-bg)' }} activeDot={{ r: 6 }} />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
     </Container>
   );
 }

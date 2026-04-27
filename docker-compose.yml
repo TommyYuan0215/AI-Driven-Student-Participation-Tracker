@@ -11,16 +11,9 @@ services:
     depends_on:
       mysql:
         condition: service_healthy
+    env_file:
+      - .env
     environment:
-      - DATABASE_HOST=mysql
-      - DATABASE_USER=root
-      - DATABASE_PASSWORD=root
-      - DATABASE_NAME=aispt
-      - FLASK_ENV=development
-      - DB_MODE=local
-      - CUDA_VISIBLE_DEVICES=-1
-      - TF_FORCE_GPU_ALLOW_GROWTH=false
-      - TF_CPP_MIN_LOG_LEVEL=2
       - GUNICORN_CMD_ARGS=--workers=1 --threads=2 --timeout=120 --reload
     restart: always
     deploy:

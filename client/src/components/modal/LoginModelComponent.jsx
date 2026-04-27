@@ -7,10 +7,10 @@ function ModelComponent(props) {
   return (
     <Modal
       {...restProps}
-      size="xl"
+      size="md"
       aria-labelledby="contained-modal-title-vcenter"
       centered
-      className="modal-xl"
+      onHide={onHide}
     >
       <Modal.Body>
         <div className="back-button" onClick={onHide}>

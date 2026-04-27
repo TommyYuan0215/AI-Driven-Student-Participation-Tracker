@@ -2,40 +2,24 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import { io } from "socket.io-client";
 import { toast } from "react-toastify";
 
-const SOCKET_URL = "http://localhost:5000";
+const SOCKET_URL = "/";
 
-// Updated SOCKET_CONFIG - rely on built-in ping/pong
+// SOCKET_CONFIG matches server-side ping_timeout/ping_interval
 const SOCKET_CONFIG = {
   reconnection: true,
-  reconnectionAttempts: 10,
+  reconnectionAttempts: 50,
   reconnectionDelay: 1000,
   reconnectionDelayMax: 10000,
-  timeout: 15000, // Connection timeout (initial connection)
-  pingTimeout: 20000, // How long to wait for a PONG before considering connection dead
-  pingInterval: 10000, // How often to send a PING
+  timeout: 20000,
+  pingTimeout: 60000,
+  pingInterval: 25000,
   transports: ['websocket', 'polling'],
-  forceNew: false, // Prevents creating a new connection instance on every render
   autoConnect: true,
-  upgrade: true,
-  rememberUpgrade: true,
-  rejectUnauthorized: false, // WARNING: Only for development (e.g., self-signed SSL). DO NOT USE IN PRODUCTION.
-  path: '/socket.io/', // Default path, only needed if server customizes it
-  query: {
-    clientId: Date.now().toString(), // Example of passing data on connect
-    version: '1.0'
-  }
 };
 
-// Enhanced constants
-const MAX_RECONNECT_ATTEMPTS = 10;
-const RAPID_DISCONNECT_THRESHOLD = 3;
-const RAPID_DISCONNECT_WINDOW = 5000; // 5 seconds
-const CONNECTION_TIMEOUT = 10000; // Time without a pong before forcing a reconnect check
-const STABILITY_TIMEOUT = 5000; // 5 seconds for connection to be considered stable
-const OPERATION_TIMEOUT = 10000; // 10 seconds for queued operations
-const HEALTH_CHECK_INTERVAL = 30000; // 30 seconds for custom health checks
-const INITIAL_RECONNECT_DELAY = 1000;
-const MAX_RECONNECT_DELAY = 30000;
+const STABILITY_TIMEOUT = 5000;
+const HEALTH_CHECK_INTERVAL = 30000;
+const OPERATION_TIMEOUT = 10000;
 
 export const useSocket = () => {
   // Enhanced state management
@@ -68,7 +52,7 @@ export const useSocket = () => {
 
     // Debounce similar toasts (prevent spam)
     if (lastToastRef.current[toastKey] &&
-        now - lastToastRef.current[toastKey] < 3000) {
+      now - lastToastRef.current[toastKey] < 3000) {
       return;
     }
 
@@ -413,26 +397,26 @@ export const useSocket = () => {
         // First, check if connection is ready and queue if not
         const isReady = await ensureConnection(operation); // ensureConnection might queue
         if (isReady) {
-            // If connection was ready, execute the operation directly
-            return await operation();
+          // If connection was ready, execute the operation directly
+          return await operation();
         } else {
-            // If operation was queued, we can't await its result directly here
-            // The pendingOperationsRef will handle its execution upon connect
-            console.log("Operation was queued, awaiting connection.");
-            // You might need a more sophisticated mechanism here if the operation needs to return a value immediately
-            // For now, it just means it will run later.
-            return new Promise((resolve, reject) => {
-                // This is a simplified approach, a real-world scenario might need a unique ID for the queued operation
-                // and a way for the operation itself to resolve/reject this promise.
-                // For now, we assume if it's queued, it eventually succeeds.
-                const checkInterval = setInterval(() => {
-                    if (!pendingOperationsRef.current.has(operation.id)) { // Assuming operation has a unique ID
-                        clearInterval(checkInterval);
-                        resolve(); // Operation executed (or timed out)
-                    }
-                }, 100);
-                // Consider adding a timeout for this promise as well.
-            });
+          // If operation was queued, we can't await its result directly here
+          // The pendingOperationsRef will handle its execution upon connect
+          console.log("Operation was queued, awaiting connection.");
+          // You might need a more sophisticated mechanism here if the operation needs to return a value immediately
+          // For now, it just means it will run later.
+          return new Promise((resolve, reject) => {
+            // This is a simplified approach, a real-world scenario might need a unique ID for the queued operation
+            // and a way for the operation itself to resolve/reject this promise.
+            // For now, we assume if it's queued, it eventually succeeds.
+            const checkInterval = setInterval(() => {
+              if (!pendingOperationsRef.current.has(operation.id)) { // Assuming operation has a unique ID
+                clearInterval(checkInterval);
+                resolve(); // Operation executed (or timed out)
+              }
+            }, 100);
+            // Consider adding a timeout for this promise as well.
+          });
         }
       } catch (error) {
         attempts++;

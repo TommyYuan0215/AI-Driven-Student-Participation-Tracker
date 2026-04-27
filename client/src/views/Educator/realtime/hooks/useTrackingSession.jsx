@@ -94,15 +94,9 @@ export function useTrackingSession(
   // Sync refs with state
   useEffect(() => {
     interestedCountRef.current = interestedCount;
-  }, [interestedCount]);
-
-  useEffect(() => {
     boredCountRef.current = boredCount;
-  }, [boredCount]);
-
-  useEffect(() => {
     lackingFocusCountRef.current = lackingFocusCount;
-  }, [lackingFocusCount]);
+  }, [interestedCount, boredCount, lackingFocusCount]);
 
   // Handle tracking state
   useEffect(() => {

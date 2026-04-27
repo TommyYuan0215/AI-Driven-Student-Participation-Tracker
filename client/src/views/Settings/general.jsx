@@ -1,413 +1,242 @@
 import { useState, useEffect } from "react";
-import { Accordion } from "react-bootstrap";
 import Cookies from "js-cookie";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import useSession from "../../hooks/useSession";
 import PageTitleBreadcrumb from "../../components/layout/PageTitleBreadcrumbLayout";
 import axios from "../../utils/axiosUtils";
 import { toast } from "react-toastify";
-import { Form, Button } from "react-bootstrap";
+import { Form, Button, Row, Col, Modal } from "react-bootstrap";
 
 function GeneralSettings() {
   const [darkMode, setDarkMode] = useState(false);
   const [privateMode, setPrivateMode] = useState(0);
   const navigate = useNavigate();
+  const location = useLocation();
   const { userData, isLoggedIn } = useSession(navigate);
 
-  // State for Emotion Save Interval
-  const [savedInterval, setSavedInterval] = useState();
+  const [savedInterval, setSavedInterval] = useState(30);
   const [fontSize, setFontSize] = useState("medium");
   const [lackingFocusThreshold, setLackingFocusThreshold] = useState(0);
   const [boredThreshold, setBoredThreshold] = useState(0);
   const [clearingSessions, setClearingSessions] = useState(false);
+  const [activeTab, setActiveTab] = useState("basic");
 
-  // Fetch privacy status when the component mounts
+
   useEffect(() => {
-    const fetchPrivacyStatus = async () => {
+    const fetchSettings = async () => {
+      if (!isLoggedIn || userData?.userType !== 1) return;
       try {
-        const response = await axios.get("/settings/get_privacy_status");
-        if (response.data.success) {
-          setPrivateMode(response.data.privacyStatus); // Directly set the fetched value (0 or 1)
-        } else {
-          console.error(response.data.message); // Handle error (e.g., not logged in)
+        const [privacy, interval, thresholds] = await Promise.all([
+          axios.get("/settings/get_privacy_status"),
+          axios.get("/settings/get_emotion_save_interval"),
+          axios.get("/settings/get_thresholds")
+        ]);
+        if (privacy.data.success) setPrivateMode(privacy.data.privacyStatus);
+        if (interval.data.success) setSavedInterval(interval.data.emotionSaveInterval);
+        if (thresholds.data.success) {
+          setLackingFocusThreshold(thresholds.data.thresholds.thresholdLackingFocus);
+          setBoredThreshold(thresholds.data.thresholds.thresholdBored);
         }
-      } catch (error) {
-        console.error("Error fetching privacy status:", error);
-      }
+      } catch (err) { console.error("Error fetching settings:", err); }
     };
+    if (isLoggedIn) fetchSettings();
+  }, [isLoggedIn, userData]);
 
-    fetchPrivacyStatus();
-  }, []);
-
-  // Fetch saved interval when the component mounts
   useEffect(() => {
-    const fetchSavedInterval = async () => {
-      try {
-        const response = await axios.get("/settings/get_emotion_save_interval");
-        if (response.data.success) {
-          setSavedInterval(response.data.emotionSaveInterval); // Corrected to match the key returned by the backend
-        } else {
-          console.error("Error fetching saved interval");
-        }
-      } catch (error) {
-        console.error("Error fetching saved interval:", error);
-      }
-    };
-
-    fetchSavedInterval();
-  }, []);
-
-  // useEffect to save theme cache as cookie
-  useEffect(() => {
-    const savedTheme = Cookies.get("theme"); // Get theme from cookies
+    const savedTheme = Cookies.get("theme");
     if (savedTheme === "dark") {
       setDarkMode(true);
       document.querySelector("html").setAttribute("data-bs-theme", "dark");
     }
-  }, []);
-
-  useEffect(() => {
     const savedFontSize = Cookies.get("fontSize");
-    if (savedFontSize) {
-      setFontSize(savedFontSize);
-      const size =
-        savedFontSize === "small"
-          ? "14px"
-          : savedFontSize === "large"
-          ? "20px"
-          : "16px";
-      document.documentElement.style.fontSize = size;
-    }
+    if (savedFontSize) setFontSize(savedFontSize);
   }, []);
 
-  useEffect(() => {
-    axios.get('/settings/get_thresholds').then(res => {
-      if (res.data.success) {
-        setLackingFocusThreshold(res.data.thresholds.thresholdLackingFocus);
-        setBoredThreshold(res.data.thresholds.thresholdBored);
-      }
-    });
-  }, []);
-
-  // Dark Mode toggle logic
   const toggleTheme = () => {
-    const newDarkMode = !darkMode; // Compute new theme state
+    const newDarkMode = !darkMode;
     setDarkMode(newDarkMode);
-    // Update theme in cookies
-    Cookies.set("theme", newDarkMode ? "dark" : "light", { expires: 365 }); // Save for 1 year
-    document
-      .querySelector("html")
-      .setAttribute("data-bs-theme", newDarkMode ? "dark" : "light");
+    Cookies.set("theme", newDarkMode ? "dark" : "light", { expires: 365 });
+    document.querySelector("html").setAttribute("data-bs-theme", newDarkMode ? "dark" : "light");
   };
 
-  // Privacy settings toggle logic
   const togglePrivacy = () => {
-    if (!userData?.userID) {
-      console.error("User not logged in");
-      return;
-    }
-
-    const confirmationMessage =
-      privateMode === 0
-        ? "Switching to Public Mode will share your data with all educators for further analysis. Are you sure?"
-        : "Switching to Private Mode will keep your data only within your account for personal analysis. Are you sure?";
-
-    const isConfirmed = window.confirm(confirmationMessage);
-
-    if (!isConfirmed) {
-      return; // If the user cancels, don't proceed
-    }
-
-    const newPrivateMode = privateMode === 0 ? 1 : 0; // Switch between 0 and 1
+    const newPrivateMode = privateMode === 0 ? 1 : 0;
     setPrivateMode(newPrivateMode);
-
-    // Send the updated privacy status to the backend
-    const updatePrivacyStatus = async () => {
-      try {
-        const response = await axios.post("/settings/update_privacy_settings", {
-          id: userData.userID, // Send the userID from userData
-          privacyStatus: newPrivateMode, // Send 1 for public, 0 for private
-        });
-
-        if (response.status === 200) {
-          toast.success("Privacy settings updated successfully!");
-        } else {
-          toast.error(
-            response.data.message || "Failed to update privacy settings"
-          );
-        }
-      } catch (error) {
-        console.error("Error updating privacy settings:", error);
-        toast.error(
-          error.response?.data?.message ||
-            "An error occurred while updating privacy settings"
-        );
-      }
-    };
-
-    updatePrivacyStatus();
+    axios.post("/settings/update_privacy_settings", {
+      id: userData.userID,
+      privacyStatus: newPrivateMode,
+    }).then(() => toast.success("Privacy mode updated")).catch(() => toast.error("Update failed"));
   };
 
-  // Handle the slider change
-  const handleSliderChange = (e) => {
-    const value = Number(e.target.value);
-    setSavedInterval(value); // Update the savedInterval when the slider changes
-  };
-
-  // Handle Save Emotional Interval
   const handleSaveInterval = () => {
-    const userId = userData.userID;
-
-    if (!userId) {
-      console.error("User not logged in");
-      return;
-    }
-
-    axios
-      .post("/settings/update_emotion_save_interval", {
-        id: userId,
-        emotionSaveInterval: savedInterval, // Send the selected interval value (in seconds)
-      })
-      .then((response) => {
-        toast.success("Emotion save interval updated successfully!");
-      })
-      .catch((error) => {
-        console.error("Error updating interval:", error);
-        toast.error("Failed to update interval.");
-      });
+    axios.post("/settings/update_emotion_save_interval", {
+      id: userData.userID,
+      emotionSaveInterval: savedInterval,
+    }).then(() => toast.success("Frequency updated")).catch(() => toast.error("Save failed"));
   };
 
   const handleSaveThresholds = () => {
     axios.post('/settings/update_thresholds', {
       thresholdLackingFocus: lackingFocusThreshold,
       thresholdBored: boredThreshold
-    }).then(response => {
-      if (response.data.success) toast.success('Thresholds updated!');
-      else toast.error(response.data.message);
-    }).catch(() => toast.error('Failed to update thresholds.'));
-  };
-
-  const handleClearAllSessions = async () => {
-    if (!userData?.userID) {
-      toast.error("User not logged in");
-      return;
-    }
-    const confirmed = window.confirm(
-      "Are you sure you want to permanently delete all your session data? This action cannot be undone."
-    );
-    if (!confirmed) return;
-    setClearingSessions(true);
-    try {
-      const response = await axios.post("/tracking_session/delete_all_sessions", {
-        userID: userData.userID,
-      });
-      if (response.data.success) {
-        toast.success(response.data.message || "All session data deleted.");
-      } else {
-        toast.error(response.data.message || "Failed to delete session data.");
-      }
-    } catch (error) {
-      toast.error(
-        error.response?.data?.message || "Failed to delete session data."
-      );
-    } finally {
-      setClearingSessions(false);
-    }
+    }).then(() => toast.success('Thresholds updated!')).catch(() => toast.error('Save failed'));
   };
 
   const handleFontSizeChange = (e) => {
-    setFontSize(e.target.value);
-    const size =
-      e.target.value === "small"
-        ? "14px"
-        : e.target.value === "large"
-        ? "20px"
-        : "16px";
+    const val = e.target.value;
+    setFontSize(val);
+    const size = val === "small" ? "14px" : val === "large" ? "20px" : "16px";
     document.documentElement.style.fontSize = size;
-    Cookies.set("fontSize", e.target.value, { expires: 365 });
+    Cookies.set("fontSize", val, { expires: 365 });
   };
 
-  // Determine which accordion section to open by default
-  let defaultActiveKey = "0"; // Basic Settings by default
-  if (isLoggedIn && userData?.userType === 1) defaultActiveKey = "2"; // Educator
+  const handlePurgeExecution = async () => {
+    const confirmDelete = window.confirm("Are you sure you want to delete all session history? This action cannot be undone.");
+    if (!confirmDelete) return;
+
+    setClearingSessions(true);
+    try {
+      const response = await axios.post("/tracking_session/delete_all_sessions", {
+        userID: userData.userID
+      });
+      if (response.data.success) {
+        toast.success(response.data.message);
+      } else {
+        toast.error(response.data.message);
+      }
+    } catch { toast.error("Purge operation failed"); }
+    finally { setClearingSessions(false); }
+  };
 
   return (
-    <>
-      <PageTitleBreadcrumb title="General Settings" path={location.pathname} />
-      <div className="ms-4 me-4">
-        <Accordion defaultActiveKey={defaultActiveKey}>
-          {/* Basic Settings */}
-          <Accordion.Item eventKey="0">
-            <Accordion.Header>Basic Settings</Accordion.Header>
-            <Accordion.Body>
-              <section className="mb-4">
-                <h6 className="fw-semibold">System Theme</h6>
-                <p className="text-muted small mb-2">
-                  Switch between light and dark mode for the entire system interface. Your preference will be saved for future visits.
-                </p>
-                <div className="theme-toggle">
-                  <label className="toggle-switch mb-0">
-                    <input
-                      type="checkbox"
-                      checked={darkMode}
-                      onChange={toggleTheme}
-                    />
-                    <span className="slider"></span>
+    <div className="py-2 fade-in">
+      <PageTitleBreadcrumb title="System Preferences" path={location.pathname} />
+
+      <Row className="mt-4 g-4">
+        <Col lg={3}>
+          <div className="settings-card p-3">
+            <div className={`settings-nav-item ${activeTab === 'basic' ? 'active' : ''}`} onClick={() => setActiveTab('basic')}>
+              <i className="bi bi-sliders2"></i>
+              <span>Basic Appearance</span>
+            </div>
+            {isLoggedIn && userData?.userType === 1 && (
+              <div className={`settings-nav-item ${activeTab === 'educator' ? 'active' : ''}`} onClick={() => setActiveTab('educator')}>
+                <i className="bi bi-shield-lock"></i>
+                <span>Educator Controls</span>
+              </div>
+            )}
+            <div className={`settings-nav-item ${activeTab === 'maintenance' ? 'active' : ''}`} onClick={() => setActiveTab('maintenance')}>
+              <i className="bi bi-tools"></i>
+              <span>Maintenance</span>
+            </div>
+          </div>
+        </Col>
+
+        <Col lg={9}>
+          <div className="settings-card p-4">
+            {activeTab === 'basic' && (
+              <div className="fade-in">
+                <h6 className="settings-section-title">Visual Customization</h6>
+
+                <div className="modern-toggle-wrapper mb-4">
+                  <div>
+                    <div className="fw-bold mb-1">High Contrast Mode</div>
+                    <div className="small text-muted">Optimize the interface for low-light environments</div>
+                  </div>
+                  <label className="premium-switch">
+                    <input type="checkbox" checked={darkMode} onChange={toggleTheme} />
+                    <span className="premium-slider"></span>
                   </label>
-                  <span className="theme-label">
-                    {darkMode ? "Dark Mode" : "Light Mode"}
-                  </span>
                 </div>
-              </section>
-              <hr />
-              {/* Font Size Option */}
-              <section className="mb-4">
-                <h6 className="fw-semibold">Font Size</h6>
-                <p className="text-muted small mb-2">
-                  Adjust the font size for better readability across the system.
-                </p>
-                <div className="d-flex align-items-center gap-3">
-                  <Form.Group>
-                    <Form.Select value={fontSize} onChange={handleFontSizeChange} style={{ width: 300, maxWidth: 300 }}>
-                      <option value="small">Small</option>
-                      <option value="medium">Medium (Default)</option>
-                      <option value="large">Large</option>
-                    </Form.Select>
-                  </Form.Group>
-                </div>
-              </section>
-            </Accordion.Body>
-          </Accordion.Item>
 
-          {/* Educator Section */}
-          {isLoggedIn && userData?.userType === 1 && (
-          <Accordion.Item eventKey="2">
-            <Accordion.Header>Educator Settings</Accordion.Header>
-            <Accordion.Body>
-              {/* Privacy Section */}
-              <section className="mb-4">
-                <h6 className="fw-semibold">Privacy Information Settings</h6>
-                <p className="text-muted small mb-2">
-                  Control who can see your student participation session data.
-                </p>
-                <div className="model-toggle d-flex align-items-center mt-2">
-                  <label className="toggle-switch mb-0">
-                    <input
-                      type="checkbox"
-                      checked={privateMode === 1}
-                      onChange={togglePrivacy}
-                    />
-                    <span className="slider"></span>
-                  </label>
-                  <span className="model-label ms-2">
-                    {privateMode === 0
-                      ? "Private Mode: Only you can see your own student participation engagement session data"
-                      : "Public Mode: Everyone can see your student participation session data"}
-                  </span>
-                </div>
-              </section>
-
-              <hr />
-
-              {/* Emotion Data Save Frequency */}
-              <section className="mb-4">
-                <h6 className="fw-semibold">Emotion Data Save Frequency</h6>
-                <p className="text-muted small mb-2">
-                  Set how often emotion data is saved during a session.
-                </p>
-                <div className="d-flex align-items-end gap-3 mt-3 flex-wrap">
-                  <Form.Group className="flex-fill" controlId="formIntervalSlider">
-                    <Form.Range
-                      min={30}
-                      max={300}
-                      step={30}
-                      value={savedInterval}
-                      onChange={handleSliderChange}
-                    />
-                    <div className="d-flex justify-content-between small text-muted px-1 mt-1">
-                      <span>30s</span>
-                      <span>1m</span>
-                      <span>1.5m</span>
-                      <span>2m</span>
-                      <span>2.5m</span>
-                      <span>3m</span>
-                      <span>3.5m</span>
-                      <span>4m</span>
-                      <span>4.5m</span>
-                      <span>5m</span>
+                <div className="p-4 rounded-4 mb-4" style={{ background: 'var(--bs-tertiary-bg)', border: '1px solid var(--bs-border-color-translucent)' }}>
+                  <Form.Label className="fw-bold mb-3">System-wide Font Scale</Form.Label>
+                  <div className="d-flex align-items-center gap-4">
+                    <div className="flex-fill">
+                      <Form.Select className="rounded-pill px-4" value={fontSize} onChange={handleFontSizeChange}>
+                        <option value="small">Compact (14px)</option>
+                        <option value="medium">Standard (16px)</option>
+                        <option value="large">Spacious (20px)</option>
+                      </Form.Select>
                     </div>
-                  </Form.Group>
-                  <Button
-                    variant="success"
-                    className="h-50 mt-2"
-                    onClick={handleSaveInterval}
-                  >
-                    <i className="bi bi-floppy me-1"></i> Save Changes
+                    <div className="text-muted small">Affects all navigation and dashboard elements</div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {activeTab === 'educator' && (
+              <div className="fade-in">
+                <h6 className="settings-section-title">Data Privacy & Security</h6>
+                <div className="modern-toggle-wrapper mb-4">
+                  <div>
+                    <div className="fw-bold mb-1">Global Data Visibility</div>
+                    <div className="small text-muted">{privateMode === 1 ? 'Broadcasting: Your data is visible to all authorized educators' : 'Stealth: Data remains restricted to your local session analysis'}</div>
+                  </div>
+                  <label className="premium-switch">
+                    <input type="checkbox" checked={privateMode === 1} onChange={togglePrivacy} />
+                    <span className="premium-slider"></span>
+                  </label>
+                </div>
+
+                <h6 className="settings-section-title mt-5">Engine Performance</h6>
+                <div className="p-4 rounded-4 mb-4" style={{ background: 'var(--bs-tertiary-bg)', border: '1px solid var(--bs-border-color-translucent)' }}>
+                  <div className="d-flex justify-content-between align-items-center mb-3">
+                    <div className="fw-bold">Emotion Sampling Frequency</div>
+                    <span className="badge bg-primary rounded-pill px-3">{savedInterval}s</span>
+                  </div>
+                  <Form.Range min={30} max={300} step={30} value={savedInterval} onChange={(e) => setSavedInterval(Number(e.target.value))} />
+                  <div className="d-flex justify-content-between small text-muted mt-2 px-1">
+                    <span>Precision (30s)</span>
+                    <span>Balanced</span>
+                    <span>Optimized (5m)</span>
+                  </div>
+                  <Button variant="primary" className="mt-4 rounded-pill px-4" onClick={handleSaveInterval}>
+                    Commit sampling rate
                   </Button>
                 </div>
-              </section>
 
-              <hr />
-
-              {/* Threshold Settings Section */}
-              <section className="mb-4">
-                <h6 className="fw-semibold">Predefined Threshold Settings (Alert Toast)</h6>
-                <p className="text-muted small mb-2">
-                  Set alert thresholds for student engagement.
-                </p>
-                <div className="d-flex align-items-end gap-3 mt-2 flex-wrap">
-                  <Form.Group className="flex-fill" controlId="formLackingFocus">
-                    <Form.Label>Lacking Focus (Cumulative) Threshold Value</Form.Label>
-                    <Form.Control
-                      type="number"
-                      placeholder="Enter threshold value"
-                      min={0}
-                      max={100}
-                      step={1}
-                      value={lackingFocusThreshold}
-                      onChange={e => setLackingFocusThreshold(Number(e.target.value))}
-                    />
-                  </Form.Group>
-                  <Form.Group className="flex-fill" controlId="formBored">
-                    <Form.Label>Bored (Cumulative) Threshold Value</Form.Label>
-                    <Form.Control
-                      type="number"
-                      placeholder="Enter threshold value"
-                      min={0}
-                      max={100}
-                      step={1}
-                      value={boredThreshold}
-                      onChange={e => setBoredThreshold(Number(e.target.value))}
-                    />
-                  </Form.Group>
-                  <Button variant="success" className="h-50 mt-2" onClick={handleSaveThresholds}>
-                    <i className="bi bi-floppy me-1"></i> Save Changes
+                <h6 className="settings-section-title mt-5">Alert Logic</h6>
+                <div className="p-4 rounded-4" style={{ background: 'var(--bs-tertiary-bg)', border: '1px solid var(--bs-border-color-translucent)' }}>
+                  <Row className="g-4">
+                    <Col md={6}>
+                      <Form.Label className="small fw-bold text-muted">Lacking Focus Threshold</Form.Label>
+                      <Form.Control type="number" className="rounded-pill px-3" value={lackingFocusThreshold} onChange={e => setLackingFocusThreshold(Number(e.target.value))} />
+                    </Col>
+                    <Col md={6}>
+                      <Form.Label className="small fw-bold text-muted">Boredom Threshold</Form.Label>
+                      <Form.Control type="number" className="rounded-pill px-3" value={boredThreshold} onChange={e => setBoredThreshold(Number(e.target.value))} />
+                    </Col>
+                  </Row>
+                  <Button variant="primary" className="mt-4 rounded-pill px-4" onClick={handleSaveThresholds}>
+                    Update trigger logic
                   </Button>
                 </div>
-              </section>
+              </div>
+            )}
 
-              <hr />
-
-              {/* Danger Zone */}
-              <section>
-                <div className="alert alert-danger">
-                  <h6 className="fw-semibold text-danger mb-2">
-                    Danger Zone: Clear All Session Data
-                  </h6>
-                  <p className="mb-2 small">
-                    This will permanently delete all your session data. This action cannot be undone.
-                  </p>
-                  <Button variant="danger" className="mt-2" onClick={handleClearAllSessions} disabled={clearingSessions}>
-                    {clearingSessions ? "Clearing..." : "Clear All Session Data"}
+            {activeTab === 'maintenance' && (
+              <div className="fade-in">
+                <h6 className="settings-section-title text-danger">Data Integrity & Cleanup</h6>
+                <div className="p-4 rounded-4 border border-danger border-opacity-25 shadow-sm" style={{ background: 'rgba(220, 53, 69, 0.02)' }}>
+                  <div className="d-flex align-items-center gap-3 mb-3">
+                    <div>
+                      <div className="fw-bold text-danger">Purge Analytical Repository</div>
+                      <p className="small text-muted mb-0">Permanently remove all tracking sessions and emotional data from the database.</p>
+                    </div>
+                  </div>
+                  <Button variant="danger" className="rounded-pill px-4" onClick={handlePurgeExecution} disabled={clearingSessions}>
+                    {clearingSessions ? 'Purging...' : 'Clear All Session History'}
                   </Button>
                 </div>
-              </section>
-            </Accordion.Body>
-          </Accordion.Item>
-        )}
-        </Accordion>
-      </div>
-    </>
+              </div>
+            )}
+          </div>
+        </Col>
+      </Row>
+
+
+    </div>
   );
 }
 

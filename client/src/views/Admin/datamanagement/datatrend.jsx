@@ -29,7 +29,7 @@ function AdminDataTrending() {
   };
 
   return (
-    <>
+    <div className="py-2 fade-in">
       <PageTitleBreadcrumb
         title="Trend Data Analysis"
         path={location.pathname}
@@ -41,7 +41,7 @@ function AdminDataTrending() {
       />
 
       <TrendAnalysisPageComponent sessionID={sessionID} showBackButton={true} ref={chartRef} />
-    </>
+    </div>
   );
 }
 

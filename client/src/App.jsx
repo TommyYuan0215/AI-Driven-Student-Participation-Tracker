@@ -26,11 +26,11 @@ import EducatorDataTrending from "./views/Educator/postanalytics/datatrend";
 import GeneralSettings from "./views/Settings/general";
 import AccountSettings from "./views/Settings/account";
 
-function AppRoutes({ showSidebar, toggleSidebar }) {
+function AppRoutes({ showSidebar, toggleSidebar, setModalType }) {
   return (
     <Routes>
       {/* Public Route */}
-      <Route path="/" element={<Home />} />
+      <Route path="/" element={<Home setModalType={setModalType} />} />
 
       {/* Admin Protected Routes */}
       <Route path="/admin/*" element={<AdminPage showSidebar={showSidebar} toggleSidebar={toggleSidebar} />}>
@@ -82,25 +82,32 @@ function AppRoutes({ showSidebar, toggleSidebar }) {
 
 function AppWithSidebar() {
   const [showSidebar, setShowSidebar] = useState(true);
+  const [modalType, setModalType] = useState(null); // Global Auth Modal State
   const location = useLocation();
   const isDashboard = location.pathname.startsWith("/admin") || location.pathname.startsWith("/educator");
+  const isTrackingView = location.pathname.includes("/educator/tracking/");
 
   const toggleSidebar = () => setShowSidebar((prev) => !prev);
 
   return (
     <>
-      <Header
-        showSidebar={showSidebar}
-        toggleSidebar={toggleSidebar}
-        showSidebarToggle={isDashboard}
-      />
+      {!isTrackingView && (
+        <Header
+          showSidebar={showSidebar}
+          toggleSidebar={toggleSidebar}
+          showSidebarToggle={isDashboard}
+          modalType={modalType}
+          setModalType={setModalType}
+        />
+      )}
       <AppRoutes
         showSidebar={showSidebar}
         toggleSidebar={toggleSidebar}
+        setModalType={setModalType}
       />
       {/* Toast Notifications */}
       <ToastContainer position="top-center" autoClose={3000} />
-      <Footer />
+      {!isTrackingView && <Footer />}
     </>
   );
 }

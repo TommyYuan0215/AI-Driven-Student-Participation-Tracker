@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Nav, Navbar, NavDropdown, Button } from "react-bootstrap";
+import { Nav, Navbar, NavDropdown, Button, Container } from "react-bootstrap";
 import "../../App.css";
 import ModelComponent from "../modal/LoginModelComponent";
 import LoginForm from "../form/LoginForm";
@@ -9,116 +9,129 @@ import { useNavigate } from "react-router-dom";
 
 function ProfileIcon({ userData, showName = true }) {
   return (
-    <span>
-      <img
-        className="rounded-circle userprofile me-1 img-thumbnail"
-        src={
-          userData.userPhoto
-            ? `data:image/jpeg;base64,${userData.userPhoto}`
-            : "/profile.jpg"
-        }
-        alt="profile-pic"
-        style={{ width: "40px", height: "40px", objectFit: "cover" }}
-      />
-      &nbsp;
-      {showName && userData.userName && <span>{userData.userName}</span>}
+    <span className="d-inline-flex align-items-center">
+      <div className="position-relative d-inline-block me-2">
+          <img
+            className="rounded-circle shadow-sm profile-avatar-img"
+            src={
+              userData.userPhoto
+                ? `data:image/jpeg;base64,${userData.userPhoto}`
+                : "/profile.jpg"
+            }
+            alt="profile-pic"
+          />
+          <span className="position-absolute bottom-0 end-0 bg-success border border-white rounded-circle profile-status-indicator"></span>
+      </div>
+      {showName && userData.userName && (
+        <span className="fw-bold d-none d-sm-inline me-1 small text-emphasis">
+            {userData.userName}
+        </span>
+      )}
     </span>
   );
 }
 
-function Header({ showSidebar, toggleSidebar, showSidebarToggle }) {
-  const [modalType, setModalType] = useState(null); // "login" or "signup"
-  const navigate = useNavigate(); // Use navigate here
+function Header({ showSidebar, toggleSidebar, showSidebarToggle, modalType, setModalType }) {
+  const navigate = useNavigate();
   const { userData, isLoggedIn } = useSession(navigate);
   const { logout } = useSession(navigate);
-  const handleModalClose = () => setModalType(null); // Close modal
-  const openLoginModal = () => setModalType("login"); // Open login modal
-  const openSignUpModal = () => setModalType("signup"); // Open signup modal
+  
+  const handleModalClose = () => setModalType(null);
+  const openLoginModal = () => setModalType("login");
+  const openSignUpModal = () => setModalType("signup");
 
   return (
-    <div className="header-gradient-background">
-      <Navbar expand="lg" className="ps-4 pe-4 d-flex align-items-center">
-        {/* Sidebar Toggle Button (if showSidebarToggle is true) */}
-        {showSidebarToggle && typeof toggleSidebar === "function" && (
-          <Button
-            title={showSidebar ? "Hide Sidebar" : "Show Sidebar"}
-            className="sidebar-toggle me-3 d-none d-md-inline-flex align-items-center"
-            onClick={toggleSidebar}
-            variant="light"
-            size="sm"
-            aria-label="Toggle sidebar"
-            style={{
-              boxShadow: "none",
-              height: "48px",
-              width: "48px",
-              padding: 0,
-              display: "flex",
-              justifyContent: "center",
-              alignItems: "center"
-            }}
-          >
-            <i
-              className={`bi ${showSidebar ? "bi bi-x-lg" : "bi-list"}`}
-              style={{ fontSize: "2rem", color: "grey" }}
-            ></i>
-          </Button>
-        )}
-        <Navbar.Brand
-          href={isLoggedIn ? userData.redirect : "/"}
-          className="fw-bolder custom-navbar-brand"
-          style={{ display: "flex", alignItems: "center" }}
-        >
-          <img
-            src={"/Header_Icon.png"}
-            alt="brand-icon"
-            style={{ width: "50px", height: "30px" }}
-          ></img>{" "}
-          &nbsp; FocusTrack
-
-        </Navbar.Brand>
-
-        {/* Navbar toggle for smaller screens */}
-        <Navbar.Toggle aria-controls="navbar-nav" />
-
-        <Navbar.Collapse id="navbar-nav" className="justify-content-end">
-          <Nav>
-            {isLoggedIn ? (
-              <NavDropdown
-                title={<ProfileIcon userData={userData} />}
-                id="profile-nav-dropdown"
-                align="end"
-                className="custom-nav-dropdown fw-bold"
-              >
-                <NavDropdown.Item
-                  onClick={() =>
-                    confirm("Are you sure you want to log out?") && logout()
-                  }
-                  className="logout-item d-flex align-items-center"
+    <div className="sticky-top w-100 z-1050">
+      <Navbar expand="lg" className="glass-header pt-2 pb-1">
+        <Container fluid className="px-4">
+          <div className="d-flex align-items-center w-100">
+            {/* Left: Brand & Toggle */}
+            <div className="d-flex align-items-center">
+                {showSidebarToggle && typeof toggleSidebar === "function" && (
+                  <button
+                    onClick={toggleSidebar}
+                    className="sidebar-toggle-modern me-3 shadow-sm d-flex align-items-center justify-content-center"
+                  >
+                    <i className={`bi ${showSidebar ? "bi-x-lg" : "bi-list"}`}></i>
+                  </button>
+                )}
+                
+                <Navbar.Brand
+                  href={isLoggedIn ? userData.redirect : "/"}
+                  className="fw-black d-flex align-items-center gap-2 m-0 text-emphasis-ls-1"
                 >
-                  <i className="bi bi-box-arrow-right me-2"></i> Logout System
-                </NavDropdown.Item>
-              </NavDropdown>
-            ) : (
-              <Nav.Link
-                onClick={openLoginModal}
-                className="d-flex align-items-center"
-              >
-                <span className="ms-2 fw-bold" style={{ lineHeight: "40px" }}>
-                  Login Now
-                </span>
-              </Nav.Link>
-            )}
-          </Nav>
-        </Navbar.Collapse>
+                  <img src="/Header_Icon.png" alt="icon" className="header-logo-img" />
+                  <span className="fs-4 d-none d-sm-block">Focus<span className="text-primary">Track</span></span>
+                </Navbar.Brand>
+            </div>
+
+            {/* Right: Actions */}
+            <div className="ms-auto d-flex align-items-center gap-3">
+              <Nav className="ms-auto align-items-center">
+                {isLoggedIn ? (
+                  <NavDropdown
+                    title={<ProfileIcon userData={userData} />}
+                    id="profile-nav-dropdown"
+                    align="end"
+                    className="custom-dropdown-modern-auth no-caret"
+                  >
+                    <div className="dropdown-header p-3 border-bottom mb-1 bg-tertiary">
+                      <div className="d-flex align-items-center gap-2 mb-2">
+                        <img 
+                          src={userData.userPhoto ? `data:image/jpeg;base64,${userData.userPhoto}` : "/profile.jpg"} 
+                          className="rounded-circle border border-primary p-1 profile-avatar-img-large" 
+                          alt="avatar" 
+                        />
+                        <div className="overflow-hidden">
+                          <p className="fw-black mb-0 text-truncate text-emphasis small">{userData.userName}</p>
+                          <p className="text-muted small mb-0 opacity-75">
+                            {userData.userType === 0 ? 'Administrator' : 'Educator'}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="p-2">
+                      <NavDropdown.Item
+                        onClick={() => navigate(userData.userType === 0 ? "/admin/settings/general" : "/educator/settings/general")}
+                        className="rounded-3 p-2 d-flex align-items-center gap-2 mb-1 transition-2"
+                      >
+                        <div className="bg-light p-2 rounded-circle shadow-sm d-flex align-items-center justify-content-center icon-box-32">
+                          <i className="bi bi-gear text-primary"></i>
+                        </div>
+                        <span className="fw-bold small">System Settings</span>
+                      </NavDropdown.Item>
+
+                      <NavDropdown.Item
+                        onClick={() => confirm("End current session?") && logout()}
+                        className="text-danger rounded-3 p-2 d-flex align-items-center gap-2 transition-2"
+                      >
+                        <div className="bg-danger bg-opacity-10 p-2 rounded-circle d-flex align-items-center justify-content-center icon-box-32">
+                          <i className="bi bi-power"></i>
+                        </div>
+                        <span className="fw-bold small">Logout System</span>
+                      </NavDropdown.Item>
+                    </div>
+                  </NavDropdown>
+                ) : (
+                  <button 
+                    onClick={openLoginModal}
+                    className="btn-futuristic-login shadow-sm"
+                  >
+                    <i className="bi bi-shield-lock me-2"></i>
+                    <span>Portal Access</span>
+                  </button>
+                )}
+              </Nav>
+            </div>
+          </div>
+        </Container>
       </Navbar>
 
-      {/* Modal for both Login and Sign Up */}
+
       <ModelComponent show={modalType !== null} onHide={handleModalClose}>
         {modalType === "login" ? (
-          <LoginForm
-            switchToSignUp={openSignUpModal}
-            closeModel={handleModalClose}
-          />
+          <LoginForm switchToSignUp={openSignUpModal} closeModel={handleModalClose} />
         ) : (
           <SignUpForm switchToLogin={openLoginModal} />
         )}

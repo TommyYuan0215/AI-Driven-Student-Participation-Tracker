@@ -29,7 +29,7 @@ function EducatorDataTrending() {
   };
 
   return (
-    <>
+    <div className="py-2 fade-in">
       <PageTitleBreadcrumb
         title="Trend Data Analysis"
         path={location.pathname}
@@ -38,10 +38,11 @@ function EducatorDataTrending() {
         btnIcon={isGenerating ? "bi-hourglass-split" : "bi-file-earmark-pdf"}
         onclickToggle={handleGenerateReport}
         disabled={isGenerating}
+        icon="bi-graph-up-arrow"
       />
 
       <TrendAnalysisPageComponent sessionID={sessionID} showBackButton={true} ref={chartRef} />
-    </>
+    </div>
   );
 }
 

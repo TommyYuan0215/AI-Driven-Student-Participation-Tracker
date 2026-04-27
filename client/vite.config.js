@@ -17,56 +17,56 @@ export default defineConfig({
     ],
     proxy: {
       '/socket.io/': {
-        target: 'http://localhost:5555',
+        target: 'http://backend:5555',
         ws: true, // Proxy WebSocket connections
         changeOrigin: true,
         secure: false,
       },
       // Optionally, proxy your other backend routes as well:
       '/database': {
-        target: 'http://localhost:5555',
+        target: 'http://backend:5555',
         changeOrigin: true,
         secure: false,
         ws: true,
       },
       '/tracking': {
-        target: 'http://localhost:5555',
+        target: 'http://backend:5555',
         changeOrigin: true,
         secure: false,
         ws: true,
       },
       '/tracking_session': {
-        target: 'http://localhost:5555',
+        target: 'http://backend:5555',
         changeOrigin: true,
         secure: false,
         ws: true,
       },
       '/credential': {
-        target: 'http://localhost:5555',
+        target: 'http://backend:5555',
         changeOrigin: true,
         secure: false,
         ws: true,
       },
       '/usermanagement': {
-        target: 'http://localhost:5555',
+        target: 'http://backend:5555',
         changeOrigin: true,
         secure: false,
         ws: true,
       },
       '/contentmanagement': {
-        target: 'http://localhost:5555',
+        target: 'http://backend:5555',
         changeOrigin: true,
         secure: false,
         ws: true,
       },
       '/settings': {
-        target: 'http://localhost:5555',
+        target: 'http://backend:5555',
         changeOrigin: true,
         secure: false,
         ws: true,
       },
       '/report_generator': {
-        target: 'http://localhost:5555',
+        target: 'http://backend:5555',
         changeOrigin: true,
         secure: false,
         ws: true,

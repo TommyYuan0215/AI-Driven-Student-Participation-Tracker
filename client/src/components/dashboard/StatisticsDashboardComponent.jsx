@@ -15,14 +15,14 @@ function StatisticsDashboard({
   const endpoint = isPublic
     ? "/tracking_session/get_tracking_session_public"
     : isAdmin
-    ? "/tracking_session/get_tracking_session_admin"
-    : "/tracking_session/get_tracking_session";
+      ? "/tracking_session/get_tracking_session_admin"
+      : "/tracking_session/get_tracking_session";
 
   const params = isPublic
     ? { userID: userData?.userID } // Add userID for public sessions
     : isAdmin
-    ? {} // Admin can see all sessions
-    : { userID: userData?.userID }; // Add userID for private sessions
+      ? {} // Admin can see all sessions
+      : { userID: userData?.userID }; // Add userID for private sessions
 
   // Call the appropriate API endpoint
   const {
@@ -53,7 +53,7 @@ function StatisticsDashboard({
           const response = await axios.get("/tracking_session/get_tracking_emotion", {
             params: { sessionID: session.sessionID }
           });
-          
+
           // Sum up all entries for this session
           if (response.data && response.data.length > 0) {
             response.data.forEach(entry => {
@@ -121,190 +121,194 @@ function StatisticsDashboard({
   };
 
   return (
-    <>
-      <div className="m-4 card px-3">
-        {loading ? (
-          <LoadingSpinner text="Loading statistics..." />
-        ) : trackingsessionList.length === 0 ? (
-          <div className="text-center my-5 py-5 text-muted">
-            <i
-              className="bi bi-emoji-neutral"
-              style={{ fontSize: "3rem", opacity: 0.7 }}
-            ></i>
-            <h5 className="mt-3">No engagement data available</h5>
-            <p className="small">
-              {isPublic
-                ? "Engagement data is only shown where educators have enabled public sharing in their privacy settings."
-                : "Tracking hasn't started yet — stay tuned!"}
-            </p>
+    <div className="container-fluid">
+      {loading ? (
+        <LoadingSpinner text="Analyzing global performance..." />
+      ) : trackingsessionList.length === 0 ? (
+        <div className="text-center my-5 py-5 border-0 rounded-4 shadow-sm" style={{ background: 'var(--bs-tertiary-bg)' }}>
+          <i
+            className="bi bi-bar-chart-line text-muted mb-3 d-block"
+            style={{ fontSize: "4rem", opacity: 0.3 }}
+          ></i>
+          <h4 className="fw-bold" style={{ color: 'var(--bs-emphasis-color)' }}>No analytics captured yet</h4>
+          <p className="text-muted small max-width-500 mx-auto">
+            {isPublic
+              ? "Public engagement data will appear here once educators enable sharing."
+              : "Complete a tracking session to see detailed emotional analytics and trends."}
+          </p>
+        </div>
+      ) : (
+        <>
+          {/* Summary Metric Cards */}
+          <div className="row g-4 mb-5">
+            <div className="col-xl-3 col-md-6">
+              <div className="card border-0 rounded-4 h-100 overflow-hidden elevation-card" style={{
+                background: 'var(--bs-body-bg)',
+                boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04)',
+                border: '1px solid var(--bs-border-color-translucent)'
+              }}>
+                <div className="card-body p-4">
+                  <div className="d-flex align-items-center mb-3">
+                    <div className="bg-primary bg-opacity-10 p-3 rounded-4 me-3 shadow-sm">
+                      <i className="bi bi-calendar-event text-primary fs-4"></i>
+                    </div>
+                    <h6 className="mb-0 fw-bold" style={{ color: 'var(--bs-secondary-color)', fontSize: '0.8rem', letterSpacing: '0.5px' }}>TOTAL SESSIONS</h6>
+                  </div>
+                  <h2 className="fw-black mb-1" style={{ color: 'var(--bs-emphasis-color)' }}>{formatNumber(trackingsessionList.length)}</h2>
+                  <div className="small text-success fw-bold"><i className="bi bi-check-circle-fill me-1"></i>System Active</div>
+                </div>
+              </div>
+            </div>
+
+            <div className="col-xl-3 col-md-6">
+              <div className="card border-0 rounded-4 h-100 overflow-hidden elevation-card" style={{
+                background: 'var(--bs-body-bg)',
+                boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04)',
+                border: '1px solid var(--bs-border-color-translucent)'
+              }}>
+                <div className="card-body p-4">
+                  <div className="d-flex align-items-center mb-3">
+                    <div className="bg-success bg-opacity-10 p-3 rounded-4 me-3 shadow-sm">
+                      <i className="bi bi-emoji-smile text-success fs-4"></i>
+                    </div>
+                    <h6 className="mb-0 fw-bold" style={{ color: 'var(--bs-secondary-color)', fontSize: '0.8rem', letterSpacing: '0.5px' }}>INTERESTED</h6>
+                  </div>
+                  <h2 className="fw-black mb-1" style={{ color: 'var(--bs-emphasis-color)' }}>{formatNumber(cumulativeStats.interested)}</h2>
+                  <div className="small text-muted fw-light">Total Data Points</div>
+                </div>
+              </div>
+            </div>
+
+            <div className="col-xl-3 col-md-6">
+              <div className="card border-0 rounded-4 h-100 overflow-hidden elevation-card" style={{
+                background: 'var(--bs-body-bg)',
+                boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04)',
+                border: '1px solid var(--bs-border-color-translucent)'
+              }}>
+                <div className="card-body p-4">
+                  <div className="d-flex align-items-center mb-3">
+                    <div className="bg-warning bg-opacity-10 p-3 rounded-4 me-3 shadow-sm">
+                      <i className="bi bi-emoji-expressionless text-warning fs-4"></i>
+                    </div>
+                    <h6 className="mb-0 fw-bold" style={{ color: 'var(--bs-secondary-color)', fontSize: '0.8rem', letterSpacing: '0.5px' }}>BORED</h6>
+                  </div>
+                  <h2 className="fw-black mb-1" style={{ color: 'var(--bs-emphasis-color)' }}>{formatNumber(cumulativeStats.bored)}</h2>
+                  <div className="small text-muted fw-light">Engagement Gap</div>
+                </div>
+              </div>
+            </div>
+
+            <div className="col-xl-3 col-md-6">
+              <div className="card border-0 rounded-4 h-100 overflow-hidden elevation-card" style={{
+                background: 'var(--bs-body-bg)',
+                boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04)',
+                border: '1px solid var(--bs-border-color-translucent)'
+              }}>
+                <div className="card-body p-4">
+                  <div className="d-flex align-items-center mb-3">
+                    <div className="bg-danger bg-opacity-10 p-3 rounded-4 me-3 shadow-sm">
+                      <i className="bi bi-emoji-frown text-danger fs-4"></i>
+                    </div>
+                    <h6 className="mb-0 fw-bold" style={{ color: 'var(--bs-secondary-color)', fontSize: '0.8rem', letterSpacing: '0.5px' }}>LACKING FOCUS</h6>
+                  </div>
+                  <h2 className="fw-black mb-1" style={{ color: 'var(--bs-emphasis-color)' }}>{formatNumber(cumulativeStats.lackingFocus)}</h2>
+                  <div className="small text-muted fw-light">Critical Attention</div>
+                </div>
+              </div>
+            </div>
           </div>
-        ) : (
-          <>
-            <section className="px-1 py-4">
-              <div className="row">
-                <div className="col-md-3 mb-3">
-                  <div className="card text-center shadow-lg p-4 mb-5 rounded">
-                    <div className="card-body">
-                      <i
-                        className="bi bi-file-earmark-plus mb-3"
-                        style={{ fontSize: "2rem", color: "magenta" }}
-                      ></i>
-                      <h5 className="card-title">Total Sessions Created</h5>
-                      <h3>{formatNumber(trackingsessionList.length)}</h3>
-                    </div>
-                  </div>
-                </div>
 
-                <div className="col-md-3 mb-3">
-                  <div className="card text-center shadow-lg p-4 mb-5 rounded">
-                    <div className="card-body">
-                      <i
-                        className="bi bi-emoji-smile mb-3"
-                        style={{ fontSize: "2rem", color: "green" }}
-                      ></i>
-                      <h5 className="card-title">Interested (Cumulative)</h5>
-                      <h3>{formatNumber(cumulativeStats.interested)}</h3>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="col-md-3 mb-3">
-                  <div className="card text-center shadow-lg p-4 mb-5 rounded">
-                    <div className="card-body">
-                      <i
-                        className="bi bi-emoji-expressionless mb-3"
-                        style={{ fontSize: "2rem", color: "orange" }}
-                      ></i>
-                      <h5 className="card-title">Bored (Cumulative)</h5>
-                      <h3>{formatNumber(cumulativeStats.bored)}</h3>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="col-md-3 mb-3">
-                  <div className="card text-center shadow-lg p-4 mb-5 rounded">
-                    <div className="card-body">
-                      <i
-                        className="bi bi-emoji-frown mb-3"
-                        style={{ fontSize: "2rem", color: "red" }}
-                      ></i>
-                      <h5 className="card-title">Lacking Focus (Cumulative)</h5>
-                      <h3>{formatNumber(cumulativeStats.lackingFocus)}</h3>
-                    </div>
-                  </div>
-                </div>
+          {/* Session History Table */}
+          <div className="card border-0 rounded-4 overflow-hidden shadow-lg mb-4" style={{
+            background: 'var(--bs-body-bg)',
+            border: '1px solid var(--bs-border-color-translucent)',
+            boxShadow: '0 25px 50px -12px rgba(0,0,0,0.15)'
+          }}>
+            <div className="card-header bg-transparent border-0 py-4 px-4 d-flex align-items-center justify-content-between">
+              <div>
+                <h5 className="mb-1 fw-bold" style={{ color: 'var(--bs-emphasis-color)' }}>Session Analytics History</h5>
+                <p className="text-muted small mb-0">Browse and analyze individual class performance</p>
               </div>
-            </section>
-
-            <section className="px-1">
-              <h5 className="mb-3">Session History</h5>
-              <div className="d-flex justify-content-between align-items-center mb-3">
-                <div>
-                  Showing {indexOfFirstItem + 1} to {Math.min(indexOfLastItem, trackingsessionList.length)} of {trackingsessionList.length} entries
-                </div>
-                <div className="d-flex align-items-center">
-                  <span className="me-2">Items per page:</span>
-                  <select 
-                    className="form-select form-select-sm" 
-                    value={itemsPerPage}
-                    onChange={(e) => {
-                      setItemsPerPage(Number(e.target.value));
-                      setCurrentPage(1); // Reset to first page when changing items per page
-                    }}
-                    style={{ width: "70px" }}
-                  >
-                    <option value={10}>10</option>
-                    <option value={25}>25</option>
-                    <option value={50}>50</option>
-                  </select>
-                </div>
+              <div className="d-flex align-items-center gap-3">
+                <div className="small text-muted d-none d-md-block">Entries:</div>
+                <select
+                  className="form-select form-select-sm rounded-pill px-3 shadow-sm"
+                  value={itemsPerPage}
+                  onChange={(e) => {
+                    setItemsPerPage(Number(e.target.value));
+                    setCurrentPage(1);
+                  }}
+                  style={{ width: "80px", background: 'var(--bs-tertiary-bg)', border: '1px solid var(--bs-border-color-translucent)' }}
+                >
+                  <option value={10}>10</option>
+                  <option value={25}>25</option>
+                  <option value={50}>50</option>
+                </select>
               </div>
+            </div>
 
-              <Table striped bordered hover responsive>
-                <thead>
-                  <tr className="text-center">
-                    <th style={{ width: "50px" }}>#</th>
-                    <th
-                      onClick={() => handleSort("sessionID")}
-                      style={{ cursor: "pointer" }}
-                    >
-                      Session ID{" "}
-                      {sortConfig.key === "sessionID"
-                        ? sortConfig.direction === "asc"
-                          ? "🔼"
-                          : "🔽"
-                        : "↕️"}
-                    </th>
-                    <th
-                      onClick={() => handleSort("createAt")}
-                      style={{ cursor: "pointer" }}
-                    >
-                      Create By{" "}
-                      {sortConfig.key === "createAt"
-                        ? sortConfig.direction === "asc"
-                          ? "🔼"
-                          : "🔽"
-                        : "↕️"}
-                    </th>
-                    <th
-                      onClick={() => handleSort("sessionStart")}
-                      style={{ cursor: "pointer" }}
-                    >
-                      Session Start{" "}
-                      {sortConfig.key === "sessionStart"
-                        ? sortConfig.direction === "asc"
-                          ? "🔼"
-                          : "🔽"
-                        : "↕️"}
-                    </th>
-                    <th
-                      onClick={() => handleSort("sessionEnd")}
-                      style={{ cursor: "pointer" }}
-                    >
-                      Session End{" "}
-                      {sortConfig.key === "sessionEnd"
-                        ? sortConfig.direction === "asc"
-                          ? "🔼"
-                          : "🔽"
-                        : "↕️"}
-                    </th>
-                    <th style={{ width: "180px" }}>Action</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {trackingsessionListPagination.map((session, index) => (
-                    <tr key={session.sessionID}>
-                      <td>{index + 1}</td>
-                      <td>{session.sessionID}</td>
-                      <td>{session.userName}</td>
-                      <td>{session.sessionStart}</td>
-                      <td>{session.sessionEnd}</td>
-                      <td>
-                        <Button
-                          variant="primary"
-                          className="btn-sm"
-                          onClick={() => navigateToDetails(session.sessionID)}
-                        >
-                          <i className="bi bi-eye"></i>&nbsp; View Trend Details
-                        </Button>
-                      </td>
+            <div className="card-body p-0">
+              <div className="table-responsive">
+                <Table hover className="align-middle mb-0 custom-table">
+                  <thead style={{ background: 'var(--bs-tertiary-bg)' }}>
+                    <tr>
+                      <th className="ps-4 py-3 text-muted fw-bold small text-uppercase">#</th>
+                      <th className="py-3 text-muted fw-bold small text-uppercase" onClick={() => handleSort("sessionID")} style={{ cursor: "pointer" }}>
+                        Session ID {sortConfig.key === "sessionID" ? (sortConfig.direction === "asc" ? "↑" : "↓") : "⇅"}
+                      </th>
+                      <th className="py-3 text-muted fw-bold small text-uppercase" onClick={() => handleSort("createAt")} style={{ cursor: "pointer" }}>
+                        Educator {sortConfig.key === "createAt" ? (sortConfig.direction === "asc" ? "↑" : "↓") : "⇅"}
+                      </th>
+                      <th className="py-3 text-muted fw-bold small text-uppercase" onClick={() => handleSort("sessionStart")} style={{ cursor: "pointer" }}>
+                        Start Time {sortConfig.key === "sessionStart" ? (sortConfig.direction === "asc" ? "↑" : "↓") : "⇅"}
+                      </th>
+                      <th className="py-3 text-muted fw-bold small text-uppercase" onClick={() => handleSort("sessionEnd")} style={{ cursor: "pointer" }}>
+                        End Time {sortConfig.key === "sessionEnd" ? (sortConfig.direction === "asc" ? "↑" : "↓") : "⇅"}
+                      </th>
+                      <th className="pe-4 py-3 text-muted fw-bold small text-uppercase text-center">Action</th>
                     </tr>
-                  ))}
-                </tbody>
-              </Table>
+                  </thead>
+                  <tbody>
+                    {trackingsessionListPagination.map((session, index) => (
+                      <tr key={session.sessionID} className="border-bottom" style={{ borderColor: 'var(--bs-border-color-translucent)' }}>
+                        <td className="ps-4 fw-medium text-muted">{indexOfFirstItem + index + 1}</td>
+                        <td className="fw-bold" style={{ color: 'var(--bs-emphasis-color)' }}>#{session.sessionID}</td>
+                        <td>
+                          <div className="d-flex align-items-center">
+                            <div className="bg-light rounded-circle p-2 me-2 d-flex align-items-center justify-content-center shadow-sm" style={{ width: '32px', height: '32px' }}>
+                              <i className="bi bi-person text-primary small"></i>
+                            </div>
+                            <span className="fw-medium">{session.userName}</span>
+                          </div>
+                        </td>
+                        <td className="small text-muted">{session.sessionStart}</td>
+                        <td className="small text-muted">{session.sessionEnd}</td>
+                        <td className="pe-4 text-center">
+                          <button
+                            className="btn btn-primary btn-sm rounded-pill px-3 fw-bold shadow-sm elevation-button"
+                            style={{ fontSize: '0.75rem' }}
+                            onClick={() => navigateToDetails(session.sessionID)}
+                          >
+                            Analyze Report
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </Table>
+              </div>
+            </div>
 
-              <Pagination className="d-flex justify-content-end">
-                <Pagination.First
-                  onClick={() => setCurrentPage(1)}
-                  disabled={currentPage === 1}
-                />
+            <div className="card-footer bg-transparent border-0 py-4 px-4 d-flex flex-column flex-md-row align-items-center justify-content-between gap-3">
+              <div className="text-muted small fw-medium">
+                Showing {indexOfFirstItem + 1} to {Math.min(indexOfLastItem, trackingsessionList.length)} of {trackingsessionList.length} sessions
+              </div>
+
+              <Pagination className="mb-0 custom-pagination">
                 <Pagination.Prev
-                  onClick={() =>
-                    setCurrentPage((prev) => Math.max(prev - 1, 1))
-                  }
+                  onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
                   disabled={currentPage === 1}
                 />
-                {currentPage > 3 && <Pagination.Ellipsis disabled />}
                 {Array.from({
                   length: Math.ceil(trackingsessionList.length / itemsPerPage),
                 })
@@ -324,10 +328,6 @@ function StatisticsDashboard({
                       {pageIndex + 1}
                     </Pagination.Item>
                   ))}
-                {currentPage <
-                  Math.ceil(trackingsessionList.length / itemsPerPage) - 2 && (
-                  <Pagination.Ellipsis disabled />
-                )}
                 <Pagination.Next
                   onClick={() =>
                     setCurrentPage((prev) =>
@@ -342,23 +342,41 @@ function StatisticsDashboard({
                     Math.ceil(trackingsessionList.length / itemsPerPage)
                   }
                 />
-                <Pagination.Last
-                  onClick={() =>
-                    setCurrentPage(
-                      Math.ceil(trackingsessionList.length / itemsPerPage)
-                    )
-                  }
-                  disabled={
-                    currentPage ===
-                    Math.ceil(trackingsessionList.length / itemsPerPage)
-                  }
-                />
               </Pagination>
-            </section>
-          </>
-        )}
-      </div>
-    </>
+            </div>
+          </div>
+        </>
+      )}
+
+      <style>{`
+        .fw-black { font-weight: 900; }
+        .rounded-4 { border-radius: 1.5rem !important; }
+        .custom-table thead th {
+            letter-spacing: 0.05em;
+            font-size: 0.7rem;
+        }
+        .custom-table tbody tr {
+            transition: all 0.2s ease;
+        }
+        .custom-table tbody tr:hover {
+            background-color: var(--bs-tertiary-bg) !important;
+            transform: scale(1.002);
+        }
+        .custom-pagination .page-link {
+            border: none;
+            border-radius: 8px;
+            margin: 0 3px;
+            padding: 8px 16px;
+            font-weight: 600;
+            background: var(--bs-tertiary-bg);
+            color: var(--bs-body-color);
+        }
+        .custom-pagination .active .page-link {
+            background: var(--bs-primary);
+            color: #fff;
+        }
+      `}</style>
+    </div>
   );
 }
 

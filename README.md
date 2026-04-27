@@ -3,7 +3,7 @@
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 ![Python](https://img.shields.io/badge/Python-3.8+-3776AB?logo=python&logoColor=white)
 ![Flask](https://img.shields.io/badge/Flask-3.1.0-000000?logo=flask&logoColor=white)
-![TensorFlow](https://img.shields.io/badge/TensorFlow-2.19.0-FF6F00?logo=tensorflow&logoColor=white)
+![LiteRT](https://img.shields.io/badge/LiteRT-2.21.0-blue?logo=tensorflow&logoColor=white)
 ![OpenCV](https://img.shields.io/badge/OpenCV-4.10.0-5C3EE8?logo=opencv&logoColor=white)
 ![Socket.IO](https://img.shields.io/badge/Socket.IO-5.11.4-010101?logo=socketdotio&logoColor=white)
 ![React](https://img.shields.io/badge/React-18+-61DAFB?logo=react&logoColor=black)

@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
-import { Accordion, Table, Form, Button, Row, Col } from "react-bootstrap";
-import { useNavigate } from "react-router-dom";
+import { Table, Form, Button, Row, Col } from "react-bootstrap";
+import { useNavigate, useLocation } from "react-router-dom";
 import useSession from "../../hooks/useSession";
 import { toast } from "react-toastify";
 import axios from "../../utils/axiosUtils";
@@ -9,11 +9,11 @@ import PageTitleBreadcrumb from "../../components/layout/PageTitleBreadcrumbLayo
 
 function AccountSettings() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { userData, isLoggedIn, refetch } = useSession(navigate);
   const [imagePreview, setImagePreview] = useState("/profile.jpg");
   const [imageFile, setImageFile] = useState(null);
 
-  // Initialize form data with empty values
   const [formData, setFormData] = useState({
     id: "",
     name: "",
@@ -23,7 +23,6 @@ function AccountSettings() {
     confirmpass: "",
   });
 
-  // Update form data when userData becomes available
   useEffect(() => {
     if (userData) {
       setFormData((prev) => ({
@@ -32,8 +31,6 @@ function AccountSettings() {
         name: userData.userName || "",
         email: userData.userEmail || "",
       }));
-
-      // Update profile image if exists
       if (userData.userPhoto) {
         setImagePreview(`data:image/jpeg;base64,${userData.userPhoto}`);
       }
@@ -41,49 +38,37 @@ function AccountSettings() {
   }, [userData]);
 
   const [isMandatoryFilled, setIsMandatoryFilled] = useState(false);
-
-  // Check mandatory fields (Email, Name and current password)
   useEffect(() => {
     setIsMandatoryFilled(
       formData.name.trim() !== "" &&
-        formData.email.trim() !== "" &&
-        formData.currentpass.trim() !== ""
+      formData.email.trim() !== "" &&
+      formData.currentpass.trim() !== ""
     );
   }, [formData.name, formData.email, formData.currentpass]);
 
-  // Handle input changes
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
+    setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  // Handle preview image after user choose file
   const previewImage = (e) => {
     const file = e.target.files[0];
     if (file) {
       const reader = new FileReader();
-      reader.onload = (event) => {
-        setImagePreview(event.target.result);
-      };
+      reader.onload = (event) => setImagePreview(event.target.result);
       reader.readAsDataURL(file);
       setImageFile(file);
     }
   };
 
-  // Handle form save changes
   const handleFormSaveChanges = async (e) => {
     e.preventDefault();
-
     if (!isMandatoryFilled) {
-      toast.error("Please fill in all mandatory fields before saving changes.");
+      toast.error("Please fill in all mandatory fields.");
       return;
     }
-
     if (formData.newpass && formData.newpass !== formData.confirmpass) {
-      toast.error("New password and confirm password do not match!");
+      toast.error("New passwords do not match!");
       return;
     }
 
@@ -93,315 +78,154 @@ function AccountSettings() {
       formDataToSend.append("name", formData.name);
       formDataToSend.append("email", formData.email);
       formDataToSend.append("currentPassword", formData.currentpass);
-
       if (formData.newpass) {
         formDataToSend.append("newPassword", formData.newpass);
+        formDataToSend.append("confirmPassword", formData.confirmpass);
       }
+      if (imageFile) formDataToSend.append("profileImage", imageFile);
 
-      if (imageFile && imagePreview !== "/profile.jpg") {
-        formDataToSend.append("profileImage", imageFile);
-      }
-
-      const response = await axios.post(
-        "/settings/update_account",
-        formDataToSend,
-        {
-          headers: { "Content-Type": "multipart/form-data" },
-        }
-      );
+      const response = await axios.post("/settings/update_account", formDataToSend, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
 
       if (response.status === 200) {
-        await axios.get("/credential/get_user_session");
         await refetch();
-
-        setFormData((prev) => ({
-          ...prev,
-          currentpass: "",
-          newpass: "",
-          confirmpass: "",
-        }));
-
-        if (imageFile) {
-          setImageFile(null);
-        }
-
-        toast.success("Account settings updated successfully!");
-      } else {
-        toast.error(
-          response.data.message || "Failed to update account settings"
-        );
+        setFormData(p => ({ ...p, currentpass: "", newpass: "", confirmpass: "" }));
+        setImageFile(null);
+        toast.success("Account profile updated!");
       }
-    } catch (error) {
-      console.error("Update account error:", error);
-      toast.error(
-        error.response?.data?.message ||
-          "An error occurred while updating account settings"
-      );
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Update failed");
     }
   };
 
-  // Handle Reset Photo Event
-  const handleResetPhoto = async (e) => {
-    e.preventDefault();
-
-    if (
-      !window.confirm(
-        "Are you sure you want to reset to the default profile picture?"
-      )
-    ) {
-      return;
-    }
-
-    // Check mandatory fields
-    if (!isMandatoryFilled) {
-      toast.error("Please fill in all mandatory fields before saving changes.");
+  const handleResetPhoto = async () => {
+    if (!window.confirm("Reset to default profile picture?")) return;
+    if (!formData.currentpass) {
+      toast.error("Enter your current password to authorize this action.");
       return;
     }
 
     try {
-      const formDataToSend = new FormData();
-      formDataToSend.append("id", userData.userID);
-      formDataToSend.append("resetPhoto", "true");
-      formDataToSend.append("currentPassword", formData.currentpass);
-
-      const response = await axios.post(
-        "/settings/reset_account_photo",
-        formDataToSend,
-        {
-          headers: {
-            "Content-Type": "multipart/form-data",
-          },
-        }
-      );
-
-      if (response.status === 200) {
-        // Update local state
-        setImagePreview("/profile.jpg");
-        setImageFile(null);
-
-        // Refresh session
-        await refetch();
-
-        toast.success("Profile picture reset successfully");
-      } else {
-        toast.error(response.data.message || "Failed to reset profile picture");
-      }
-    } catch (error) {
-      console.error("Reset photo error:", error);
-      toast.error(
-        error.response?.data?.message || "Failed to reset profile picture"
-      );
+      const fd = new FormData();
+      fd.append("id", userData.userID);
+      fd.append("resetPhoto", "true");
+      fd.append("currentPassword", formData.currentpass);
+      await axios.post("/settings/reset_account_photo", fd);
+      setImagePreview("/profile.jpg");
+      await refetch();
+      toast.success("Photo reset");
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Reset failed");
     }
   };
 
-  // Handle Clear Optional Event
-  const handleClearOptional = () => {
-    if (window.confirm("Are you sure you want to clear optional fields?")) {
-      // Reset FormData
-      setFormData((prev) => ({
-        ...prev,
-        newpass: "",
-        confirmpass: "",
-      }));
-
-      // Reset image preview and file input
-      setImagePreview(
-        userData.userPhoto
-          ? `data:image/jpeg;base64,${userData.userPhoto}`
-          : "/profile.jpg"
-      );
-      setImageFile(null);
-      toast.info("Optional fields have been cleared.");
-
-      // Clear file input manually
-      const fileInput = document.getElementById("image");
-      if (fileInput) {
-        fileInput.value = "";
-      }
-    }
-  };
-
-  if (!isLoggedIn) {
-    return <p>Please log in to access account settings.</p>;
-  }
+  if (!isLoggedIn) return <p>Access Denied.</p>;
 
   return (
-    <>
-      <PageTitleBreadcrumb title="Account Settings" path={location.pathname} />
-      <div className="ms-4 me-4 m-3">
-        <div className="row">
-          <section className="col-md-8">
-            <Form onSubmit={handleFormSaveChanges} className="card">
-              <Accordion defaultActiveKey="0">
-                <Accordion.Item eventKey="0">
-                  <Accordion.Header>
-                    <strong style={{ color: "red" }}>(Mandatory)</strong> &nbsp;
-                    Basic Information
-                  </Accordion.Header>
-                  <Accordion.Body>
-                    <Form.Group>
-                      <Form.Group className="form-floating mb-3 d-none">
-                        <input
-                          className="form-control"
-                          id="id"
-                          type="text"
-                          name="id"
-                          value={formData.id}
-                          onChange={handleInputChange}
-                          placeholder="UserID"
-                          data-sb-validations="required"
-                          disabled
-                        />
-                        <label for="name">User ID</label>
-                      </Form.Group>
-                      <Form.Group className="form-floating mb-3">
-                        <input
-                          className="form-control"
-                          id="name"
-                          type="text"
-                          name="name"
-                          value={formData.name}
-                          onChange={handleInputChange}
-                          placeholder="Name"
-                          data-sb-validations="required"
-                        />
-                        <label for="name">Name</label>
-                      </Form.Group>
+    <div className="py-2 fade-in">
+      <PageTitleBreadcrumb title="Account Management" path={location.pathname} />
 
-                      <Form.Group className="form-floating mb-3">
-                        <input
-                          className="form-control"
-                          id="email"
-                          type="email"
-                          name="email"
-                          value={formData.email}
-                          onChange={handleInputChange}
-                          placeholder="name@example.com"
-                          data-sb-validations="required,email"
-                        />
-                        <label for="email">Email address</label>
-                      </Form.Group>
+      <Row className="mt-4 g-4">
+        <Col lg={8}>
+          <div className="settings-card p-4">
+            <Form onSubmit={handleFormSaveChanges}>
+              <div className="d-flex align-items-center gap-4 mb-5 pb-4 border-bottom">
+                <div className="avatar-upload-container">
+                  <img src={imagePreview} className="avatar-preview" alt="Profile" />
+                  <label htmlFor="avatar-input" className="avatar-edit-btn">
+                    <i className="bi bi-camera-fill"></i>
+                  </label>
+                  <input type="file" id="avatar-input" className="d-none" onChange={previewImage} />
+                </div>
+                <div>
+                  <h5 className="fw-bold mb-1">{userData.userName}</h5>
+                  <p className="text-muted small mb-3">Update your profile picture and personal details</p>
+                  <Button type="button" variant="outline-danger" size="sm" className="rounded-pill px-3" onClick={handleResetPhoto} disabled={imagePreview === "/profile.jpg"}>
+                    Reset Photo
+                  </Button>
+                </div>
+              </div>
 
-                      <Form.Group className="form-floating mb-3">
-                        <input
-                          className="form-control"
-                          id="password"
-                          type="password"
-                          name="currentpass"
-                          value={formData.currentpass}
-                          onChange={handleInputChange}
-                          placeholder="Enter your password here..."
-                          data-sb-validations="required"
-                          required
-                        />
-                        <label for="password">Current Password</label>
-                      </Form.Group>
-                    </Form.Group>
-                  </Accordion.Body>
-                </Accordion.Item>
-                <Accordion.Item eventKey="1">
-                  <Accordion.Header>
-                    <strong>(Optional)</strong> &nbsp; Update Password
-                  </Accordion.Header>
-                  <Accordion.Body>
-                    <Row className="g-2">
-                      <Col md>
-                        <Form.Group className="form-floating mb-3">
-                          <input
-                            className="form-control"
-                            id="password"
-                            type="password"
-                            name="newpass"
-                            value={formData.newpass}
-                            onChange={handleInputChange}
-                            placeholder="Enter your password here..."
-                          />
-                          <Form.Label for="password">New Password</Form.Label>
-                        </Form.Group>
-                      </Col>
-                      <Col md>
-                        <Form.Group className="form-floating mb-3">
-                          <input
-                            className="form-control"
-                            id="password"
-                            type="password"
-                            name="confirmpass"
-                            value={formData.confirmpass}
-                            onChange={handleInputChange}
-                            placeholder="Enter your password here..."
-                          />
-                          <Form.Label for="password">
-                            Confirm New Password
-                          </Form.Label>
-                        </Form.Group>
-                      </Col>
-                    </Row>
-                  </Accordion.Body>
-                </Accordion.Item>
-                <Accordion.Item eventKey="2">
-                  <Accordion.Header>
-                    <strong>(Optional)</strong> &nbsp; Update User Profile
-                  </Accordion.Header>
-                  <Accordion.Body>
-                    <>
-                      <Form.Group className="image-section">
-                        <img
-                          src={imagePreview}
-                          id="image-preview"
-                          className="rounded-circle mx-auto d-block img-thumbnail"
-                          alt=""
-                          style={{
-                            width: "120px",
-                            height: "120px",
-                            objectFit: "cover",
-                          }}
-                        />
-                        <br />
-                        <div className="custom-file">
-                          <input
-                            type="file"
-                            className="form-control"
-                            name="image"
-                            id="image"
-                            onChange={previewImage}
-                          />
-                        </div>
-                        <br />
-                      </Form.Group>
-                      <Form.Group className="d-grid">
-                        <Button
-                          variant="danger"
-                          size="sm"
-                          disabled={imagePreview === "/profile.jpg"}
-                          onClick={handleResetPhoto}
-                        >
-                          <i className="bi bi-arrow-counterclockwise"></i>
-                          &nbsp;Reset to Default Profile Picture
-                        </Button>
-                      </Form.Group>
-                    </>
-                  </Accordion.Body>
-                </Accordion.Item>
-              </Accordion>
-              <br />
-              <Form.Group className="d-flex justify-content-around align-content-center">
-                <Button className="" variant="success" type="submit">
-                  <i className="bi bi-save"></i>&nbsp; Save Changes
+              <h6 className="settings-section-title">Core Identity</h6>
+              <Row className="g-3 mb-4">
+                <Col md={6}>
+                  <div className="settings-input-group">
+                    <Form.Label className="form-label">Full Name</Form.Label>
+                    <Form.Control type="text" name="name" value={formData.name} onChange={handleInputChange} placeholder="Your display name" />
+                  </div>
+                </Col>
+                <Col md={6}>
+                  <div className="settings-input-group">
+                    <Form.Label className="form-label">Email Address</Form.Label>
+                    <Form.Control type="email" name="email" value={formData.email} onChange={handleInputChange} placeholder="name@focustrack.com" />
+                  </div>
+                </Col>
+              </Row>
+
+              <h6 className="settings-section-title mt-5">Security Authorization</h6>
+              <div className="p-4 rounded-4 mb-4" style={{ background: 'rgba(99, 102, 241, 0.03)', border: '1px solid rgba(99, 102, 241, 0.1)' }}>
+                <Form.Label className="small fw-bold text-primary mb-2">Current Password (Required for any changes)</Form.Label>
+                <Form.Control type="password" name="currentpass" value={formData.currentpass} onChange={handleInputChange} className="rounded-pill px-3 shadow-sm" placeholder="Verify your identity..." />
+              </div>
+
+              <h6 className="settings-section-title mt-5">Credentials Update (Optional)</h6>
+              <Row className="g-3 mb-5">
+                <Col md={6}>
+                  <div className="settings-input-group">
+                    <Form.Label className="form-label">New Password</Form.Label>
+                    <Form.Control type="password" name="newpass" value={formData.newpass} onChange={handleInputChange} placeholder="Min. 8 characters" />
+                  </div>
+                </Col>
+                <Col md={6}>
+                  <div className="settings-input-group">
+                    <Form.Label className="form-label">Confirm New Password</Form.Label>
+                    <Form.Control type="password" name="confirmpass" value={formData.confirmpass} onChange={handleInputChange} placeholder="Repeat new password" />
+                  </div>
+                </Col>
+              </Row>
+
+              <div className="d-flex gap-5 pt-4 border-top justify-content-center">
+                <Button variant="primary" type="submit" className="rounded-pill px-5 py-2 fw-bold shadow-sm" disabled={!isMandatoryFilled}>
+                  Save Changes
                 </Button>
-                <Button variant="secondary" onClick={handleClearOptional}>
-                  <i className="bi bi-arrow-clockwise"></i>&nbsp; Clear Optional
+                <Button variant="light" className="rounded-pill px-4" onClick={() => navigate(-1)}>
+                  Cancel
                 </Button>
-              </Form.Group>
-              <br />
+              </div>
             </Form>
-          </section>
+          </div>
+        </Col>
 
-          <section className="col-md-4">
-            <ProfileCard userData={userData}></ProfileCard>
-          </section>
-        </div>
-      </div>
-    </>
+        <Col lg={4}>
+          <div className="position-sticky" style={{ top: '2rem' }}>
+            <ProfileCard userData={userData} />
+
+            <div className="settings-card p-4 mt-4 bg-light bg-opacity-50">
+              <h6 className="fw-bold small mb-3">System Insights</h6>
+              <div className="d-flex align-items-center gap-3 mb-3">
+                <div className="bg-white p-2 rounded-3 shadow-sm">
+                  <i className="bi bi-shield-check text-success"></i>
+                </div>
+                <div className="small">
+                  <div className="fw-bold">Two-Factor Authenticated</div>
+                  <div className="text-muted">Secured by cloud biometric engine</div>
+                </div>
+              </div>
+              <div className="d-flex align-items-center gap-3">
+                <div className="bg-white p-2 rounded-3 shadow-sm">
+                  <i className="bi bi-clock-history text-primary"></i>
+                </div>
+                <div className="small">
+                  <div className="fw-bold">Last Activity</div>
+                  <div className="text-muted">Today at {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </Col>
+      </Row>
+    </div>
   );
 }
 

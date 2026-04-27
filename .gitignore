@@ -7,6 +7,9 @@ client/yarn-error.log*
 client/pnpm-debug.log*
 client/lerna-debug.log*
 
+# Environment variables
+.env
+
 # Ignore client dependencies & builds
 client/node_modules/
 client/dist/

@@ -7,81 +7,6 @@
   flex-direction: column;
 }
 
-/* ==========================================================================
-     2. Header Styles
-     ========================================================================== */
-.header-gradient-background {
-  position: sticky;
-  top: 0;
-  z-index: 1100;
-  width: 100%;
-}
-
-[data-bs-theme="light"] .header-gradient-background {
-  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
-  background: rgba(255, 255, 255, 0.95);
-  -webkit-backdrop-filter: blur(10px);
-  backdrop-filter: blur(10px);
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-}
-
-[data-bs-theme="dark"] .header-gradient-background {
-  background: rgba(0, 0, 0, 0.95);
-  -webkit-backdrop-filter: blur(10px);
-  backdrop-filter: blur(10px);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
-}
-
-/* Custom Navbar Brand Styling */
-.custom-navbar-brand {
-  font-weight: 700;
-  font-size: 2.5rem; /* Bigger font size */
-  letter-spacing: 1.5px;
-  line-height: 1.2;
-  display: inline-block;
-  transition: all 0.3s ease;
-}
-
-/* Light Theme: Gradient Text */
-[data-bs-theme="light"] .custom-navbar-brand {
-  background: linear-gradient(135deg, #002f50, #005f7f, #00aaff);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  animation: shine 3s linear infinite;
-}
-
-/* Dark Theme: Solid White with Subtle Glow */
-[data-bs-theme="dark"] .custom-navbar-brand {
-  background: none;
-  -webkit-background-clip: unset;
-  -webkit-text-fill-color: unset;
-  color: white;
-  text-shadow: 0 0 8px rgba(0, 170, 255, 0.5);
-}
-
-/* Gradient Animation Keyframes */
-@keyframes shine {
-  0% {
-    background-position: 0% 50%;
-  }
-  100% {
-    background-position: 100% 50%;
-  }
-}
-
-.nav-link .active {
-  background-color: #de1e82;
-  color: #ffffff !important;
-  border-radius: 8px;
-  padding: 5px 20px;
-  font-weight: bold;
-}
-
-.nav-link .active:hover {
-  background-color: #de1e82;
-  color: #554848 !important;
-}
 
 .back-button {
   display: inline-flex;
@@ -183,11 +108,11 @@
   border-radius: 50%;
 }
 
-input:checked + .slider {
+input:checked+.slider {
   background-color: #2196f3;
 }
 
-input:checked + .slider:before {
+input:checked+.slider:before {
   transform: translateX(25px);
 }
 
@@ -223,36 +148,29 @@ input:checked + .slider:before {
   display: flex;
   align-items: flex-start;
   position: sticky;
-  top: 75px;
-  height: calc(100vh - 75px);
+  top: 72px;
+  height: calc(100vh - 72px);
   z-index: 1000;
 }
 
 .sidebar-wrapper {
   position: fixed;
-  top: 75px;
+  /* Pins the sidebar directly to the bottom of the sticky header */
   left: 0;
-  height: calc(100vh - 75px);
-  min-height: calc(100vh - 75px);
-  width: 300px;
-  min-width: 300px;
-  transition: height 0.4s cubic-bezier(0.4, 0, 0.2, 1),
-              top 0.4s cubic-bezier(0.4, 0, 0.2, 1),
-              transform 0.3s ease,
-              background-color 0.3s ease;
-  border-right: 1px solid rgba(0, 0, 0, 0.1);
-  box-shadow: 5px 0 10px rgba(0, 0, 0, 0.1);
+  height: calc(100vh - 72px);
+  min-height: calc(100vh - 72px);
+  width: 320px;
+  min-width: 280px;
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+    background-color 0.3s ease;
+  border-right: 1px solid var(--bs-border-color-translucent);
+  box-shadow: 5px 0 15px rgba(0, 0, 0, 0.05);
   overflow-y: auto;
   z-index: 1000;
-  padding-bottom: 75px; /* Add padding to prevent content from being hidden behind footer */
+  padding-bottom: 2rem;
 }
 
-.sidebar-wrapper.scrolled {
-  height: calc(100vh - 75px) !important;
-  top: 75px !important;
-  transition: height 0.4s cubic-bezier(0.4, 0, 0.2, 1),
-              top 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-}
+/* Removed .scrolled class as the header is always sticky */
 
 [data-bs-theme="light"] .sidebar-wrapper {
   background: rgba(255, 255, 255, 0.7);
@@ -291,11 +209,12 @@ input:checked + .slider:before {
 
 .content-wrapper {
   flex: 1;
-  margin-left: 300px;
-  width: calc(100% - 300px);
+  margin-left: 320px;
+  width: calc(100% - 280px);
   min-height: 100vh;
   overflow-x: hidden;
   transition: margin-left 0.3s ease;
+  padding: 0 2rem;
 }
 
 .content-wrapper.expanded {
@@ -376,63 +295,6 @@ input:checked + .slider:before {
   color: inherit;
 }
 
-/* ==========================================================================
-     7. Footer Styles
-     ========================================================================== */
-.footer {
-  background-image: linear-gradient(to right, #3b2ee2, #de1e82);
-  color: white;
-  flex-shrink: 0;
-  width: 100%;
-  position: relative;
-  z-index: 1001; /* Higher than sidebar to ensure it's always on top */
-  margin-top: auto;
-}
-
-.footer .card_parent {
-  margin: 0 3px;
-}
-
-.footer .card {
-  margin: 5px 10px;
-  padding: 5px 20px;
-  background-color: rgba(206, 206, 206, 0.3);
-}
-
-.footer p {
-  font-weight: bold;
-  margin-bottom: 1rem;
-}
-
-.footer ul {
-  list-style-type: none;
-}
-
-.footer li {
-  margin-bottom: 8px;
-}
-
-.footer .social-media {
-  font-size: 25px;
-  margin: 0 10px;
-}
-
-.footer a {
-  text-decoration: none;
-  color: white;
-  transform: scale(1);
-  transition: transform 0.3s ease-in, color 0.3s ease-in;
-}
-
-.footer a:hover {
-  color: #ffd700;
-  transform: scale(1.5);
-}
-
-.footer .copyright {
-  text-align: center;
-  font-size: 0.9rem;
-}
 
 /* ==========================================================================
      8. Transition Effects for Dropdowns in Generate Report button
@@ -461,8 +323,1394 @@ input:checked + .slider:before {
     height: calc(100vh - 75px);
     z-index: 1000;
   }
+
   .content-wrapper {
     margin-left: 0;
     width: 100vw;
   }
+}
+
+/* ==========================================================================
+     10. Modern Sidebar Styles
+   ========================================================================== */
+.sidebar-container {
+  background: var(--bs-body-bg);
+  transition: all 0.3s ease;
+}
+
+.sidebar-link-modern,
+.sidebar-header-modern .accordion-button {
+  display: flex;
+  align-items: center;
+  padding: 0.75rem 1rem !important;
+  border-radius: 12px !important;
+  color: var(--bs-secondary-color) !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  border: 1px solid transparent !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.sidebar-header-modern .accordion-button::after {
+  filter: grayscale(1) invert(0.5);
+  transform: scale(0.7);
+}
+
+.sidebar-link-modern:hover,
+.sidebar-header-modern:hover .accordion-button {
+  background: var(--bs-tertiary-bg) !important;
+  color: var(--bs-emphasis-color) !important;
+  transform: translateX(5px);
+}
+
+.sidebar-link-modern.active-link {
+  background: rgba(99, 102, 241, 0.1) !important;
+  color: #6366f1 !important;
+  border: 1px solid rgba(99, 102, 241, 0.2) !important;
+}
+
+.sub-nav-link {
+  padding: 0.5rem 0.75rem !important;
+  border-radius: 10px !important;
+  font-size: 0.85rem !important;
+  font-weight: 600 !important;
+  color: var(--bs-secondary-color) !important;
+  transition: all 0.2s ease !important;
+  text-decoration: none !important;
+  display: flex !important;
+  align-items: center !important;
+}
+
+.sub-nav-link:hover {
+  color: var(--bs-primary) !important;
+  background: var(--bs-tertiary-bg) !important;
+  padding-left: 1.25rem !important;
+}
+
+.sub-nav-link.active-link {
+  background: #6366f1 !important;
+  color: #ffffff !important;
+  font-weight: 800 !important;
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3) !important;
+}
+
+.logout-link {
+  color: #f43f5e !important;
+  opacity: 0.8;
+}
+
+.logout-link:hover {
+  color: #e11d48 !important;
+  opacity: 1;
+  background: rgba(244, 63, 94, 0.05) !important;
+}
+
+.icon-gradient {
+  font-size: 1.1rem;
+  background: linear-gradient(135deg, #6366f1, #a855f7);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.sidebar-header-modern .accordion-button:not(.collapsed) {
+  color: var(--bs-emphasis-color) !important;
+  background: var(--bs-tertiary-bg) !important;
+}
+
+/* ==========================================================================
+     11. Premium Table & Management Styles
+   ========================================================================== */
+.custom-premium-table tbody tr {
+  transition: all 0.2s ease;
+}
+
+.custom-premium-table tbody tr:hover {
+  background-color: var(--bs-tertiary-bg) !important;
+  transform: scale(1.002);
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+}
+
+.cursor-pointer {
+  cursor: pointer;
+}
+
+.custom-premium-pagination .page-link {
+  border: none;
+  border-radius: 10px;
+  margin: 0 3px;
+  background: var(--bs-tertiary-bg);
+  color: var(--bs-secondary-color);
+  font-weight: 600;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 40px;
+  height: 40px;
+}
+
+.custom-premium-pagination .active .page-link {
+  background: #6366f1 !important;
+  color: #fff !important;
+  box-shadow: 0 4px 10px rgba(99, 102, 241, 0.3);
+}
+
+.custom-premium-pagination .page-link:hover:not(.active) {
+  background: var(--bs-secondary-bg);
+  color: var(--bs-primary);
+}
+
+/* Analytics Table Specifics */
+.custom-analytics-table tbody tr:hover {
+  background-color: var(--bs-tertiary-bg) !important;
+}
+
+.custom-analytics-pagination .page-link {
+  border: none;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 5px;
+  background: var(--bs-tertiary-bg);
+  color: var(--bs-primary);
+}
+
+.custom-analytics-pagination .active .page-link {
+  background: var(--bs-primary);
+  color: #fff;
+}
+
+/* ==========================================================================
+     12. Modern Settings & Profile Styles
+   ========================================================================== */
+.settings-card {
+  background: var(--bs-body-bg);
+  border: 1px solid var(--bs-border-color-translucent);
+  border-radius: 20px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+  overflow: hidden;
+}
+
+.settings-nav-item {
+  padding: 1rem 1.25rem;
+  border-radius: 12px;
+  margin-bottom: 0.5rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--bs-secondary-color);
+  font-weight: 500;
+}
+
+.settings-nav-item:hover {
+  background: var(--bs-tertiary-bg);
+  color: var(--bs-emphasis-color);
+}
+
+.settings-nav-item.active {
+  background: rgba(99, 102, 241, 0.1);
+  color: #6366f1;
+  font-weight: 700;
+}
+
+.settings-section-title {
+  font-size: 0.75rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--bs-secondary-color);
+  opacity: 0.6;
+  margin-bottom: 1.5rem;
+}
+
+.modern-toggle-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.25rem;
+  background: var(--bs-tertiary-bg);
+  border-radius: 16px;
+  border: 1px solid var(--bs-border-color-translucent);
+  transition: all 0.2s ease;
+}
+
+.modern-toggle-wrapper:hover {
+  border-color: rgba(99, 102, 241, 0.3);
+}
+
+/* Custom Toggle Switch */
+.premium-switch {
+  position: relative;
+  display: inline-block;
+  width: 50px;
+  height: 26px;
+}
+
+.premium-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.premium-slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #cbd5e1;
+  transition: .4s;
+  border-radius: 34px;
+}
+
+.premium-slider:before {
+  position: absolute;
+  content: "";
+  height: 20px;
+  width: 20px;
+  left: 3px;
+  bottom: 3px;
+  background-color: white;
+  transition: .4s;
+  border-radius: 50%;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+input:checked+.premium-slider {
+  background-color: #6366f1;
+}
+
+input:checked+.premium-slider:before {
+  transform: translateX(24px);
+}
+
+.avatar-upload-container {
+  position: relative;
+  width: 140px;
+  height: 140px;
+  margin: 0 auto;
+}
+
+.avatar-preview {
+  width: 140px;
+  height: 140px;
+  border-radius: 40px;
+  object-fit: cover;
+  border: 4px solid var(--bs-body-bg);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+}
+
+.avatar-edit-btn {
+  position: absolute;
+  bottom: -5px;
+  right: -5px;
+  background: #6366f1;
+  color: white;
+  width: 40px;
+  height: 40px;
+  border-radius: 15px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 4px solid var(--bs-body-bg);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.avatar-edit-btn:hover {
+  transform: scale(1.1);
+  background: #4f46e5;
+}
+
+.settings-input-group {
+  background: var(--bs-tertiary-bg);
+  border: 1px solid var(--bs-border-color-translucent);
+  border-radius: 16px;
+  padding: 0.5rem 1rem;
+  transition: all 0.2s ease;
+}
+
+.settings-input-group:focus-within {
+  border-color: #6366f1;
+  box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1);
+}
+
+.settings-input-group .form-control {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  padding-left: 0;
+}
+
+.settings-input-group .form-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--bs-secondary-color);
+  margin-bottom: 0;
+}
+
+/* ==========================================================================
+   Section 13: Standardized Breadcrumbs & Page Titles
+   ========================================================================== */
+.fw-black {
+  font-weight: 900 !important;
+}
+
+.custom-modern-breadcrumb .breadcrumb-item+.breadcrumb-item::before {
+  content: "•" !important;
+  color: var(--bs-primary) !important;
+  opacity: 0.5 !important;
+}
+
+.custom-modern-breadcrumb .breadcrumb-item a {
+  color: var(--bs-secondary-color) !important;
+  text-decoration: none !important;
+  font-weight: 600 !important;
+  font-size: 0.85rem !important;
+  transition: color 0.2s ease !important;
+}
+
+.custom-modern-breadcrumb .breadcrumb-item a:hover {
+  color: var(--bs-primary) !important;
+}
+
+.custom-modern-breadcrumb .breadcrumb-item.active {
+  color: var(--bs-primary) !important;
+  font-weight: 800 !important;
+  font-size: 0.85rem !important;
+}
+
+.btn-modern-primary-sm {
+  background: #6366f1 !important;
+  color: #fff !important;
+  border: none !important;
+  padding: 0.75rem 1.5rem !important;
+  border-radius: 12px !important;
+  font-weight: 800 !important;
+  font-size: 0.85rem !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  box-shadow: 0 10px 15px -3px rgba(99, 102, 241, 0.3) !important;
+}
+
+.btn-modern-primary-sm:hover:not(:disabled) {
+  background: #4f46e5 !important;
+  transform: translateY(-2px) !important;
+  box-shadow: 0 15px 20px -5px rgba(99, 102, 241, 0.4) !important;
+}
+
+.btn-modern-primary-sm:disabled {
+  opacity: 0.6 !important;
+  cursor: not-allowed !important;
+  background: var(--bs-secondary-bg) !important;
+  color: var(--bs-secondary-color) !important;
+  box-shadow: none !important;
+}
+
+.page-hero-container {
+  padding: 2.5rem !important;
+  border-radius: 1.5rem !important;
+  position: relative !important;
+  overflow: hidden !important;
+  background: var(--bs-tertiary-bg) !important;
+  border: 1px solid var(--bs-border-color-translucent) !important;
+  margin-bottom: 2rem !important;
+}
+
+/* ==========================================================================
+   Section 14: Mobile Responsiveness & Adaptive Layouts
+   ========================================================================== */
+@media (max-width: 991.98px) {
+  .sidebar-wrapper {
+    width: 280px;
+    z-index: 2005;
+    box-shadow: 15px 0 30px rgba(0, 0, 0, 0.2);
+  }
+
+  .content-wrapper {
+    margin-left: 0 !important;
+    width: 100% !important;
+    padding: 1rem !important;
+  }
+
+  /* Overlay when sidebar is open on mobile */
+  .sidebar-wrapper.show::after {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 280px;
+    width: calc(100vw - 280px);
+    height: 100vh;
+    background: rgba(15, 23, 42, 0.4);
+    backdrop-filter: blur(4px);
+    z-index: 2004;
+  }
+
+  .display-1 {
+    font-size: 3.5rem !important;
+  }
+
+  .display-4 {
+    font-size: 2.5rem !important;
+  }
+
+  .page-hero-container {
+    padding: 1.5rem !important;
+    text-align: center;
+  }
+
+  .custom-modern-breadcrumb {
+    justify-content: center;
+  }
+
+  .carousel-item {
+    height: 350px !important;
+  }
+
+  .carousel-caption {
+    left: 10px !important;
+    right: 10px !important;
+    bottom: 10px !important;
+    max-width: 100% !important;
+    padding: 1rem !important;
+  }
+
+  /* Force table scrolling on small screens */
+  .table-responsive {
+    border-radius: 12px;
+    border: 1px solid var(--bs-border-color-translucent);
+  }
+}
+
+@media (max-width: 575.98px) {
+  .display-1 {
+    font-size: 2.5rem !important;
+    letter-spacing: -2px !important;
+  }
+
+  .lead {
+    font-size: 1.1rem !important;
+  }
+
+  .btn-modern-primary,
+  .btn-modern-outline {
+    padding: 0.8rem 1.5rem !important;
+    width: 100%;
+  }
+
+  .footer-modern .row>div {
+    text-align: center !important;
+  }
+
+  .social-icon-box {
+    width: 38px;
+    height: 38px;
+  }
+}
+
+/* ==========================================================================
+   Section 15: Announcement & Broadcast Component Styles
+   ========================================================================== */
+.announcement-carousel .carousel-control-prev,
+.announcement-carousel .carousel-control-next {
+  width: 44px;
+  height: 44px;
+  /* Switched to primary/light background by default */
+  background: var(--bs-primary);
+  border-color: var(--bs-primary);
+  border-radius: 50%;
+  top: 50%;
+  transform: translateY(-50%);
+  margin: 0 10px;
+  opacity: 1;
+  /* Increased from 0.8 to show clearly */
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 1px solid var(--bs-border-color-translucent);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  z-index: 5;
+}
+
+.announcement-carousel .carousel-control-prev-icon,
+.announcement-carousel .carousel-control-next-icon {
+  width: 18px;
+  filter: invert(1) brightness(2);
+}
+
+.announcement-carousel .carousel-control-prev:hover,
+.announcement-carousel .carousel-control-next:hover {
+  transform: translateY(-50%) scale(1.05);
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.2);
+}
+
+.announcement-info-container {
+  width: 100%;
+  max-width: 85%;
+  padding: 2rem !important;
+  background: var(--bs-tertiary-bg);
+  backdrop-filter: blur(8px);
+  border: 1px solid var(--bs-border-color-translucent);
+  border-radius: 1.5rem;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);
+  transition: all 0.3s ease;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+.announcement-info-container:hover {
+  transform: scale(1.02);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.05);
+  border-color: var(--bs-primary-border-subtle);
+}
+
+/* ==========================================================================
+   Section 16: Premium Header & Navigation Styles
+   ========================================================================== */
+.glass-header {
+  background: rgba(var(--bs-body-bg-rgb), 0.75) !important;
+  backdrop-filter: blur(12px) !important;
+  border-bottom: 1px solid var(--bs-border-color-translucent) !important;
+  transition: all 0.3s ease;
+}
+
+.sidebar-toggle-modern {
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  background: var(--bs-tertiary-bg);
+  border: 1px solid var(--bs-border-color-translucent);
+  color: var(--bs-primary);
+  font-size: 1.2rem;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.sidebar-toggle-modern:hover {
+  background: var(--bs-primary);
+  color: #fff;
+  transform: scale(1.05);
+  box-shadow: 0 0 15px rgba(99, 102, 241, 0.4);
+}
+
+.btn-futuristic-login {
+  background: var(--bs-emphasis-color);
+  color: var(--bs-body-bg);
+  border: none;
+  padding: 0.5rem 1.25rem;
+  border-radius: 12px;
+  font-size: 0.85rem;
+  font-weight: 800;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.btn-futuristic-login:hover {
+  transform: translateY(-2px);
+  opacity: 0.9;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.2);
+}
+
+.custom-dropdown-modern-auth .dropdown-menu {
+  border: 1px solid var(--bs-border-color-translucent);
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.15);
+  border-radius: 16px;
+  overflow: hidden;
+  padding: 0.5rem;
+  margin-top: 15px;
+  background: var(--bs-body-bg);
+  animation: slideDownNav 0.3s ease-out;
+}
+
+.custom-dropdown-modern-auth .dropdown-toggle::after {
+  display: none !important;
+}
+
+.custom-dropdown-modern-auth .dropdown-toggle,
+.custom-dropdown-modern-auth .nav-link,
+.custom-dropdown-modern-auth .nav-link:focus,
+.custom-dropdown-modern-auth .nav-link:active,
+.custom-dropdown-modern-auth .dropdown-toggle:focus,
+.custom-dropdown-modern-auth .dropdown-toggle:active {
+  border: 1px solid transparent !important;
+  padding: 0.4rem 0.8rem !important;
+  border-radius: 12px !important;
+  transition: all 0.2s ease !important;
+  outline: none !important;
+  box-shadow: none !important;
+  background: transparent !important;
+}
+
+.custom-dropdown-modern-auth .dropdown-toggle:hover,
+.custom-dropdown-modern-auth .nav-link:hover,
+.custom-dropdown-modern-auth .show>.dropdown-toggle,
+.custom-dropdown-modern-auth .show>.nav-link {
+  background: var(--bs-tertiary-bg) !important;
+  border-color: var(--bs-border-color-translucent) !important;
+  color: var(--bs-primary) !important;
+}
+
+@keyframes slideDownNav {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.profile-avatar-img {
+  width: 34px;
+  height: 34px;
+  object-fit: cover;
+  border: 2px solid var(--bs-primary);
+}
+
+.profile-avatar-img-large {
+  width: 40px;
+  height: 40px;
+  object-fit: cover;
+}
+
+.profile-status-indicator {
+  width: 10px;
+  height: 10px;
+}
+
+/* ==========================================================================
+   Section 17: Utility Classes for JSX Clean-up
+   ========================================================================== */
+.z-1050 {
+  z-index: 1050 !important;
+}
+
+.text-emphasis {
+  color: var(--bs-emphasis-color) !important;
+}
+
+.text-emphasis-ls-1 {
+  color: var(--bs-emphasis-color) !important;
+  letter-spacing: -1px !important;
+}
+
+.header-logo-img {
+  width: 50px;
+  height: 30px;
+}
+
+.bg-tertiary {
+  background: var(--bs-tertiary-bg) !important;
+}
+
+.transition-2 {
+  transition: all 0.2s ease !important;
+}
+
+.icon-box-32 {
+  width: 32px;
+  height: 32px;
+}
+
+/* ==========================================================================
+   Section 18: Modern Footer Design Styles
+   ========================================================================== */
+.footer-modern {
+  background: #0f172a;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  position: relative;
+  z-index: 2000;
+  overflow: hidden;
+  width: 100%;
+  margin-left: 0 !important;
+}
+
+.footer-modern::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 200px;
+  height: 1px;
+  background: linear-gradient(to right, transparent, var(--bs-primary), transparent);
+}
+
+.social-icon-box {
+  width: 42px;
+  height: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 1.1rem;
+  text-decoration: none;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.social-icon-box:hover {
+  background: var(--bs-primary);
+  color: white;
+  transform: translateY(-5px);
+  box-shadow: 0 10px 20px rgba(99, 102, 241, 0.3) !important;
+  border-color: var(--bs-primary);
+}
+
+.contact-link {
+  color: rgba(255, 255, 255, 0.6);
+  text-decoration: none;
+  transition: all 0.3s ease;
+  padding: 0.5rem 1rem;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.contact-link:hover {
+  color: white;
+  background: rgba(255, 255, 255, 0.05);
+  border-color: var(--bs-primary);
+  transform: translateX(-5px);
+}
+
+.footer-logo-img {
+  width: 40px;
+  height: 24px;
+  filter: brightness(1.2);
+}
+
+.text-uppercase-ls-2 {
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  font-size: 0.75rem;
+}
+
+.text-ls-neg-1 {
+  letter-spacing: -1px !important;
+}
+
+/* ==========================================================================
+   Section 19: Announcement Center Typography & Meta Styles
+   ========================================================================== */
+.announcement-title {
+  color: var(--bs-emphasis-color);
+  font-size: 1.4rem;
+  letter-spacing: -0.5px;
+  line-height: 1.2;
+}
+
+.announcement-description {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  -webkit-line-clamp: 2;
+  line-height: 1.5;
+  color: var(--bs-secondary-color);
+}
+
+.announcement-meta {
+  color: var(--bs-secondary-color);
+  opacity: 0.6;
+}
+
+.announcement-modal-content {
+  max-height: 400px;
+  overflow-y: auto;
+  white-space: pre-line;
+  word-wrap: break-word;
+  color: var(--bs-body-color);
+  line-height: 1.8;
+  font-size: 1.05rem;
+  text-align: justify;
+}
+
+.announcement-badge-pill {
+  font-size: 0.75rem;
+}
+
+.small-badge {
+  font-size: 0.65rem !important;
+}
+
+.indicator-8 {
+  width: 8px !important;
+  height: 8px !important;
+}
+
+/* ==========================================================================
+   Section 20: Modern Sidebar Layout & Animation Styles
+   ========================================================================== */
+.sidebar-header-modern .accordion-button {
+  padding: 0.75rem 1rem !important;
+  background: transparent !important;
+  color: var(--bs-secondary-color) !important;
+  border: 1px solid transparent !important;
+  transition: all 0.2s ease !important;
+  box-shadow: none !important;
+}
+
+.sidebar-header-modern .accordion-button:not(.collapsed) {
+  background: var(--bs-tertiary-bg) !important;
+  color: var(--bs-primary) !important;
+  border-color: var(--bs-border-color-translucent) !important;
+}
+
+.sidebar-header-modern .accordion-button::after {
+  filter: grayscale(1) opacity(0.5);
+  transform: scale(0.8);
+}
+
+.sub-nav-group {
+  border-left: 2px solid var(--bs-border-color-translucent) !important;
+}
+
+.text-uppercase-ls-1 {
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.logout-link-btn {
+  border: none !important;
+  background: none !important;
+  width: 100% !important;
+  text-align: left !important;
+}
+
+/* ==========================================================================
+   Section 21: High-Fidelity Landing Page (Home) Styles
+   ========================================================================== */
+.hero-neural-bg {
+  background-image: url("/assets/neural_bg.png");
+  background-size: cover;
+  background-position: center;
+  filter: brightness(0.4);
+}
+
+.hero-gradient-overlay {
+  background: linear-gradient(to bottom, rgba(15, 23, 42, 0.4), rgba(15, 23, 42, 0.9));
+}
+
+.hero-badge-pill {
+  letter-spacing: 2px;
+  font-size: 0.7rem;
+}
+
+.hero-title {
+  letter-spacing: -4px;
+}
+
+.hero-subtitle {
+  max-width: 700px;
+  font-size: 1.4rem;
+}
+
+.text-gradient-hero {
+  background: linear-gradient(to right, #6366f1, #a855f7);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.btn-modern-primary {
+  background: #6366f1;
+  color: #fff;
+  border: none;
+  padding: 1rem 2.5rem;
+  border-radius: 50px;
+  font-weight: bold;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 10px 20px -5px rgba(99, 102, 241, 0.5);
+}
+
+.btn-modern-primary:hover {
+  background: #4f46e5;
+  transform: translateY(-3px) scale(1.05);
+  box-shadow: 0 20px 30px -10px rgba(99, 102, 241, 0.6);
+}
+
+.btn-modern-outline {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  padding: 1rem 2.5rem;
+  border-radius: 50px;
+  font-weight: bold;
+  backdrop-filter: blur(10px);
+  transition: all 0.3s ease;
+}
+
+.btn-modern-outline:hover {
+  background: rgba(255, 255, 255, 0.2);
+  border-color: #fff;
+}
+
+.feature-3d-card {
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  background: var(--bs-body-bg);
+  border: 1px solid var(--bs-border-color-translucent);
+}
+
+.feature-3d-card:hover {
+  transform: translateY(-10px) rotateX(5deg) rotateY(2deg);
+  box-shadow: 0 30px 60px -12px rgba(0, 0, 0, 0.2) !important;
+  border-color: var(--bs-primary) !important;
+}
+
+.feature-icon-box {
+  width: 60px;
+  height: 60px;
+  border-radius: 16px;
+  color: #fff;
+}
+
+.slideshow-wrapper-modern {
+  background: var(--bs-body-bg);
+  border: 1px solid var(--bs-border-color-translucent);
+}
+
+.slideshow-item-img {
+  object-fit: cover;
+}
+
+.slideshow-caption-glass {
+  background: rgba(15, 23, 42, 0.6);
+  backdrop-filter: blur(10px);
+  bottom: 40px;
+  left: 40px;
+  max-width: 400px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.animate-slide-up {
+  animation: slideUp 0.8s ease-out forwards;
+}
+
+.animate-slide-up-delayed {
+  animation: slideUp 0.8s ease-out 0.2s forwards;
+  opacity: 0;
+}
+
+.animate-slide-up-delayed-more {
+  animation: slideUp 0.8s ease-out 0.4s forwards;
+  opacity: 0;
+}
+
+.animate-fade-in {
+  animation: fadeIn 1s ease-out forwards;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+.letter-spacing-2 {
+  letter-spacing: 2px !important;
+}
+
+.letter-spacing-3 {
+  letter-spacing: 3px !important;
+}
+
+.h-500 {
+  height: 500px !important;
+}
+
+.bg-body {
+  background: var(--bs-body-bg) !important;
+}
+
+.z-10 {
+  z-index: 10 !important;
+}
+
+/* ==========================================================================
+   Section 22: Global Micro-Animations
+   ========================================================================== */
+.fade-in {
+  animation: fadeIn 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ==========================================================================
+   Section 23: Admin User Management & Auth Selection Styles
+   ========================================================================== */
+.btn-modern-auth-selection {
+  background: var(--bs-tertiary-bg);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-modern-auth-selection:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+}
+
+.btn-modern-auth-selection.authorize:hover {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.btn-modern-auth-selection.authorize .icon-box {
+  background: #10b981;
+  color: white;
+}
+
+.btn-modern-auth-selection.revoke:hover {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.btn-modern-auth-selection.revoke .icon-box {
+  background: #ef4444;
+  color: white;
+}
+
+/* ==========================================================================
+   Section 24: Educator Dashboard & Session Controls
+   ========================================================================== */
+.text-gradient {
+  background: linear-gradient(to right, #4f46e5, #9333ea);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.glass-badge {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  padding: 0.5rem 1rem;
+  border-radius: 50px;
+  font-size: 0.65rem;
+  font-weight: 800;
+  letter-spacing: 1px;
+  display: inline-flex;
+  align-items: center;
+}
+
+.btn-modern-action {
+  background: #1e293b;
+  color: #fff;
+  border: none;
+  padding: 1.1rem 2.5rem;
+  border-radius: 1.2rem;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.btn-modern-action:hover {
+  background: #4f46e5;
+  transform: translateY(-5px) scale(1.02);
+  box-shadow: 0 25px 30px -10px rgba(79, 70, 229, 0.4) !important;
+}
+
+.max-width-600 {
+  max-width: 600px;
+}
+
+/* ==========================================================================
+   Section 25: Real-Time Monitoring Immersion Styles
+   ========================================================================== */
+.monitoring-container {
+  background-color: #0a0a0a;
+}
+
+.monitoring-sidebar {
+  background-color: #111;
+}
+
+.border-secondary-subtle {
+  border-color: rgba(255, 255, 255, 0.05) !important;
+}
+
+/* ==========================================================================
+   Section 26: High-Fidelity Announcement Center (Dashboard)
+   ========================================================================== */
+.announcement-card-modern {
+  background: linear-gradient(135deg, var(--bs-body-bg) 0%, var(--bs-tertiary-bg) 100%);
+  border: 1px solid var(--bs-border-color-translucent);
+  border-radius: 1.5rem !important;
+}
+
+.announcement-glass-overlay {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 1.2rem;
+  padding: 2.5rem;
+  max-width: 85%;
+  margin: 0 auto;
+  transition: all 0.3s ease;
+}
+
+[data-bs-theme="dark"] .announcement-glass-overlay {
+  background: rgba(15, 23, 42, 0.4);
+  border-color: rgba(255, 255, 255, 0.05);
+}
+
+.announcement-glass-overlay:hover {
+  transform: scale(1.02);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.announcement-carousel .carousel-control-prev,
+.announcement-carousel .carousel-control-next {
+  width: 45px;
+  height: 45px;
+  background: var(--bs-primary);
+  border-radius: 50%;
+  top: 50%;
+  transform: translateY(-50%);
+  opacity: 0;
+  transition: all 0.3s ease;
+}
+
+.announcement-card-modern:hover .carousel-control-prev,
+.announcement-card-modern:hover .carousel-control-next {
+  opacity: 1;
+}
+
+.announcement-carousel .carousel-control-prev {
+  left: 20px;
+}
+
+.announcement-carousel .carousel-control-next {
+  right: 20px;
+}
+
+.announcement-title-main {
+  font-size: 1.6rem;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+  background: linear-gradient(to right, var(--bs-emphasis-color), var(--bs-primary));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  line-height: 1.2;
+}
+
+.announcement-subtitle {
+  color: var(--bs-secondary-color);
+  font-size: 0.95rem;
+  line-height: 1.6;
+  opacity: 0.8;
+}
+
+.announcement-meta-badge {
+  background: rgba(99, 102, 241, 0.1);
+  color: var(--bs-primary);
+  padding: 0.4rem 1rem;
+  border-radius: 50px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.h-300 {
+  height: 300px !important;
+}
+
+.text-truncate-2 {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  -webkit-line-clamp: 2;
+}
+
+.announcement-modal-header-box {
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.05) 0%, rgba(168, 85, 247, 0.05) 100%);
+  border: 1px solid rgba(99, 102, 241, 0.1);
+}
+
+.pointer {
+  cursor: pointer;
+}
+
+.h-250 {
+  height: 250px !important;
+}
+
+.border-translucent {
+  border: 1px solid var(--bs-border-color-translucent) !important;
+}
+
+.bg-tertiary {
+  background: var(--bs-tertiary-bg) !important;
+}
+
+.text-emphasis {
+  color: var(--bs-emphasis-color) !important;
+}
+
+/* ==========================================================================
+   Section 27: Announcement Center - Custom Brand Theme
+   ========================================================================== */
+.announcement-header-brand {
+  background-color: #3B3486 !important;
+  color: #ffffff !important;
+  border-radius: 1.5rem 1.5rem 0 0 !important;
+}
+
+.announcement-body-custom {
+  height: 250px;
+  max-height: 250px;
+  overflow: hidden;
+  padding: 0;
+}
+
+.announcement-carousel-custom {
+  height: 100%;
+  background-color: #cfe5ff;
+}
+
+.announcement-item-content {
+  text-align: center;
+  padding: 2.5rem;
+}
+
+.announcement-title-brand {
+  color: #3B3486 !important;
+  font-weight: 700;
+  margin-bottom: 1rem;
+  white-space: normal;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.announcement-desc-truncate {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  -webkit-line-clamp: 2;
+  text-overflow: ellipsis;
+  max-width: 100%;
+  color: #4b5563;
+}
+
+/* ==========================================================================
+   Section 28: Dashboard Standardization - Announcement Center
+   ========================================================================== */
+.announcement-card-standardized {
+  background: #ffffff !important;
+  border: 1px solid rgba(0, 0, 0, 0.05) !important;
+  border-radius: 1.5rem !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.03) !important;
+}
+
+.announcement-header-standardized {
+  background-color: #3B3486 !important;
+  color: #ffffff !important;
+  padding: 1.2rem 1.5rem !important;
+  border-radius: 1.5rem 1.5rem 0 0 !important;
+  border: none !important;
+  font-size: 1.1rem;
+}
+
+.announcement-body-standardized {
+  padding: 1.5rem !important;
+  /* The white space around the blue box */
+  height: 320px;
+  display: flex;
+  flex-direction: column;
+}
+
+.announcement-carousel-box {
+  background-color: #cfe5ff !important;
+  border-radius: 1.2rem !important;
+  height: 100%;
+  overflow: hidden;
+  position: relative;
+}
+
+.announcement-carousel-box .carousel-control-prev-icon,
+.announcement-carousel-box .carousel-control-next-icon {
+  filter: invert(1) grayscale(100) brightness(1.5);
+  width: 3rem;
+  height: 3rem;
+}
+
+.announcement-content-standardized {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 2rem 4rem;
+  text-align: center;
+}
+
+.announcement-title-standardized {
+  color: #3B3486 !important;
+  font-weight: 700;
+  font-size: 2rem;
+  margin-bottom: 0.5rem;
+}
+
+.announcement-desc-standardized {
+  color: #64748b !important;
+  font-size: 1rem;
+  margin-bottom: 1.5rem;
+  max-width: 80%;
+}
+
+.announcement-date-standardized {
+  color: #64748b !important;
+  font-weight: 600;
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* ==========================================================================
+   Section 31: Announcement Center - Content Border Box
+   ========================================================================== */
+.announcement-inner-border-box {
+  width: 90%;
+  height: 250px;
+  padding: 2.5rem;
+  background: var(--bs-tertiary-bg);
+  border-radius: 1.5rem;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.announcement-inner-border-box:hover {
+  transform: translateY(-5px);
+  border-color: var(--bs-primary-border-subtle);
 }

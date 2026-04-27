@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
-import { Table, Button, Pagination } from "react-bootstrap";
-import { useNavigate } from "react-router-dom";
+import { Table, Button, Pagination, Container } from "react-bootstrap";
+import { useNavigate, useLocation } from "react-router-dom";
 import PageTitleBreadcrumb from "../../../components/layout/PageTitleBreadcrumbLayout";
 import LoadingSpinner from "../../../components/common/LoadingSpinnerComponent";
 import LargeModelComponent from "../../../components/modal/LargeModelComponent";
@@ -13,6 +13,7 @@ import useSession from "../../../hooks/useSession";
 
 function AnnouncementManagement() {
   const navigate = useNavigate();
+  const location = useLocation();
   const {userData, isLoggedIn} = useSession(navigate);
 
   const {
@@ -107,7 +108,6 @@ function AnnouncementManagement() {
     const newStatus = currentStatus === 1 ? 0 : 1;
 
     try {
-      // Sending the updated status to the backend
       const response = await axios.post(
         "/contentmanagement/update_announcement_status",
         {
@@ -133,14 +133,8 @@ function AnnouncementManagement() {
     e.preventDefault();
     const { announcementTitle, announcementDesc } = formData;
 
-    // Validate input
-    if (!announcementTitle.trim()) {
-      toast.error("Announcement title is required.");
-      return;
-    }
-
-    if (!announcementDesc.trim()) {
-      toast.error("Announcement description is required.");
+    if (!announcementTitle.trim() || !announcementDesc.trim()) {
+      toast.error("All fields are required.");
       return;
     }
 
@@ -153,54 +147,29 @@ function AnnouncementManagement() {
       const response = await axios.post(
         "/contentmanagement/add_announcement",
         formDataToSend,
-        {
-          headers: {
-            "Content-Type": "multipart/form-data",
-          },
-        }
+        { headers: { "Content-Type": "multipart/form-data" } }
       );
 
       if (response.status === 200) {
-        // Reset the form
-        setFormData({
-          announcementTitle: "",
-          announcementDesc: "",
-        });
-
-        toast.success(
-          response.data.message || "Announcement added successfully!"
-        );
+        setFormData({ announcementTitle: "", announcementDesc: "" });
+        toast.success(response.data.message || "Announcement added successfully!");
         handleCloseNewModal();
-
-        // Refresh the announcements list
         await refetch();
       } else {
-        toast.error(
-          response.data.message ||
-            "Failed to add announcement. Please try again."
-        );
+        toast.error(response.data.message || "Failed to add announcement.");
       }
     } catch (error) {
       console.error("Add announcement error:", error);
-      toast.error(
-        error.response?.data?.message || "Failed to add announcement"
-      );
+      toast.error(error.response?.data?.message || "Failed to add announcement");
     }
   };
 
-  // Handle Edit Announcement (Update)
   const handleEditAnnouncement = async (e) => {
     e.preventDefault();
     const { announcementId, announcementTitle, announcementDesc } = formData;
 
-    // Validate input
-    if (!announcementTitle.trim()) {
-      toast.error("Announcement title is required.");
-      return;
-    }
-
-    if (!announcementDesc.trim()) {
-      toast.error("Announcement description is required.");
+    if (!announcementTitle.trim() || !announcementDesc.trim()) {
+      toast.error("All fields are required.");
       return;
     }
 
@@ -211,320 +180,185 @@ function AnnouncementManagement() {
 
     try {
       const response = await axios.post(
-        "/contentmanagement/edit_announcement", // API for editing an existing announcement
+        "/contentmanagement/edit_announcement",
         formDataToSend,
-        {
-          headers: {
-            "Content-Type": "multipart/form-data",
-          },
-        }
+        { headers: { "Content-Type": "multipart/form-data" } }
       );
 
       if (response.status === 200) {
-        // Reset the form after successful edit
-        setFormData({
-          announcementId: "",
-          announcementTitle: "",
-          announcementDesc: "",
-        });
-
-        toast.success(
-          response.data.message || "Announcement updated successfully!"
-        );
-        handleCloseEditModal(); // Close modal
-
-        // Refresh the announcements list
+        setFormData({ announcementId: "", announcementTitle: "", announcementDesc: "" });
+        toast.success(response.data.message || "Announcement updated successfully!");
+        handleCloseEditModal();
         await refetch();
       } else {
-        toast.error(
-          response.data.message ||
-            "Failed to update announcement. Please try again."
-        );
+        toast.error(response.data.message || "Failed to update announcement.");
       }
     } catch (error) {
       console.error("Edit announcement error:", error);
-      toast.error(
-        error.response?.data?.message || "Failed to update announcement"
-      );
+      toast.error(error.response?.data?.message || "Failed to update announcement");
     }
   };
 
-  // Handle delete announcement
   const handleDeleteAnnouncement = async (id) => {
-    if (
-      !window.confirm(`Are you sure you want to delete announcement: ${id}?`)
-    ) {
+    if (!window.confirm(`Are you sure you want to delete announcement ID: ${id}?`)) {
       return;
     }
 
     try {
-      const response = await axios.post(
-        "/contentmanagement/delete_announcement",
-        {
-          announcementId: id,
-        }
-      );
-
+      const response = await axios.post("/contentmanagement/delete_announcement", { announcementId: id });
       if (response.data.success) {
-        toast.success(
-          response.data.message || "Announcement deleted successfully!"
-        );
+        toast.success(response.data.message || "Announcement deleted successfully!");
         await refetch();
       } else {
         toast.error(response.data.message || "Failed to delete announcement");
       }
     } catch (error) {
       console.error("Delete announcement error:", error);
-      toast.error(
-        error.response?.data?.message || "Failed to delete announcement"
-      );
+      toast.error(error.response?.data?.message || "Failed to delete announcement");
     }
   };
 
   return (
-    <>
+    <div className="py-2 fade-in">
       <PageTitleBreadcrumb
         title="Announcement Management"
         path={location.pathname}
         isAddNew={true}
         onclickToggle={() => setShowNewModal(true)}
-        btnTitle="Add New Announcement"
-      ></PageTitleBreadcrumb>
-      <div className="m-4 card px-3">
-        <section className="px-1 py-4">
+        btnTitle="Create Announcement"
+        btnIcon="bi-megaphone"
+      />
+
+      <div className="card border-0 rounded-4 overflow-hidden shadow-lg mt-4" style={{ 
+        background: 'var(--bs-body-bg)',
+        border: '1px solid var(--bs-border-color-translucent)'
+      }}>
+        <div className="card-header bg-transparent border-0 py-4 px-4 d-flex align-items-center justify-content-between">
+            <div>
+                <h6 className="mb-0 fw-bold" style={{ color: 'var(--bs-emphasis-color)' }}>System Broadcasts</h6>
+                <p className="text-muted small mb-0">Publish and manage institution-wide updates</p>
+            </div>
+            <div className="d-flex align-items-center gap-3">
+              <span className="text-muted small fw-medium">Items:</span>
+              <select 
+                  className="form-select form-select-sm rounded-pill px-3" 
+                  value={itemsPerPage}
+                  onChange={(e) => {
+                    setItemsPerPage(Number(e.target.value));
+                    setCurrentPage(1);
+                  }}
+                  style={{ width: "80px", background: 'var(--bs-tertiary-bg)' }}
+              >
+                  <option value={10}>10</option>
+                  <option value={25}>25</option>
+                  <option value={50}>50</option>
+              </select>
+            </div>
+        </div>
+        
+        <div className="card-body p-0">
           {loading ? (
-            <LoadingSpinner text="Loading announcement list..." />
+            <div className="py-5"><LoadingSpinner text="Fetching broadcast history..." /></div>
           ) : announcementList.length > 0 ? (
-            <>
-              <div className="d-flex justify-content-between align-items-center mb-3">
-                <div>
-                  Showing {indexOfFirstItem + 1} to {Math.min(indexOfLastItem, announcementList.length)} of {announcementList.length} entries
-                </div>
-                <div className="d-flex align-items-center">
-                  <span className="me-2">Items per page:</span>
-                  <select 
-                    className="form-select form-select-sm" 
-                    value={itemsPerPage}
-                    onChange={(e) => {
-                      setItemsPerPage(Number(e.target.value));
-                      setCurrentPage(1); // Reset to first page when changing items per page
-                    }}
-                    style={{ width: "70px" }}
-                  >
-                    <option value={10}>10</option>
-                    <option value={25}>25</option>
-                    <option value={50}>50</option>
-                  </select>
-                </div>
-              </div>
-              <Table striped bordered hover responsive className="align-middle">
-                <thead>
-                  <tr className="text-center">
-                    <th style={{ width: "50px" }}>#</th>
-                    <th
-                      onClick={() => handleSort("announcementID")}
-                      style={{ width: "100px", cursor: "pointer" }}
-                    >
-                      ID{" "}
-                      {sortConfig.key === "announcementID"
-                        ? sortConfig.direction === "asc"
-                          ? "🔼"
-                          : "🔽"
-                        : "↕️"}
+            <div className="table-responsive">
+              <Table hover className="align-middle mb-0 custom-premium-table">
+                <thead style={{ background: 'var(--bs-tertiary-bg)' }}>
+                  <tr>
+                    <th className="ps-4 py-3 text-muted fw-bold small text-uppercase">#</th>
+                    <th className="py-3 text-muted fw-bold small text-uppercase cursor-pointer" onClick={() => handleSort("announcementID")}>
+                      ID {sortConfig.key === "announcementID" ? (sortConfig.direction === "asc" ? "↑" : "↓") : "↕"}
                     </th>
-                    <th
-                      onClick={() => handleSort("announcementTitle")}
-                      style={{ width: "180px", cursor: "pointer" }}
-                    >
-                      Title{" "}
-                      {sortConfig.key === "announcementTitle"
-                        ? sortConfig.direction === "asc"
-                          ? "🔼"
-                          : "🔽"
-                        : "↕️"}
+                    <th className="py-3 text-muted fw-bold small text-uppercase cursor-pointer" onClick={() => handleSort("announcementTitle")}>
+                      Title {sortConfig.key === "announcementTitle" ? (sortConfig.direction === "asc" ? "↑" : "↓") : "↕"}
                     </th>
-                    <th>Description </th>
-                    <th
-                      style={{ width: "120px", cursor: "pointer" }}
-                      onClick={() => handleSort("announcementStatus")}
-                    >
-                      Status{" "}
-                      {sortConfig.key === "announcementStatus"
-                        ? sortConfig.direction === "asc"
-                          ? "🔼"
-                          : "🔽"
-                        : "↕️"}
-                    </th>
-                    <th style={{ width: "300px" }}>Action</th>
+                    <th className="py-3 text-muted fw-bold small text-uppercase">Description Snippet</th>
+                    <th className="py-3 text-muted fw-bold small text-uppercase text-center">Status</th>
+                    <th className="py-3 text-muted fw-bold small text-uppercase text-end pe-4">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
                   {createdAnnouncement.map((announcement, index) => (
-                    <tr key={announcement.announcementID}>
-                      <td>{index + 1}</td>
-                      <td>{announcement.announcementID}</td>
-                      <td>{announcement.announcementTitle}</td>
-                      <td>{announcement.announcementDescription}</td>
+                    <tr key={announcement.announcementID} className="border-bottom" style={{ borderColor: 'var(--bs-border-color-translucent)' }}>
+                      <td className="ps-4 text-muted small">{indexOfFirstItem + index + 1}</td>
+                      <td className="fw-medium text-primary">#{announcement.announcementID}</td>
+                      <td className="fw-bold" style={{ color: 'var(--bs-emphasis-color)' }}>{announcement.announcementTitle}</td>
+                      <td className="text-muted small text-truncate" style={{ maxWidth: '300px' }}>{announcement.announcementDescription}</td>
                       <td className="text-center">
-                        <ContentManagementStatusBadge
-                          contentStatus={announcement.announcementStatus}
-                        />
+                        <ContentManagementStatusBadge contentStatus={announcement.announcementStatus} />
                       </td>
-                      <td className="text-center">
-                        <Button
-                          variant={
-                            announcement.announcementStatus === 1
-                              ? "secondary"
-                              : "success"
-                          }
-                          size="sm"
-                          onClick={() =>
-                            handleToggleStatus(
-                              announcement.announcementID,
-                              announcement.announcementStatus
-                            )
-                          }
-                        >
-                          <i
-                            className={`bi ${
-                              announcement.announcementStatus === 1
-                                ? "bi-ban"
-                                : "bi-check-circle"
-                            }`}
-                          ></i>
-                          &nbsp;
-                          {announcement.announcementStatus === 1
-                            ? "Archived"
-                            : "Activate"}
-                        </Button>{" "}
-                        &nbsp;
-                        <Button
-                          variant="info"
-                          size="sm"
-                          onClick={() => handleOpenModalEdit(announcement)}
-                        >
-                          <i className="bi bi-pencil"></i>&nbsp; Edit
-                        </Button>{" "}
-                        &nbsp;
-                        <Button
-                          variant="danger"
-                          size="sm"
-                          onClick={() =>
-                            handleDeleteAnnouncement(
-                              announcement.announcementID
-                            )
-                          }
-                        >
-                          <i className="bi bi-trash"></i>&nbsp; Delete
-                        </Button>
+                      <td className="text-end pe-4">
+                        <div className="d-flex justify-content-end gap-2">
+                          <button 
+                            className={`btn btn-sm ${announcement.announcementStatus === 1 ? 'btn-outline-secondary' : 'btn-outline-success'} rounded-pill px-3 d-flex align-items-center gap-2`}
+                            onClick={() => handleToggleStatus(announcement.announcementID, announcement.announcementStatus)}
+                          >
+                            <i className={`bi ${announcement.announcementStatus === 1 ? 'bi-archive' : 'bi-broadcast'}`}></i>
+                            <span className="small fw-bold">{announcement.announcementStatus === 1 ? "Archive" : "Activate"}</span>
+                          </button>
+                          <button 
+                            className="btn btn-sm btn-light rounded-pill px-3 shadow-sm d-flex align-items-center gap-2"
+                            onClick={() => handleOpenModalEdit(announcement)}
+                          >
+                            <i className="bi bi-pencil text-primary"></i>
+                            <span className="small fw-bold">Edit</span>
+                          </button>
+                          <button 
+                            className="btn btn-sm btn-light rounded-pill px-3 shadow-sm d-flex align-items-center gap-2"
+                            onClick={() => handleDeleteAnnouncement(announcement.announcementID)}
+                          >
+                            <i className="bi bi-trash text-danger"></i>
+                            <span className="small fw-bold">Delete</span>
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))}
                 </tbody>
               </Table>
-              <br />
-              <Pagination className="d-flex justify-content-end">
-                <Pagination.First
-                  onClick={() => setCurrentPage(1)}
-                  disabled={currentPage === 1}
-                />
-                <Pagination.Prev
-                  onClick={() =>
-                    setCurrentPage((prev) => Math.max(prev - 1, 1))
-                  }
-                  disabled={currentPage === 1}
-                />
-
-                {currentPage > 3 && <Pagination.Ellipsis disabled />}
-
-                {Array.from({
-                  length: Math.ceil(announcementList.length / itemsPerPage),
-                })
-                  .slice(
-                    Math.max(0, currentPage - 3),
-                    Math.min(
-                      currentPage + 2,
-                      Math.ceil(announcementList.length / itemsPerPage)
-                    )
-                  )
-                  .map((_, pageIndex) => (
-                    <Pagination.Item
-                      key={pageIndex + 1}
-                      active={pageIndex + 1 === currentPage}
-                      onClick={() => setCurrentPage(pageIndex + 1)}
-                    >
-                      {pageIndex + 1}
-                    </Pagination.Item>
-                  ))}
-
-                {currentPage <
-                  Math.ceil(announcementList.length / itemsPerPage) - 2 && (
-                  <Pagination.Ellipsis disabled />
-                )}
-
-                <Pagination.Next
-                  onClick={() =>
-                    setCurrentPage((prev) =>
-                      Math.min(
-                        prev + 1,
-                        Math.ceil(announcementList.length / itemsPerPage)
-                      )
-                    )
-                  }
-                  disabled={
-                    currentPage ===
-                    Math.ceil(announcementList.length / itemsPerPage)
-                  }
-                />
-                <Pagination.Last
-                  onClick={() =>
-                    setCurrentPage(
-                      Math.ceil(announcementList.length / itemsPerPage)
-                    )
-                  }
-                  disabled={
-                    currentPage ===
-                    Math.ceil(announcementList.length / itemsPerPage)
-                  }
-                />
-              </Pagination>
-            </>
+            </div>
           ) : (
-            <div
-              className="d-flex justify-content-center align-items-center"
-              style={{ minHeight: "calc(100vh - 250px)" }}
-            >
-              <div className="text-center">
-                <i className="bi bi-megaphone text-muted fs-1"></i>
-                <h3 className="text-muted mt-3">No announcements available</h3>
-                <p className="text-muted">
-                  Click the add button to create a new announcement.
-                </p>
-              </div>
+            <div className="text-center py-5">
+              <i className="bi bi-megaphone text-muted opacity-25" style={{ fontSize: '4rem' }}></i>
+              <h5 className="text-muted mt-3">No Announcements</h5>
+              <p className="text-muted small">Create your first system announcement</p>
             </div>
           )}
-          ;
-        </section>
+        </div>
+        
+        <div className="card-footer bg-transparent border-0 py-4 px-4 d-flex align-items-center justify-content-between">
+          <div className="text-muted small fw-medium">
+            Page {currentPage} of {Math.ceil(announcementList.length / itemsPerPage)}
+          </div>
+          
+          <Pagination className="mb-0 custom-premium-pagination">
+            <Pagination.Prev
+              onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+              disabled={currentPage === 1}
+            />
+            <Pagination.Next
+              onClick={() => setCurrentPage((prev) => Math.min(prev + 1, Math.ceil(announcementList.length / itemsPerPage)))}
+              disabled={currentPage === Math.ceil(announcementList.length / itemsPerPage)}
+            />
+          </Pagination>
+        </div>
       </div>
 
       <LargeModelComponent
         show={showNewModal || showEditModal}
-        onHide={() => {
-          handleCloseNewModal();
-          handleCloseEditModal();
-        }}
-        title={showNewModal ? "Add New Announcement" : "Edit Announcement"}
+        onHide={() => { handleCloseNewModal(); handleCloseEditModal(); }}
+        title={showNewModal ? "Compose Announcement" : "Modify Broadcast Content"}
       >
-        <AnnouncementForm
-          formData={formData}
-          handleInputChange={handleInputChange}
-          handleSubmit={
-            showNewModal ? handleNewAnnouncement : handleEditAnnouncement
-          }
-          isEdit={!showNewModal}
-        />
+        <div className="p-2">
+          <AnnouncementForm
+            formData={formData}
+            handleInputChange={handleInputChange}
+            handleSubmit={showNewModal ? handleNewAnnouncement : handleEditAnnouncement}
+            isEdit={!showNewModal}
+          />
+        </div>
       </LargeModelComponent>
-    </>
+
+    </div>
   );
 }
 

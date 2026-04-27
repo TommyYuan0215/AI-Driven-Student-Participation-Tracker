@@ -1,8 +1,6 @@
-// File: RealTimeMonitoring.jsx
 import React, { useEffect } from "react";
 import { Container, Row, Col } from "react-bootstrap";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
-import useSession from "../../../hooks/useSession";
 
 // Import custom components
 import VideoFeed from "./components/VideoFeed";
@@ -16,14 +14,11 @@ import { useVideoProcessing } from "./hooks/useVideoPreprocessing";
 import { useTrackingSession } from "./hooks/useTrackingSession";
 
 function RealTimeMonitoring() {
-  // Get session ID from URL and navigation
   const { sessionId } = useParams();
   const location = useLocation();
   const navigate = useNavigate();
 
-  // Initialize hooks - order matters!
-  const { socketRef, isConnected, connectionAttempts, setConnectionAttempts } =
-    useSocket();
+  const { socketRef, isConnected, setConnectionAttempts } = useSocket();
 
   const {
     isCameraOn,
@@ -33,11 +28,9 @@ function RealTimeMonitoring() {
     mediaStreamRef,
     handleCamera,
     handleShareScreen,
-    stopMediaStream,
     stopScreenShare,
   } = useMediaStream();
 
-  // Initialize tracking session first to get isTracking
   const {
     isTracking,
     sessionElapsedTime,
@@ -50,10 +43,8 @@ function RealTimeMonitoring() {
     handleStopScreenShare,
   } = useTrackingSession(sessionId, socketRef, mediaStreamRef, stopScreenShare);
 
-  // Then use isTracking in video processing
   const {
     videoContainerRef,
-    boxRef,
     startSendingVideo,
     updateBoundingBoxes,
     hideAllBoxes,
@@ -65,96 +56,56 @@ function RealTimeMonitoring() {
     screenRef
   );
 
-  // Prevent page refresh
   useEffect(() => {
-    const handleBeforeUnload = async (event) => {
+    const handleBeforeUnload = (event) => {
       event.preventDefault();
-      event.returnValue =
-        "Are you sure you want to leave this page? Your session will be ended.";
+      event.returnValue = "Are you sure you want to leave? Your session will be ended.";
     };
-
     window.addEventListener("beforeunload", handleBeforeUnload);
     return () => window.removeEventListener("beforeunload", handleBeforeUnload);
   }, []);
 
-  // Start sending video when tracking starts
   useEffect(() => {
     if (isTracking) {
-      console.log("Starting video tracking...");
-
-      // Reset connection attempts counter when tracking starts
       setConnectionAttempts(0);
-
-      // Make sure we're connected to the socket
-      if (!isConnected && socketRef.current) {
-        socketRef.current.connect();
-      }
-
-      // Start sending video frames
+      if (!isConnected && socketRef.current) socketRef.current.connect();
       startSendingVideo();
     } else {
-      console.log("Tracking stopped, hiding boxes");
-      // Ensure boxes are hidden when tracking stops
       hideAllBoxes();
     }
   }, [isTracking, isConnected]);
 
-  // Update boxes when tracking data changes
   useEffect(() => {
     if (isTracking && Array.isArray(trackingData)) {
       updateBoundingBoxes(trackingData);
     }
   }, [trackingData, isTracking]);
 
-  // Handle tracking toggle with validation
-  const handleTrackingToggle = () => {
-    if (!isShareScreen && !isCameraOn && !isTracking) {
-      return handleTracking(); // This will show the toast error
-    }
-
-    handleTracking();
-  };
-
-  // Wrapper for end monitoring session
   const handleEndMonitoringSession = () => {
     endSession((path) => {
-      if (location.pathname === `/educator/tracking/${sessionId}`) {
-        setTimeout(() => {
-          navigate(path);
-        }, 1000);
+      if (location.pathname.includes(sessionId)) {
+        setTimeout(() => navigate(path), 1000);
       }
     });
   };
 
   const handleCameraToggle = async () => {
-    if (isCameraOn) {
-      // Stopping camera: also stop tracking if running
-      if (isTracking) handleTracking();
-      await handleCamera();
-    } else {
-      // Starting camera: if screen share is on, stop it first
-      if (isShareScreen) await handleStopScreenShare();
-      await handleCamera();
-    }
+    if (isCameraOn && isTracking) handleTracking();
+    if (!isCameraOn && isShareScreen) await handleStopScreenShare();
+    await handleCamera();
   };
 
   const handleShareScreenToggle = async () => {
-    if (isShareScreen) {
-      // Stopping share screen: also stop tracking if running
-      if (isTracking) handleTracking();
-      await handleStopScreenShare();
-    } else {
-      // Starting share screen: if camera is on, stop it first
-      if (isCameraOn) await handleCameraToggle();
-      await handleStopScreenShare(); // ensure screen share is off before starting
-      await handleShareScreen();
-    }
+    if (isShareScreen && isTracking) handleTracking();
+    if (!isShareScreen && isCameraOn) await handleCameraToggle();
+    await handleStopScreenShare();
+    await handleShareScreen();
   };
 
   return (
-    <Container fluid className="d-flex flex-column p-0 vh-85">
-      <Row className="g-0 flex-grow-1">
-        <Col xs={10} className="h-100 border-0 rounded-0">
+    <Container fluid className="d-flex flex-column p-0 vh-100 overflow-hidden monitoring-container fade-in">
+      <Row className="g-0 flex-grow-1 overflow-hidden">
+        <Col xs={10} className="h-100 border-0 rounded-0 overflow-hidden">
           <VideoFeed
             videoContainerRef={videoContainerRef}
             cameraRef={cameraRef}
@@ -167,7 +118,7 @@ function RealTimeMonitoring() {
           />
         </Col>
 
-        <Col xs={2} className="vh-85" style={{ backgroundColor: "#2A2A2A" }}>
+        <Col xs={2} className="h-100 border-start border-secondary-subtle monitoring-sidebar">
           <EmotionStatistics
             studentStats={studentStats}
             isTracking={isTracking}
@@ -184,7 +135,7 @@ function RealTimeMonitoring() {
         isTracking={isTracking}
         handleCamera={handleCameraToggle}
         handleShareScreen={handleShareScreenToggle}
-        handleTracking={handleTrackingToggle}
+        handleTracking={handleTracking}
         handleEndMonitoringSession={handleEndMonitoringSession}
       />
     </Container>

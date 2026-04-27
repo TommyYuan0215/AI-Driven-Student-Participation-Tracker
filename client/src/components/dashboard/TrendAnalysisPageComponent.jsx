@@ -65,200 +65,189 @@ const TrendAnalysisPageComponent = forwardRef(({
   const totalPages = Math.ceil(chartData.length / itemsPerPage);
 
   return (
-    <div className="m-4 card px-3">
+    <div className="container-fluid py-4 px-4">
       {chartData.length === 0 ? (
-        <LoadingSpinner text="Loading trend data..." />
+        <LoadingSpinner text="Analyzing class emotional data..." />
       ) : (
-        <>
-          <section
-            className="px-3 py-2 d-flex align-items-center"
-            style={{ position: "relative" }}
-            data-trend-data={JSON.stringify(chartData)}
-          >
-            {showBackButton && (
-              <div
-                className="back-button"
-                onClick={() => navigate(-1)}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  position: "absolute",
-                  top: "0.1rem",
-                  left: "1rem",
-                  cursor: "pointer",
-                }}
-              >
-                <i className="bi bi-arrow-left"></i>
-                <span>Back</span>
-              </div>
-            )}
-            <h5 style={{ width: "100%", textAlign: "center", margin: "4px" }}>
-              {headerTitle || `Session ID: ${sessionID}`}
-            </h5>
-          </section>
-
-          {/* Line Chart - Shows ALL data regardless of pagination */}
-          <section className="px-3 py-4" ref={chartRef} style={{ minHeight: '600px', width: '100%' }}>
-            <ResponsiveContainer width="100%" height={600}>
-              <LineChart 
-                data={chartData}
-                margin={{ top: 20, right: 30, left: 40, bottom: 40 }}
-              >
-                <CartesianGrid strokeDasharray="3 2" />
-                <XAxis
-                  dataKey="timestamp"
-                  tickFormatter={(ts) => new Date(ts).toLocaleTimeString()}
-                  tick={{ fontSize: 12 }}
-                  label={{
-                    value: "Timestamp (Emotions Save Frequency)",
-                    position: "bottom",
-                    offset: -10,
-                  }}
-                />
-                <YAxis
-                  tick={{ fontSize: 12 }}
-                  label={{
-                    value: "Emotion Count",
-                    angle: -90,
-                    position: "left",
-                    offset: -20,
-                  }}
-                  domain={[0, 25]}
-                  allowDataOverflow={false}
-                  tickCount={8}
-                  width={60}
-                />
-                <Tooltip
-                  labelFormatter={(value) =>
-                    new Date(value).toLocaleTimeString()
-                  }
-                  formatter={(value) => [value, 'Count']}
-                  contentStyle={{ 
-                    backgroundColor: 'rgba(255, 255, 255, 0.9)',
-                    border: '1px solid #ccc',
-                    borderRadius: '4px',
-                    padding: '8px'
-                  }}
-                />
-                <Legend 
-                  verticalAlign="top" 
-                  height={36}
-                  wrapperStyle={{ paddingBottom: '20px' }}
-                />
-                <Line
-                  type="monotone"
-                  dataKey="Interested"
-                  stroke="#82ca9d"
-                  strokeWidth={2}
-                  dot={false}
-                  isAnimationActive={true}
-                  animationDuration={1000}
-                />
-                <Line
-                  type="monotone"
-                  dataKey="Bored"
-                  stroke="#ff7300"
-                  strokeWidth={2}
-                  dot={false}
-                  isAnimationActive={true}
-                  animationDuration={1000}
-                />
-                <Line
-                  type="monotone"
-                  dataKey="LackingFocus"
-                  stroke="#ff0000"
-                  strokeWidth={2}
-                  dot={false}
-                  isAnimationActive={true}
-                  animationDuration={1000}
-                />
-              </LineChart>
-            </ResponsiveContainer>
-          </section>
-
-          {/* Data Table with pagination */}
-          <section className="px-3 py-4">
-              <div className="d-flex justify-content-between align-items-center mb-3">
-                <div>
-                  Showing {indexOfFirstItem + 1} to {Math.min(indexOfLastItem, chartData.length)} of {chartData.length} entries
-                </div>
-                <div className="d-flex align-items-center">
-                  <span className="me-2">Items per page:</span>
-                  <select 
-                    className="form-select form-select-sm" 
-                    value={itemsPerPage}
-                    onChange={(e) => {
-                      setItemsPerPage(Number(e.target.value));
-                      setCurrentPage(1); // Reset to first page when changing items per page
-                    }}
-                    style={{ width: "70px" }}
+        <div className="d-flex flex-column gap-4">
+          {/* Header & Controls */}
+          <div className="card border-0 rounded-4 overflow-hidden elevation-card" style={{
+            background: 'var(--bs-body-bg)',
+            boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04)',
+            border: '1px solid var(--bs-border-color-translucent)'
+          }}>
+            <div className="card-body p-4 d-flex align-items-center justify-content-between">
+              <div className="d-flex align-items-center">
+                {showBackButton && (
+                  <button
+                    className="btn btn-light rounded-circle p-2 me-3 d-flex align-items-center justify-content-center shadow-sm elevation-button"
+                    onClick={() => navigate(-1)}
+                    style={{ width: '40px', height: '40px', background: 'var(--bs-tertiary-bg)', border: '1px solid var(--bs-border-color-translucent)' }}
                   >
-                    <option value={10}>10</option>
-                    <option value={25}>25</option>
-                    <option value={50}>50</option>
-                  </select>
+                    <i className="bi bi-arrow-left text-primary"></i>
+                  </button>
+                )}
+                <div>
+                  <h5 className="mb-0 fw-bold" style={{ color: 'var(--bs-emphasis-color)' }}>
+                    {headerTitle || `Session Report #${sessionID}`}
+                  </h5>
+                  <div className="small text-muted fw-medium">Detailed Emotional Trajectory Analysis</div>
                 </div>
               </div>
-            
-            <Table striped bordered hover responsive>
-              <thead>
-                <tr className="text-center">
-                  <th>#</th>
-                  <th>Timestamp</th>
-                  <th>Interested</th>
-                  <th>Bored</th>
-                  <th>Lacking Focus</th>
-                </tr>
-              </thead>
-              <tbody>
-                {currentItems.map((entry, index) => (
-                  <tr key={index}>
-                    <td>{indexOfFirstItem + index + 1}</td>
-                    <td>{new Date(entry.timestamp).toLocaleTimeString()}</td>
-                    <td>{entry.Interested}</td>
-                    <td>{entry.Bored}</td>
-                    <td>{entry.LackingFocus}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </Table>
-            
-            {totalPages > 1 && (
-              <Pagination className="d-flex justify-content-end">
-                <Pagination.First
-                  onClick={() => setCurrentPage(1)}
-                  disabled={currentPage === 1}
-                />
+              <div className="badge bg-primary bg-opacity-10 text-primary px-3 py-2 rounded-pill fw-bold shadow-sm" style={{ fontSize: '0.7rem', border: '1px solid rgba(13, 110, 253, 0.2)' }}>
+                SESSION COMPLETE
+              </div>
+            </div>
+          </div>
+
+          {/* Immersive Line Chart Section */}
+          <div className="card border-0 rounded-4 overflow-hidden shadow-lg mb-2" style={{
+            background: 'var(--bs-body-bg)',
+            boxShadow: '0 25px 50px -12px rgba(0,0,0,0.15)',
+            border: '1px solid var(--bs-border-color-translucent)'
+          }}>
+            <div className="card-header bg-transparent border-0 pt-4 px-4">
+              <h6 className="mb-0 fw-bold text-uppercase opacity-50" style={{ fontSize: '0.65rem', letterSpacing: '1.5px' }}>Engagement Over Time</h6>
+            </div>
+            <div className="card-body p-4" ref={chartRef} data-trend-data={JSON.stringify(chartData)}>
+              <div style={{ height: '500px', width: '100%' }}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart
+                    data={chartData}
+                    margin={{ top: 20, right: 30, left: 10, bottom: 20 }}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--bs-border-color-translucent)" />
+                    <XAxis
+                      dataKey="timestamp"
+                      axisLine={false}
+                      tickLine={false}
+                      tickFormatter={(ts) => new Date(ts).toLocaleTimeString()}
+                      tick={{ fill: 'var(--bs-secondary-color)', fontSize: 12 }}
+                      dy={10}
+                    />
+                    <YAxis
+                      axisLine={false}
+                      tickLine={false}
+                      tick={{ fill: 'var(--bs-secondary-color)', fontSize: 12 }}
+                      domain={[0, 'dataMax + 5']}
+                      dx={-10}
+                    />
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: 'var(--bs-body-bg)',
+                        borderRadius: '16px',
+                        border: '1px solid var(--bs-border-color)',
+                        boxShadow: '0 20px 25px -5px rgba(0,0,0,0.15)',
+                        padding: '12px'
+                      }}
+                      labelStyle={{ color: 'var(--bs-emphasis-color)', fontWeight: 'bold', marginBottom: '8px' }}
+                      labelFormatter={(value) => `Time: ${new Date(value).toLocaleTimeString()}`}
+                    />
+                    <Legend
+                      verticalAlign="top"
+                      align="right"
+                      iconType="circle"
+                      height={50}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="Interested"
+                      stroke="#10b981"
+                      strokeWidth={4}
+                      dot={false}
+                      activeDot={{ r: 8, strokeWidth: 0, shadow: '0 0 10px rgba(16, 185, 129, 0.5)' }}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="Bored"
+                      stroke="#f59e0b"
+                      strokeWidth={4}
+                      dot={false}
+                      activeDot={{ r: 8, strokeWidth: 0, shadow: '0 0 10px rgba(245, 158, 11, 0.5)' }}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="LackingFocus"
+                      stroke="#f43f5e"
+                      strokeWidth={4}
+                      dot={false}
+                      activeDot={{ r: 8, strokeWidth: 0, shadow: '0 0 10px rgba(244, 63, 94, 0.5)' }}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+          </div>
+
+          {/* Raw Data Table Section */}
+          <div className="card border-0 rounded-4 overflow-hidden" style={{
+            background: 'var(--bs-body-bg)',
+            boxShadow: '0 15px 35px -10px rgba(0,0,0,0.1)',
+            border: '1px solid var(--bs-border-color-translucent)'
+          }}>
+            <div className="card-header bg-transparent border-0 py-4 px-4 d-flex align-items-center justify-content-between">
+              <div>
+                <h6 className="mb-0 fw-bold" style={{ color: 'var(--bs-emphasis-color)' }}>Captured Data Points</h6>
+                <p className="text-muted small mb-0">High-resolution tracking metrics</p>
+              </div>
+              <select
+                className="form-select form-select-sm rounded-pill px-3"
+                value={itemsPerPage}
+                onChange={(e) => {
+                  setItemsPerPage(Number(e.target.value));
+                  setCurrentPage(1);
+                }}
+                style={{ width: "80px", background: 'var(--bs-tertiary-bg)' }}
+              >
+                <option value={10}>10</option>
+                <option value={25}>25</option>
+                <option value={50}>50</option>
+              </select>
+            </div>
+
+            <div className="card-body p-0">
+              <div className="table-responsive">
+                <Table hover className="align-middle mb-0 custom-analytics-table">
+                  <thead style={{ background: 'var(--bs-tertiary-bg)' }}>
+                    <tr>
+                      <th className="ps-4 py-3 text-muted fw-bold small text-uppercase">Point #</th>
+                      <th className="py-3 text-muted fw-bold small text-uppercase">Capture Time</th>
+                      <th className="py-3 text-muted fw-bold small text-uppercase text-center">Interested</th>
+                      <th className="py-3 text-muted fw-bold small text-uppercase text-center">Bored</th>
+                      <th className="py-3 text-muted fw-bold small text-uppercase text-center">Lacking Focus</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {currentItems.map((entry, index) => (
+                      <tr key={index} className="border-bottom" style={{ borderColor: 'var(--bs-border-color-translucent)' }}>
+                        <td className="ps-4 fw-medium text-muted">{indexOfFirstItem + index + 1}</td>
+                        <td className="fw-bold" style={{ color: 'var(--bs-emphasis-color)' }}>{new Date(entry.timestamp).toLocaleTimeString()}</td>
+                        <td className="text-center">
+                          <span className="badge bg-success bg-opacity-10 text-success rounded-pill px-3">{entry.Interested}</span>
+                        </td>
+                        <td className="text-center">
+                          <span className="badge bg-warning bg-opacity-10 text-warning rounded-pill px-3">{entry.Bored}</span>
+                        </td>
+                        <td className="text-center">
+                          <span className="badge bg-danger bg-opacity-10 text-danger rounded-pill px-3">{entry.LackingFocus}</span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </Table>
+              </div>
+            </div>
+
+            <div className="card-footer bg-transparent border-0 py-4 px-4 d-flex align-items-center justify-content-between">
+              <div className="text-muted small fw-medium">
+                Data Point {indexOfFirstItem + 1} - {Math.min(indexOfLastItem, chartData.length)} of {chartData.length} total
+              </div>
+
+              <Pagination className="mb-0 custom-analytics-pagination">
                 <Pagination.Prev
-                  onClick={() =>
-                    setCurrentPage((prev) => Math.max(prev - 1, 1))
-                  }
+                  onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
                   disabled={currentPage === 1}
                 />
-                {currentPage > 3 && <Pagination.Ellipsis disabled />}
-                {Array.from({
-                  length: Math.ceil(chartData.length / itemsPerPage),
-                })
-                  .slice(
-                    Math.max(0, currentPage - 3),
-                    Math.min(
-                      currentPage + 2,
-                      Math.ceil(chartData.length / itemsPerPage)
-                    )
-                  )
-                  .map((_, pageIndex) => (
-                    <Pagination.Item
-                      key={pageIndex + Math.max(1, currentPage - 2)}
-                      active={Math.max(1, currentPage - 2) + pageIndex === currentPage}
-                      onClick={() => setCurrentPage(Math.max(1, currentPage - 2) + pageIndex)}
-                    >
-                      {Math.max(1, currentPage - 2) + pageIndex}
-                    </Pagination.Item>
-                  ))}
-                {currentPage <
-                  Math.ceil(chartData.length / itemsPerPage) - 2 && (
-                  <Pagination.Ellipsis disabled />
-                )}
                 <Pagination.Next
                   onClick={() =>
                     setCurrentPage((prev) =>
@@ -273,22 +262,33 @@ const TrendAnalysisPageComponent = forwardRef(({
                     Math.ceil(chartData.length / itemsPerPage)
                   }
                 />
-                <Pagination.Last
-                  onClick={() =>
-                    setCurrentPage(
-                      Math.ceil(chartData.length / itemsPerPage)
-                    )
-                  }
-                  disabled={
-                    currentPage ===
-                    Math.ceil(chartData.length / itemsPerPage)
-                  }
-                />
               </Pagination>
-            )}
-          </section>
-        </>
+            </div>
+          </div>
+        </div>
       )}
+
+      <style>{`
+        .custom-analytics-table tbody tr:hover {
+            background-color: var(--bs-tertiary-bg) !important;
+        }
+        .custom-analytics-pagination .page-link {
+            border: none;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 5px;
+            background: var(--bs-tertiary-bg);
+            color: var(--bs-primary);
+        }
+        .custom-analytics-pagination .active .page-link {
+            background: var(--bs-primary);
+            color: #fff;
+        }
+      `}</style>
     </div>
   );
 });

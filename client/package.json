@@ -1,5 +1,5 @@
 {
-  "name": "ai-driven-student-participation-tracker-v2",
+  "name": "focus-track-client",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -10,13 +10,10 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@mediapipe/camera_utils": "^0.3.1675466862",
-    "@mediapipe/face_detection": "^0.4.1646425229",
     "bootstrap": "^5.3.3",
     "bootstrap-icons": "^1.11.3",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0",
-    "uuid": "^8.3.2"
+    "react-dom": "^19.0.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.21.0",

@@ -3,20 +3,14 @@ import { Nav, Accordion } from "react-bootstrap";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import useSession from "../../hooks/useSession";
 
-import "../../App.css";
-
 function SidebarComponent({ items, onTabChange }) {
   const location = useLocation();
   const [activeKey, setActiveKey] = useState(null);
+  const navigate = useNavigate();
+  const { logout } = useSession(navigate);
 
   const getActiveClass = (path) => {
-    // Highlight only if the current path exactly matches the route
-    return location.pathname === path ? "active" : "text-secondary";
-  };
-
-  const isExactMatch = (path) => {
-    // Match the index route exactly; avoid highlighting for subpaths
-    return location.pathname === path;
+    return location.pathname === path ? "active-link" : "inactive-link";
   };
 
   const handleAccordionClick = (itemId) => {
@@ -24,105 +18,72 @@ function SidebarComponent({ items, onTabChange }) {
     onTabChange(itemId);
   };
 
-  const handleNavLinkClick = (itemId) => {
-    setActiveKey(null); // Collapse accordion
+  const handleMainLinkClick = (itemId) => {
+    setActiveKey(null); // Collapse when going to top-level
     onTabChange(itemId);
   };
 
-  const navigate = useNavigate();
-  const { logout } = useSession(navigate);
-
-  // Add Logout to the Settings tab
-  const enhancedItems = items.map((item) => {
-    if (item.label === "Settings") {
-      return {
-        ...item,
-        subItems: [
-          ...(item.subItems || []),
-          {
-            id: "logout",
-            path: "#",
-            label: "Logout System",
-            icon: "bi bi-box-arrow-right",
-            onClick: () =>
-              confirm("Are you sure you want to log out?") && logout(),
-          },
-        ],
-      };
-    }
-    return item;
-  });
-
-  // Make sure logout button is different with other subItems
-  const getSubItemClass = (subItem) => {
-    if (subItem.id === "logout") {
-      return "text-danger fw-bold ms-3";
-    }
-    return `${
-      isExactMatch(subItem.path) ? "active" : "text-secondary"
-    } fw-bold ms-3`;
+  const handleSubLinkClick = (itemId) => {
+    // DO NOT collapse when clicking sub-items
+    onTabChange(itemId);
   };
 
+  const enhancedItems = items;
+
   return (
-    <Nav className="flex-column" variant="pills">
-      <Accordion activeKey={activeKey} flush>
-        {enhancedItems.map((item) => (
-          <div key={item.id}>
-            {item.subItems ? (
-              <Accordion.Item eventKey={item.id}>
-                <Accordion.Header
-                  className="m-0"
-                  onClick={() => handleAccordionClick(item.id)}
-                >
-                  <i className={item.icon}></i> &nbsp;
-                  {item.label}
-                </Accordion.Header>
-                <Accordion.Body className="p-0">
-                  {item.subItems.map((subItem) => (
-                    <Nav.Item key={subItem.path}>
-                      <Nav.Link
-                        as={subItem.id === "logout" ? "button" : NavLink}
-                        to={subItem.id === "logout" ? undefined : subItem.path}
-                        className={getSubItemClass(subItem)}
-                        onClick={subItem.onClick}
-                        style={
-                          subItem.id === "logout"
-                            ? {
-                                cursor: "pointer",
-                                border: "none",
-                                background: "none",
-                                width: "100%",
-                                textAlign: "left",
-                              }
-                            : {}
-                        }
-                      >
-                        <i className={subItem.icon}></i> &nbsp;
-                        {subItem.label}
-                      </Nav.Link>
-                      <hr className="m-0" />
-                    </Nav.Item>
-                  ))}
-                </Accordion.Body>
-              </Accordion.Item>
-            ) : (
-              <Nav.Item>
-                <Nav.Link
-                  as={NavLink}
-                  to={item.path}
-                  className={`${getActiveClass(item.path)} fw-bold`}
-                  onClick={() => handleNavLinkClick(item.id)}
-                >
-                  <i className={item.icon}></i> &nbsp;
-                  {item.label}
-                </Nav.Link>
-                <hr className="m-0" />
-              </Nav.Item>
-            )}
-          </div>
-        ))}
-      </Accordion>
-    </Nav>
+    <div className="sidebar-container py-2 px-3 h-100">
+      <Nav className="flex-column gap-2" variant="pills">
+        <Accordion activeKey={activeKey} flush>
+          {enhancedItems.map((item) => (
+            <div key={item.id} className="mb-1">
+              {item.subItems ? (
+                <Accordion.Item eventKey={item.id} className="border-0 bg-transparent">
+                  <Accordion.Header
+                    className="sidebar-header-modern rounded-3"
+                    onClick={() => handleAccordionClick(item.id)}
+                  >
+                    <div className="d-flex align-items-center w-100">
+                      <i className={`${item.icon} me-3 icon-gradient`}></i>
+                      <span className="fw-bold small text-uppercase" style={{ letterSpacing: '1px' }}>{item.label}</span>
+                    </div>
+                  </Accordion.Header>
+                  <Accordion.Body className="ps-4 pe-0 py-2 border-0 bg-transparent">
+                    <div className="d-flex flex-column gap-1 border-start ms-2 ps-3" style={{ borderColor: 'var(--bs-border-color) !important' }}>
+                      {item.subItems.map((subItem) => (
+                        <Nav.Item key={subItem.path}>
+                          <Nav.Link
+                            as={subItem.isLogout ? "button" : NavLink}
+                            to={subItem.isLogout ? undefined : subItem.path}
+                            className={`sub-nav-link ${subItem.isLogout ? "logout-link" : getActiveClass(subItem.path)}`}
+                            onClick={subItem.onClick || (() => handleSubLinkClick(item.id))}
+                            style={subItem.isLogout ? { border: 'none', background: 'none', width: '100%', textAlign: 'left' } : {}}
+                          >
+                            <i className={`${subItem.icon} me-2`}></i>
+                            <span>{subItem.label}</span>
+                          </Nav.Link>
+                        </Nav.Item>
+                      ))}
+                    </div>
+                  </Accordion.Body>
+                </Accordion.Item>
+              ) : (
+                <Nav.Item>
+                  <Nav.Link
+                    as={NavLink}
+                    to={item.path}
+                    className={`sidebar-link-modern ${getActiveClass(item.path)}`}
+                    onClick={() => handleMainLinkClick(item.id)}
+                  >
+                    <i className={`${item.icon} me-3 icon-gradient`}></i>
+                    <span className="fw-bold small text-uppercase" style={{ letterSpacing: '1px' }}>{item.label}</span>
+                  </Nav.Link>
+                </Nav.Item>
+              )}
+            </div>
+          ))}
+        </Accordion>
+      </Nav>
+    </div>
   );
 }
 

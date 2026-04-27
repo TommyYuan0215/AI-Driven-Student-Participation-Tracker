@@ -33,7 +33,7 @@ function VideoFeed({
       ref={videoContainerRef}
       className="video-container position-relative d-flex align-items-center justify-content-center"
       style={{ 
-        minHeight: "85vh",
+        height: "100%",
         backgroundColor: "#000",
         overflow: "hidden"
       }}

@@ -4,8 +4,8 @@ import LoadingSpinner from "../../../components/common/LoadingSpinnerComponent";
 import PageTitleBreadcrumb from "../../../components/layout/PageTitleBreadcrumbLayout";
 import { useLoadingState } from "../../../hooks/useLoadingState";
 import {
-  LineChart,
-  Line,
+  AreaChart,
+  Area,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -13,7 +13,7 @@ import {
   Legend,
   ResponsiveContainer,
 } from "recharts";
-import { Form, Button, Row, Col } from "react-bootstrap";
+import { Form, Row, Col } from "react-bootstrap";
 
 function UserTrendingDashboard({ isEmbedded = false }) {
   const location = useLocation();
@@ -57,10 +57,8 @@ function UserTrendingDashboard({ isEmbedded = false }) {
   useEffect(() => {
     if (cumulativeUserData.length > 0) {
       if (selectedMonth === "all") {
-        // For "All Time" view, take the full dataset but ensure it's processed correctly
         setFilteredUserData(calculateCumulativeTotals(cumulativeUserData));
       } else {
-        // Filter the data for the selected month
         const filtered = filterDataByMonth(cumulativeUserData, selectedMonth);
         setFilteredUserData(filtered);
       }
@@ -71,18 +69,13 @@ function UserTrendingDashboard({ isEmbedded = false }) {
   const extractDatePart = (createAt) => {
     try {
       if (!createAt) return null;
-
-      // If the format is "2025-04-03, 03:27 PM", extract just "2025-04-03"
       if (createAt.includes(", ")) {
         return createAt.split(", ")[0];
       }
-
-      // If it's already a date string in another format, try to parse and format it
       const date = new Date(createAt);
       if (!isNaN(date.getTime())) {
         return date.toISOString().split("T")[0];
       }
-
       return null;
     } catch (error) {
       console.error("Error extracting date:", createAt, error);
@@ -92,96 +85,50 @@ function UserTrendingDashboard({ isEmbedded = false }) {
 
   // Function to process user data and calculate cumulative count by day
   const processCumulativeUserData = (data) => {
-    // Group users by date of creation
     const usersByDate = new Map();
-    let validUserCount = 0;
-    let invalidUserCount = 0;
-
     data.forEach((user) => {
       if (user && user.createAt) {
-        // Extract just the date part
         const dateStr = extractDatePart(user.createAt);
-
         if (dateStr) {
-          validUserCount++;
-          if (!usersByDate.has(dateStr)) {
-            usersByDate.set(dateStr, 1);
-          } else {
-            usersByDate.set(dateStr, usersByDate.get(dateStr) + 1);
-          }
-        } else {
-          invalidUserCount++;
+          usersByDate.set(dateStr, (usersByDate.get(dateStr) || 0) + 1);
         }
-      } else {
-        invalidUserCount++;
       }
     });
 
-    console.log(
-      `Valid users: ${validUserCount}, Invalid users: ${invalidUserCount}`
-    );
-
-    // Convert map to array and sort by date
     const sortedDates = Array.from(usersByDate.keys()).sort();
-
-    // Calculate daily count (not cumulative across all time)
-    const dailyData = sortedDates.map((dateStr) => {
-      // Get count for this specific day
-      const dailyCount = usersByDate.get(dateStr);
-
-      // Format date for display (MM/DD/YYYY)
+    return sortedDates.map((dateStr) => {
       const [year, month, day] = dateStr.split("-");
-      const displayDate = `${month}/${day}/${year}`;
-
       return {
-        date: displayDate,
+        date: `${month}/${day}/${year}`,
         rawDate: dateStr,
-        usersPerDay: dailyCount,
-        yearMonth: `${year}-${month}`, // Add yearMonth for easier filtering
+        usersPerDay: usersByDate.get(dateStr),
+        yearMonth: `${year}-${month}`,
       };
     });
-
-    return dailyData;
   };
 
-  // Function to extract all available months from user data
   const extractAvailableMonths = (data) => {
     const monthsSet = new Set();
     data.forEach((user) => {
       if (user && user.createAt) {
         const dateStr = extractDatePart(user.createAt);
         if (dateStr) {
-          // Extract year and month from the date (YYYY-MM)
-          const yearMonth = dateStr.substring(0, 7);
-          monthsSet.add(yearMonth);
+          monthsSet.add(dateStr.substring(0, 7));
         }
       }
     });
-    // Convert Set to Array and sort
     return Array.from(monthsSet).sort();
   };
 
-  // Function to filter data by selected month
   const filterDataByMonth = (data, monthFilter) => {
-    if (monthFilter === "all") {
-      return calculateCumulativeTotals(data);
-    }
-    // Filter the data to only include dates from the selected month (YYYY-MM)
+    if (monthFilter === "all") return calculateCumulativeTotals(data);
     const filteredData = data.filter((item) => item.yearMonth === monthFilter);
-    // Calculate running total for the month
     return calculateMonthlyRunningTotal(filteredData);
   };
 
-  // Calculate running total for all-time data
   const calculateCumulativeTotals = (data) => {
     if (!data || data.length === 0) return [];
-
-    // Sort the data by date to ensure chronological order
-    const sortedData = [...data].sort((a, b) => {
-      return new Date(a.rawDate) - new Date(b.rawDate);
-    });
-
-    // Calculate running total for each day across all time
+    const sortedData = [...data].sort((a, b) => new Date(a.rawDate) - new Date(b.rawDate));
     let runningTotal = 0;
     return sortedData.map((item) => {
       runningTotal += item.usersPerDay;
@@ -193,56 +140,49 @@ function UserTrendingDashboard({ isEmbedded = false }) {
     });
   };
 
-  // Calculate running total for each day in the filtered dataset
   const calculateMonthlyRunningTotal = (data) => {
     if (!data || data.length === 0) return [];
-
-    // Sort the data by date to ensure chronological order
-    const sortedData = [...data].sort((a, b) => {
-      return new Date(a.rawDate) - new Date(b.rawDate);
-    });
-
-    // Calculate running total for each day
+    const sortedData = [...data].sort((a, b) => new Date(a.rawDate) - new Date(b.rawDate));
     let runningTotal = 0;
     return sortedData.map((item) => {
       runningTotal += item.usersPerDay;
       return {
         date: item.date,
         cumulativeUsers: runningTotal,
-        newUsers: item.usersPerDay, // Keep the daily count for reference
+        newUsers: item.usersPerDay,
       };
     });
   };
 
-  // Format month for display (e.g., "2025-04" to "April 2025")
   const formatMonthDisplay = (monthYearStr) => {
     if (monthYearStr === "all") return "All Time";
-
     const [year, month] = monthYearStr.split("-");
     const date = new Date(year, parseInt(month) - 1, 1);
-
     return date.toLocaleString("default", { month: "long", year: "numeric" });
   };
 
-  // --- New: Summary statistics ---
-  const getSummaryStats = () => {
+  const summary = (() => {
     if (!filteredUserData || filteredUserData.length === 0) return null;
     const totalUsers = filteredUserData[filteredUserData.length - 1]?.cumulativeUsers || 0;
     const newUsers = filteredUserData.reduce((sum, d) => sum + (d.newUsers || 0), 0);
-    const avgNewUsers = filteredUserData.length > 0 ? (newUsers / filteredUserData.length).toFixed(2) : 0;
+    const avgNewUsers = filteredUserData.length > 0 ? (newUsers / filteredUserData.length).toFixed(1) : 0;
     return { totalUsers, newUsers, avgNewUsers };
-  };
-  const summary = getSummaryStats();
+  })();
 
-  // --- New: Custom tooltip ---
   const CustomTooltip = ({ active, payload, label }) => {
     if (active && payload && payload.length) {
       return (
-        <div className="bg-white border rounded p-2">
-          <div><strong>Date:</strong> {label}</div>
+        <div className="p-3 rounded-4 shadow-lg border-0" style={{ 
+          background: 'rgba(255, 255, 255, 0.95)',
+          backdropFilter: 'blur(10px)',
+          minWidth: '180px',
+          border: '1px solid rgba(99, 102, 241, 0.2)'
+        }}>
+          <div className="small text-muted fw-bold mb-2 pb-2 border-bottom">{label}</div>
           {payload.map((entry, idx) => (
-            <div key={idx} style={{ color: entry.color }}>
-              <strong>{entry.name}:</strong> {entry.value}
+            <div key={idx} className="d-flex align-items-center justify-content-between gap-3 mb-1">
+              <span className="small fw-medium" style={{ color: '#4b5563' }}>{entry.name}:</span>
+              <span className="fw-bold" style={{ color: entry.color }}>{entry.value}</span>
             </div>
           ))}
         </div>
@@ -251,239 +191,153 @@ function UserTrendingDashboard({ isEmbedded = false }) {
     return null;
   };
 
-  // Render the component content
-  const renderUserTrendContent = () => {
-    if (loading) {
-      return <LoadingSpinner text="Loading user data..." />;
-    }
-
+  const renderContent = () => {
+    if (loading) return <LoadingSpinner text="Synchronizing growth data..." />;
     if (!userList || userList.length === 0) {
       return (
-        <div className="text-center my-5 py-5 text-muted">
-          <i
-            className="bi bi-emoji-neutral"
-            style={{ fontSize: "3rem", opacity: 0.7 }}
-          ></i>
-          <h5 className="mt-3">No user data available</h5>
-          <p className="small">Start adding users to see the growth trend</p>
+        <div className="text-center py-5 opacity-50">
+          <i className="bi bi-graph-up-arrow fs-1"></i>
+          <h5 className="mt-3">No Trajectory Data Found</h5>
         </div>
       );
     }
 
     return (
-      <>
-        {/* --- Summary statistics --- */}
-        {summary && (
-          <section className="px-1 py-4">
-            <div className="row">
-              <div className="col-md-4 mb-3">
-                <div className="card text-center shadow-lg p-4 mb-4 rounded">
-                  <div className="card-body">
-                    <i
-                      className="bi bi-people mb-3"
-                      style={{ fontSize: "2rem", color: "#3b2ee2" }}
-                    ></i>
-                    <h5 className="card-title">Total Users</h5>
-                    <h3>{summary.totalUsers}</h3>
-                  </div>
+      <div className={`d-flex flex-column ${isEmbedded ? "h-100" : "gap-4"}`}>
+        {/* Summary Row - Only show if NOT embedded */}
+        {!isEmbedded && (
+          <Row className="g-3">
+            <Col md={4}>
+              <div className="p-4 rounded-4 shadow-sm h-100 position-relative overflow-hidden" style={{ background: 'linear-gradient(135deg, #6366f1, #4f46e5)', color: 'white' }}>
+                <div className="position-absolute top-0 end-0 p-3 opacity-25">
+                  <i className="bi bi-people-fill fs-1"></i>
                 </div>
+                <div className="small fw-bold opacity-75 text-uppercase ls-1 mb-1">Lifetime Users</div>
+                <div className="display-6 fw-bold mb-0">{summary?.totalUsers || 0}</div>
+                <div className="small opacity-50 mt-2 fw-medium">Across all registered periods</div>
               </div>
-              <div className="col-md-4 mb-3">
-                <div className="card text-center shadow-lg p-4 mb-4 rounded">
-                  <div className="card-body">
-                    <i
-                      className="bi bi-person-plus mb-3"
-                      style={{ fontSize: "2rem", color: "#de1e82" }}
-                    ></i>
-                    <h5 className="card-title">New Users in Period</h5>
-                    <h3>{summary.newUsers}</h3>
-                  </div>
+            </Col>
+            <Col md={4}>
+              <div className="p-4 rounded-4 shadow-sm h-100 position-relative overflow-hidden" style={{ background: 'var(--bs-tertiary-bg)', border: '1px solid var(--bs-border-color-translucent)' }}>
+                <div className="position-absolute top-0 end-0 p-3 opacity-10 text-primary">
+                  <i className="bi bi-person-plus-fill fs-1"></i>
                 </div>
+                <div className="small fw-bold text-muted text-uppercase ls-1 mb-1">New Registrations</div>
+                <div className="display-6 fw-bold text-primary mb-0">{summary?.newUsers || 0}</div>
+                <div className="small text-muted mt-2 fw-medium">During current selected filter</div>
               </div>
-              <div className="col-md-4 mb-3">
-                <div className="card text-center shadow-lg p-4 mb-4 rounded">
-                  <div className="card-body">
-                    <i
-                      className="bi bi-bar-chart-line mb-3"
-                      style={{ fontSize: "2rem", color: "#198754" }}
-                    ></i>
-                    <h5 className="card-title">Avg. New Users/Day</h5>
-                    <h3>{summary.avgNewUsers}</h3>
-                  </div>
+            </Col>
+            <Col md={4}>
+              <div className="p-4 rounded-4 shadow-sm h-100 position-relative overflow-hidden" style={{ background: 'var(--bs-tertiary-bg)', border: '1px solid var(--bs-border-color-translucent)' }}>
+                <div className="position-absolute top-0 end-0 p-3 opacity-10 text-success">
+                  <i className="bi bi-speedometer2 fs-1"></i>
                 </div>
+                <div className="small fw-bold text-muted text-uppercase ls-1 mb-1">Growth Velocity</div>
+                <div className="display-6 fw-bold text-success mb-0">{summary?.avgNewUsers || 0}</div>
+                <div className="small text-muted mt-2 fw-medium">Avg. new users per day</div>
               </div>
-            </div>
-          </section>
+            </Col>
+          </Row>
         )}
-        {/* --- Chart controls --- */}
-        <section className="px-3 py-2">
-          {filteredUserData.length === 0 ? (
-            <div className="text-center my-5 py-5 text-muted">
-              <i
-                className="bi bi-emoji-neutral"
-                style={{ fontSize: "3rem", opacity: 0.7 }}
-              ></i>
-              <h5 className="mt-3">No data available for the selected period</h5>
-              <p className="small">Try selecting a different time period</p>
+
+        {/* Chart Section */}
+        <div className={isEmbedded ? "h-100 d-flex flex-column" : "card border-0 rounded-4 shadow-lg overflow-hidden"} style={isEmbedded ? {} : { 
+          background: 'var(--bs-body-bg)',
+          border: '1px solid var(--bs-border-color-translucent)'
+        }}>
+          {!isEmbedded && (
+            <div className="card-header bg-transparent border-0 pt-4 px-4 d-flex align-items-center justify-content-between">
+              <div>
+                <h6 className="mb-0 fw-bold text-uppercase opacity-50" style={{ fontSize: '0.7rem', letterSpacing: '1.5px' }}>Growth Trajectory</h6>
+              </div>
+              <div className="d-flex align-items-center gap-2">
+                <span className="small text-muted fw-bold">Period:</span>
+                <Form.Select
+                  size="sm"
+                  className="rounded-pill border-0 shadow-sm px-3"
+                  style={{ width: "180px", background: 'var(--bs-tertiary-bg)' }}
+                  value={selectedMonth}
+                  onChange={(e) => setSelectedMonth(e.target.value)}
+                >
+                  <option value="all">All Time History</option>
+                  {availableMonths.map((month) => (
+                    <option key={month} value={month}>{formatMonthDisplay(month)}</option>
+                  ))}
+                </Form.Select>
+              </div>
             </div>
-          ) : (
-            <ResponsiveContainer width="100%" height={isEmbedded ? 250 : 500}>
-              <LineChart data={filteredUserData} margin={{ top: 10, right: 40, left: 10, bottom: 10 }}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis
-                  dataKey="date"
-                  tick={{ fontSize: isEmbedded ? 10 : 12 }}
-                  minTickGap={10}
-                  label={{
-                    value: "Date Registered",
-                    position: "bottom",
-                    offset: -8,
-                  }}
-                />
-                <YAxis
-                  tick={{ fontSize: isEmbedded ? 10 : 12 }}
-                  width={isEmbedded ? 30 : 40}
-                  label={{
-                    value: "User Count",
-                    angle: -90,
-                    position: "left",
-                    offset: -5,
-                  }}
-                  allowDecimals={false}
-                />
-                <Tooltip content={<CustomTooltip />} />
-                <Legend
-                  verticalAlign="top"
-                  height={isEmbedded ? 24 : 36}
-                  wrapperStyle={{ fontSize: isEmbedded ? "0.8rem" : "1rem" }}
-                />
-                <Line
-                  type="monotone"
-                  dataKey="cumulativeUsers"
-                  name="Total Users"
-                  stroke="#3b2ee2"
-                  strokeWidth={2}
-                  activeDot={{ r: 5 }}
-                />
-                <Line
-                  type="monotone"
-                  dataKey="newUsers"
-                  name="New Users per Day"
-                  stroke="#de1e82"
-                  strokeWidth={2}
-                  activeDot={{ r: 5 }}
-                />
-              </LineChart>
-            </ResponsiveContainer>
           )}
-        </section>
-      </>
+          <div className={isEmbedded ? "flex-fill p-0" : "card-body p-4"}>
+            <div style={{ height: isEmbedded ? '100%' : '450px', width: '100%' }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={filteredUserData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="colorTotal" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#6366f1" stopOpacity={0.3}/>
+                      <stop offset="95%" stopColor="#6366f1" stopOpacity={0}/>
+                    </linearGradient>
+                    <linearGradient id="colorNew" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#ec4899" stopOpacity={0.3}/>
+                      <stop offset="95%" stopColor="#ec4899" stopOpacity={0}/>
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--bs-border-color-translucent)" />
+                  <XAxis 
+                    dataKey="date" 
+                    axisLine={false} 
+                    tickLine={false} 
+                    tick={{ fill: 'var(--bs-secondary-color)', fontSize: 11 }}
+                    minTickGap={30}
+                  />
+                  <YAxis 
+                    axisLine={false} 
+                    tickLine={false} 
+                    tick={{ fill: 'var(--bs-secondary-color)', fontSize: 11 }}
+                  />
+                  <Tooltip content={<CustomTooltip />} />
+                  <Legend verticalAlign="top" align="right" height={40} iconType="circle" />
+                  <Area
+                    type="monotone"
+                    dataKey="cumulativeUsers"
+                    name="Lifetime Growth"
+                    stroke="#6366f1"
+                    strokeWidth={4}
+                    fillOpacity={1}
+                    fill="url(#colorTotal)"
+                    activeDot={{ r: 6, strokeWidth: 0, shadow: '0 0 10px rgba(99, 102, 241, 0.5)' }}
+                  />
+                  <Area
+                    type="monotone"
+                    dataKey="newUsers"
+                    name="Daily Velocity"
+                    stroke="#ec4899"
+                    strokeWidth={3}
+                    strokeDasharray="5 5"
+                    fillOpacity={1}
+                    fill="url(#colorNew)"
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        </div>
+      </div>
     );
   };
 
-  // If embedded, return just the content without the page title and extra wrapping
-  if (isEmbedded) {
-    return (
-      <>
-        <section className="px-3 py-2">
-          {filteredUserData.length === 0 ? (
-            <div className="text-center my-5 py-5 text-muted">
-              <i
-                className="bi bi-emoji-neutral"
-                style={{ fontSize: "3rem", opacity: 0.7 }}
-              ></i>
-              <h5 className="mt-3">No data available for the selected period</h5>
-              <p className="small">Try selecting a different time period</p>
-            </div>
-          ) : (
-            <ResponsiveContainer width="100%" height={300}>
-              <LineChart data={filteredUserData} margin={{ top: 10, right: 40, left: 10, bottom: 10 }}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis
-                  dataKey="date"
-                  tick={{ fontSize: 10 }}
-                  minTickGap={10}
-                  label={{
-                    value: "Date Registered",
-                    position: "bottom",
-                    offset: -8,
-                  }}
-                />
-                <YAxis
-                  tick={{ fontSize: 10 }}
-                  width={30}
-                  label={{
-                    value: "User Count",
-                    angle: -90,
-                    position: "left",
-                    offset: -5,
-                  }}
-                  allowDecimals={false}
-                />
-                <Tooltip content={<CustomTooltip />} />
-                <Legend />
-                <Line
-                  type="monotone"
-                  dataKey="cumulativeUsers"
-                  name="Total Users"
-                  stroke="#3b2ee2"
-                  strokeWidth={2}
-                  activeDot={{ r: 5 }}
-                />
-                <Line
-                  type="monotone"
-                  dataKey="newUsers"
-                  name="New Users per Day"
-                  stroke="#de1e82"
-                  strokeWidth={2}
-                  activeDot={{ r: 5 }}
-                />
-              </LineChart>
-            </ResponsiveContainer>
-          )}
-        </section>
-      </>
-    );
-  }
-
-  // Otherwise, return the full standalone page
   return (
-    <>
-      <PageTitleBreadcrumb
-        title="User Growth Trend"
-        path={location.pathname}
-        isAddNew={false}
-      />
-      <div className="m-4 card px-3">
-        {userList && userList.length > 0 && (
-          <div
-            className={"px-3 m-4"}
-            style={{
-              display: "flex",
-              justifyContent: "center",
-              alignItems: "center",
-            }}
-          >
-            <Form.Label className="me-2 mb-0" style={{ width: "10%" }}>
-              Filter by Month:
-            </Form.Label>
-            <Form.Select
-              style={{ width: "90%" }}
-              value={selectedMonth}
-              onChange={(e) => setSelectedMonth(e.target.value)}
-            >
-              <option value="all">All Time</option>
-              {availableMonths.map((month) => (
-                <option key={month} value={month}>
-                  {formatMonthDisplay(month)}
-                </option>
-              ))}
-            </Form.Select>
-          </div>
-        )}
-        {renderUserTrendContent()}
+    <div className={isEmbedded ? "h-100 w-100" : "py-2 fade-in"}>
+      {!isEmbedded && (
+        <PageTitleBreadcrumb
+          title="User Growth Analytics"
+          path={location.pathname}
+          icon="bi-graph-up-arrow"
+        />
+      )}
+      <div className={isEmbedded ? "h-100" : "mt-2"}>
+        {renderContent()}
       </div>
-    </>
+    </div>
   );
 }
 

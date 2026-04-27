@@ -12,7 +12,7 @@ function EducatorStatistics() {
   };
 
   return (
-    <>
+    <div className="py-2 fade-in">
       <PageTitleBreadcrumb
         title="Statistics Dashboard"
         path={location.pathname}
@@ -22,7 +22,7 @@ function EducatorStatistics() {
         userData={userData}
         navigateToDetails={navigateToDetails}
       />
-    </>
+    </div>
   );
 }
 

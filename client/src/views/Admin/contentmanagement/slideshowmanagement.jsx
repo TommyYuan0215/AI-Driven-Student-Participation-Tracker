@@ -1,6 +1,6 @@
 import React, { useState } from "react";
-import { Table, Button, Pagination } from "react-bootstrap";
-import { useNavigate } from "react-router-dom";
+import { Table, Button, Pagination, Container } from "react-bootstrap";
+import { useNavigate, useLocation } from "react-router-dom";
 import ModelComponent from "../../../components/modal/XLargeModelComponent";
 import LoadingSpinner from "../../../components/common/LoadingSpinnerComponent";
 import SlideshowForm from "../../../components/form/SlideshowForm";
@@ -13,7 +13,8 @@ import useSession from "../../../hooks/useSession";
 
 function SlideshowManagement() {
   const navigate = useNavigate();
-  const {userData, isLoggedIn} = useSession(navigate);
+  const location = useLocation();
+  const { userData, isLoggedIn } = useSession(navigate);
 
   const {
     data: slideshowData,
@@ -113,13 +114,10 @@ function SlideshowManagement() {
   const handleImageChange = (e) => {
     const file = e.target.files[0];
     if (file) {
-      // Validate image size (optional)
       if (file.size > 5 * 1024 * 1024) {
-        // 5MB limit, for example
         toast.error("Image size exceeds the limit of 5MB");
         return;
       }
-      // Validate image type (optional)
       const allowedTypes = ["image/jpeg", "image/png"];
       if (!allowedTypes.includes(file.type)) {
         toast.error("Invalid image type. Only JPEG, and PNG are allowed.");
@@ -133,31 +131,16 @@ function SlideshowManagement() {
     }
   };
 
-  // Add clear form handler
   const handleClearForm = (e) => {
     e.preventDefault();
-    setFormData({
-      slideshowImage: "",
-      slideshowTitle: "",
-      slideshowDesc: "",
-    });
-    toast.info("Form has been reset to original values");
+    setFormData({ slideshowImage: "", slideshowTitle: "", slideshowDesc: "" });
+    toast.info("Form has been reset");
   };
 
-  // Handle activated and deactivated announcement status
   const handleToggleStatus = async (slideshowId, currentStatus) => {
     const newStatus = currentStatus === 1 ? 0 : 1;
-
     try {
-      // Sending the updated status to the backend
-      const response = await axios.post(
-        "/contentmanagement/update_slideshow_status",
-        {
-          slideshowId,
-          slideshowStatus: newStatus,
-        }
-      );
-
+      const response = await axios.post("/contentmanagement/update_slideshow_status", { slideshowId, slideshowStatus: newStatus });
       if (response.data.success) {
         toast.success(response.data.message);
         await refetch();
@@ -172,20 +155,11 @@ function SlideshowManagement() {
 
   const handleNewSlideshow = async (e) => {
     e.preventDefault();
-
     const { slideshowImage, slideshowTitle, slideshowDesc } = formData;
 
-    // Enhanced frontend validation
-    const validationErrors = [];
-    if (!slideshowTitle) validationErrors.push("Slideshow title is required");
-    if (!slideshowDesc)
-      validationErrors.push("Slideshow description is required");
-    if (!slideshowImage) validationErrors.push("Slideshow image is required");
-
-    // Check if there are validation errors
-    if (validationErrors.length > 0) {
-      validationErrors.forEach((error) => toast.error(error));
-      return; // Stop execution if there are validation errors
+    if (!slideshowTitle || !slideshowDesc || !slideshowImage) {
+      toast.error("All fields are required.");
+      return;
     }
 
     const formDataToSend = new FormData();
@@ -195,61 +169,28 @@ function SlideshowManagement() {
     formDataToSend.append("slideshowImage", slideshowImage);
 
     try {
-      const response = await axios.post(
-        "/contentmanagement/add_slideshow",
-        formDataToSend,
-        {
-          headers: {
-            "Content-Type": "multipart/form-data",
-          },
-        }
-      );
-
+      const response = await axios.post("/contentmanagement/add_slideshow", formDataToSend, { headers: { "Content-Type": "multipart/form-data" } });
       if (response.status === 200) {
-        // Reset form data
-        setFormData({
-          slideshowTitle: "",
-          slideshowDesc: "",
-          slideshowImage: null,
-        });
-
+        setFormData({ slideshowTitle: "", slideshowDesc: "", slideshowImage: null });
         setPreviewImage("");
-
-        // Refetch the data and close the modal
         await refetch();
         setShowNewModal(false);
-
-        // Finally show success message
         toast.success(response.data.message);
       } else {
         toast.error(response.data.message || "Failed to add slideshow");
       }
     } catch (error) {
       console.error("Add slideshow error:", error);
-      const errorMessage =
-        error.response?.data?.message ||
-        "An error occurred. Please try again later.";
-      toast.error(errorMessage);
-      // Reopen modal if there's an error
-      setShowNewModal(true);
+      toast.error(error.response?.data?.message || "Error occurred");
     }
   };
 
   const handleEditSlideshow = async (e) => {
     e.preventDefault();
+    const { slideshowId, slideshowImage, slideshowTitle, slideshowDesc } = formData;
 
-    const { slideshowId, slideshowImage, slideshowTitle, slideshowDesc } =
-      formData;
-
-    // Enhanced validation
-    const validationErrors = [];
-    if (!slideshowTitle) validationErrors.push("Slideshow title is required");
-    if (!slideshowDesc)
-      validationErrors.push("Slideshow description is required");
-    if (!slideshowImage) validationErrors.push("Slideshow image is required");
-
-    if (validationErrors.length > 0) {
-      validationErrors.forEach((error) => toast.error(error));
+    if (!slideshowTitle || !slideshowDesc || !slideshowImage) {
+      toast.error("All fields are required.");
       return;
     }
 
@@ -260,321 +201,210 @@ function SlideshowManagement() {
     formDataToSend.append("slideshowImage", slideshowImage);
 
     try {
-      const response = await axios.post(
-        "/contentmanagement/edit_slideshow",
-        formDataToSend,
-        {
-          headers: {
-            "Content-Type": "multipart/form-data",
-          },
-        }
-      );
-
+      const response = await axios.post("/contentmanagement/edit_slideshow", formDataToSend, { headers: { "Content-Type": "multipart/form-data" } });
       if (response.status === 200) {
-        setFormData({
-          slideshowId: "",
-          slideshowTitle: "",
-          slideshowDesc: "",
-          slideshowImage: null,
-        });
+        setFormData({ slideshowId: "", slideshowTitle: "", slideshowDesc: "", slideshowImage: null });
         setPreviewImage("");
-
         await refetch();
         setShowEditModal(false);
-
         toast.success(response.data.message);
       } else {
-        toast.error(
-          response.data.message ||
-            "Failed to update slideshow. Please try again later."
-        );
+        toast.error(response.data.message || "Failed to update slideshow");
       }
     } catch (error) {
-      const errorMessage =
-        error.response?.data?.message ||
-        "An error occurred. Please try again later.";
-      toast.error(errorMessage);
-      // Reopen modal if there's an error
-      setShowEditModal(true);
+      console.error("Edit slideshow error:", error);
+      toast.error(error.response?.data?.message || "Error occurred");
     }
   };
 
   const handleDeleteSlideshow = async (id) => {
-    if (!window.confirm(`Are you sure you want to delete ${id} slideshow?`)) {
-      return;
-    }
-
+    if (!window.confirm(`Delete slideshow ID: ${id}?`)) return;
     try {
-      const response = await axios.post("/contentmanagement/delete_slideshow", {
-        slideshowId: id,
-      });
-
+      const response = await axios.post("/contentmanagement/delete_slideshow", { slideshowId: id });
       if (response.status === 200) {
         await refetch();
         toast.success(response.data.message);
       } else {
-        toast.error(response.data.message || "Failed to delete slideshow");
+        toast.error(response.data.message || "Failed to delete");
       }
     } catch (error) {
-      const errorMessage =
-        error.response?.data?.message ||
-        "An error occurred. Please try again later.";
-      toast.error(errorMessage);
+      console.error("Delete slideshow error:", error);
+      toast.error("Error occurred");
     }
   };
 
   return (
-    <>
+    <div className="py-2 fade-in">
       <PageTitleBreadcrumb
         title="Slideshow Management"
         path={location.pathname}
         isAddNew={true}
         onclickToggle={() => setShowNewModal(true)}
-        btnTitle="Add New Slideshow"
+        btnTitle="Upload Media"
+        btnIcon="bi-image-fill"
       />
-      <div className="m-4 card px-3">
-        <section className="px-1 py-4">
+
+      <div className="card border-0 rounded-4 overflow-hidden shadow-lg mt-4" style={{
+        background: 'var(--bs-body-bg)',
+        border: '1px solid var(--bs-border-color-translucent)'
+      }}>
+        <div className="card-header bg-transparent border-0 py-4 px-4 d-flex align-items-center justify-content-between">
+          <div>
+            <h6 className="mb-0 fw-bold" style={{ color: 'var(--bs-emphasis-color)' }}>Visual Assets</h6>
+            <p className="text-muted small mb-0">Manage landing page visual rotations</p>
+          </div>
+          <div className="d-flex align-items-center gap-3">
+            <span className="text-muted small fw-medium">Items:</span>
+            <select
+              className="form-select form-select-sm rounded-pill px-3"
+              value={itemsPerPage}
+              onChange={(e) => {
+                setItemsPerPage(Number(e.target.value));
+                setCurrentPage(1);
+              }}
+              style={{ width: "80px", background: 'var(--bs-tertiary-bg)' }}
+            >
+              <option value={10}>10</option>
+              <option value={25}>25</option>
+              <option value={50}>50</option>
+            </select>
+          </div>
+        </div>
+
+        <div className="card-body p-0">
           {loading ? (
-            <LoadingSpinner text="Loading slideshows..." />
+            <div className="py-5"><LoadingSpinner text="Processing visual library..." /></div>
           ) : slideshowData.length > 0 ? (
-            <>
-            <div className="d-flex justify-content-between align-items-center mb-3">
-              <div>
-                Showing {indexOfFirstItem + 1} to {Math.min(indexOfLastItem, slideshowData.length)} of {slideshowData.length} entries
-              </div>
-                <div className="d-flex align-items-center">
-                  <span className="me-2">Items per page:</span>
-                  <select 
-                    className="form-select form-select-sm" 
-                    value={itemsPerPage}
-                    onChange={(e) => {
-                      setItemsPerPage(Number(e.target.value));
-                      setCurrentPage(1); // Reset to first page when changing items per page
-                    }}
-                    style={{ width: "70px" }}
-                  >
-                    <option value={10}>10</option>
-                    <option value={25}>25</option>
-                    <option value={50}>50</option>
-                  </select>
-                </div>
-              </div>
-              <Table striped bordered hover responsive className="align-middle">
-                <thead className="table-light">
-                  <tr className="text-center">
-                    <th style={{ width: "50px" }}>#</th>
-                    <th
-                      onClick={() => handleSort("slideshowID")}
-                      style={{ width: "100px", cursor: "pointer" }}
-                    >
-                      ID{" "}
-                      {sortConfig.key === "slideshowID"
-                        ? sortConfig.direction === "asc"
-                          ? "🔼"
-                          : "🔽"
-                        : "↕️"}
+            <div className="table-responsive">
+              <Table hover className="align-middle mb-0 custom-premium-table">
+                <thead style={{ background: 'var(--bs-tertiary-bg)' }}>
+                  <tr>
+                    <th className="ps-4 py-3 text-muted fw-bold small text-uppercase">#</th>
+                    <th className="py-3 text-muted fw-bold small text-uppercase cursor-pointer" onClick={() => handleSort("slideshowID")}>
+                      ID {sortConfig.key === "slideshowID" ? (sortConfig.direction === "asc" ? "↑" : "↓") : "↕"}
                     </th>
-                    <th style={{ width: "200px" }}>Image</th>
-                    <th
-                      onClick={() => handleSort("slideshowTitle")}
-                      style={{ width: "180px", cursor: "pointer" }}
-                    >
-                      Title{" "}
-                      {sortConfig.key === "slideshowTitle"
-                        ? sortConfig.direction === "asc"
-                          ? "🔼"
-                          : "🔽"
-                        : "↕️"}
+                    <th className="py-3 text-muted fw-bold small text-uppercase">Preview</th>
+                    <th className="py-3 text-muted fw-bold small text-uppercase cursor-pointer" onClick={() => handleSort("slideshowTitle")}>
+                      Title {sortConfig.key === "slideshowTitle" ? (sortConfig.direction === "asc" ? "↑" : "↓") : "↕"}
                     </th>
-                    <th>Description</th>
-                    <th
-                      style={{ width: "120px", cursor: "pointer" }}
-                      onClick={() => handleSort("slideshowStatus")}
-                    >
-                      Status{" "}
-                      {sortConfig.key === "slideshowStatus"
-                        ? sortConfig.direction === "asc"
-                          ? "🔼"
-                          : "🔽"
-                        : "↕️"}
-                    </th>
-                    <th style={{ width: "300px" }}>Action</th>
+                    <th className="py-3 text-muted fw-bold small text-uppercase text-center">Status</th>
+                    <th className="py-3 text-muted fw-bold small text-uppercase text-end pe-4">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
                   {createdSlideshow.map((slideshow, index) => (
-                    <tr key={slideshow.slideshowID}>
-                      <td>{index + 1}</td>
-                      <td>{slideshow.slideshowID}</td>
+                    <tr key={slideshow.slideshowID} className="border-bottom" style={{ borderColor: 'var(--bs-border-color-translucent)' }}>
+                      <td className="ps-4 text-muted small">{indexOfFirstItem + index + 1}</td>
+                      <td className="fw-medium text-primary">#{slideshow.slideshowID}</td>
                       <td>
-                        <img
-                          src={`data:image/*;base64,${slideshow.slideshowImage}`}
-                          alt="slideshow"
-                          style={{
-                            width: "100%",
-                            maxHeight: "120px",
-                            objectFit: "cover",
-                            borderRadius: "8px",
-                          }}
-                        />
+                        <div className="rounded-3 overflow-hidden shadow-sm border" style={{ width: '80px', height: '45px' }}>
+                          <img
+                            src={`data:image/*;base64,${slideshow.slideshowImage}`}
+                            alt="slideshow"
+                            style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                          />
+                        </div>
                       </td>
-                      <td>{slideshow.slideshowTitle}</td>
-                      <td>{slideshow.slideshowDescription}</td>
-                      <td className="text-center">
-                        <ContentManagementStatusBadge
-                          contentStatus={slideshow.slideshowStatus}
-                        />
+                      <td>
+                        <div className="fw-bold" style={{ color: 'var(--bs-emphasis-color)' }}>{slideshow.slideshowTitle}</div>
+                        <div className="text-muted small text-truncate" style={{ maxWidth: '200px' }}>{slideshow.slideshowDescription}</div>
                       </td>
                       <td className="text-center">
-                        <Button
-                          variant={
-                            slideshow.slideshowStatus === 1
-                              ? "secondary"
-                              : "success"
-                          }
-                          size="sm"
-                          onClick={() =>
-                            handleToggleStatus(
-                              slideshow.slideshowID,
-                              slideshow.slideshowStatus
-                            )
-                          }
-                        >
-                          <i
-                            className={`bi ${
-                              slideshow.slideshowStatus === 1
-                                ? "bi-ban"
-                                : "bi-check-circle"
-                            }`}
-                          ></i>
-                          &nbsp;
-                          {slideshow.slideshowStatus === 1
-                            ? "Archived"
-                            : "Activate"}
-                        </Button>{" "}
-                        <Button
-                          variant="info"
-                          size="sm"
-                          className="me-2"
-                          onClick={() => handleOpenModalEdit(slideshow)}
-                        >
-                          <i className="bi bi-pencil"></i> Edit
-                        </Button>
-                        <Button
-                          variant="danger"
-                          size="sm"
-                          onClick={() =>
-                            handleDeleteSlideshow(slideshow.slideshowID)
-                          }
-                        >
-                          <i className="bi bi-trash"></i> Delete
-                        </Button>
+                        <ContentManagementStatusBadge contentStatus={slideshow.slideshowStatus} />
+                      </td>
+                      <td className="text-end pe-4">
+                        <div className="d-flex justify-content-end gap-2">
+                          <button
+                            className={`btn btn-sm ${slideshow.slideshowStatus === 1 ? 'btn-outline-secondary' : 'btn-outline-success'} rounded-pill px-3 d-flex align-items-center gap-2`}
+                            onClick={() => handleToggleStatus(slideshow.slideshowID, slideshow.slideshowStatus)}
+                          >
+                            <i className={`bi ${slideshow.slideshowStatus === 1 ? 'bi-eye-slash' : 'bi-eye'}`}></i>
+                            <span className="small fw-bold">{slideshow.slideshowStatus === 1 ? "Archive" : "Activate"}</span>
+                          </button>
+                          <button
+                            className="btn btn-sm btn-light rounded-pill px-3 shadow-sm d-flex align-items-center gap-2"
+                            onClick={() => handleOpenModalEdit(slideshow)}
+                          >
+                            <i className="bi bi-pencil text-primary"></i>
+                            <span className="small fw-bold">Edit</span>
+                          </button>
+                          <button
+                            className="btn btn-sm btn-light rounded-pill px-3 shadow-sm d-flex align-items-center gap-2"
+                            onClick={() => handleDeleteSlideshow(slideshow.slideshowID)}
+                          >
+                            <i className="bi bi-trash text-danger"></i>
+                            <span className="small fw-bold">Delete</span>
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))}
                 </tbody>
               </Table>
-            </>
+            </div>
           ) : (
-            <div
-              className="d-flex justify-content-center align-items-center"
-              style={{ minHeight: "calc(100vh - 250px)" }}
-            >
-              <div className="text-center">
-                <i className="bi bi-calendar-x text-muted fs-1"></i>
-                <h3 className="text-muted mt-3">No slideshows available</h3>
-                <p className="text-muted">
-                  Click the add button to create a new slideshow.
-                </p>
-              </div>
+            <div className="text-center py-5">
+              <i className="bi bi-image text-muted opacity-25" style={{ fontSize: '4rem' }}></i>
+              <h5 className="text-muted mt-3">No Visual Assets</h5>
+              <p className="text-muted small">Upload high-quality images for your landing page</p>
             </div>
           )}
-        </section>
+        </div>
 
-        <br />
+        <div className="card-footer bg-transparent border-0 py-4 px-4 d-flex align-items-center justify-content-between">
+          <div className="text-muted small fw-medium">
+            Gallery {indexOfFirstItem + 1} - {Math.min(indexOfLastItem, slideshowData.length)} of {slideshowData.length}
+          </div>
 
-        <Pagination className="d-flex justify-content-end">
-          <Pagination.First
-            onClick={() => setCurrentPage(1)}
-            disabled={currentPage === 1}
-          />
-          <Pagination.Prev
-            onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-            disabled={currentPage === 1}
-          />
+          <Pagination className="mb-0 custom-premium-pagination">
+            <Pagination.Prev
+              onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+              disabled={currentPage === 1}
+            />
+            <Pagination.Next
+              onClick={() => setCurrentPage((prev) => Math.min(prev + 1, Math.ceil(slideshowData.length / itemsPerPage)))}
+              disabled={currentPage === Math.ceil(slideshowData.length / itemsPerPage)}
+            />
+          </Pagination>
+        </div>
+      </div>
 
-          {currentPage > 3 && <Pagination.Ellipsis disabled />}
-
-          {Array.from({
-            length: Math.ceil(slideshowData.length / itemsPerPage),
-          })
-            .slice(
-              Math.max(0, currentPage - 3),
-              Math.min(
-                currentPage + 2,
-                Math.ceil(slideshowData.length / itemsPerPage)
-              )
-            )
-            .map((_, pageIndex) => (
-              <Pagination.Item
-                key={pageIndex + 1}
-                active={pageIndex + 1 === currentPage}
-                onClick={() => setCurrentPage(pageIndex + 1)}
-              >
-                {pageIndex + 1}
-              </Pagination.Item>
-            ))}
-
-          {currentPage < Math.ceil(slideshowData.length / itemsPerPage) - 2 && (
-            <Pagination.Ellipsis disabled />
-          )}
-
-          <Pagination.Next
-            onClick={() =>
-              setCurrentPage((prev) =>
-                Math.min(
-                  prev + 1,
-                  Math.ceil(slideshowData.length / itemsPerPage)
-                )
-              )
-            }
-            disabled={
-              currentPage === Math.ceil(slideshowData.length / itemsPerPage)
-            }
-          />
-          <Pagination.Last
-            onClick={() =>
-              setCurrentPage(Math.ceil(slideshowData.length / itemsPerPage))
-            }
-            disabled={
-              currentPage === Math.ceil(slideshowData.length / itemsPerPage)
-            }
-          />
-        </Pagination>
-
-        {/* Add and Edit Image Modals */}
-        <ModelComponent
-          show={showNewModal || showEditModal}
-          onHide={() => {
-            handleCloseNewModal();
-            handleCloseEditModal();
-          }}
-          title={showNewModal ? "Add New Slideshow" : "Edit Slideshow"}
-        >
+      <ModelComponent
+        show={showNewModal || showEditModal}
+        onHide={() => { handleCloseNewModal(); handleCloseEditModal(); }}
+        title={showNewModal ? "Upload Gallery Asset" : "Modify Asset Details"}
+      >
+        <div className="p-2">
           <SlideshowForm
             formData={formData}
             previewImage={previewImage}
             handleInputChange={handleInputChange}
             handleImageChange={handleImageChange}
-            handleSubmit={
-              showNewModal ? handleNewSlideshow : handleEditSlideshow
-            }
+            handleSubmit={showNewModal ? handleNewSlideshow : handleEditSlideshow}
             handleClearForm={handleClearForm}
             isEdit={!showNewModal}
           />
-        </ModelComponent>
-      </div>
-    </>
+        </div>
+      </ModelComponent>
+
+      <style>{`
+        .custom-premium-table tbody tr:hover {
+            background-color: var(--bs-tertiary-bg) !important;
+        }
+        .cursor-pointer { cursor: pointer; }
+        .custom-premium-pagination .page-link {
+            border: none;
+            border-radius: 10px;
+            margin: 0 3px;
+            background: var(--bs-tertiary-bg);
+            color: var(--bs-secondary-color);
+        }
+        .custom-premium-pagination .active .page-link {
+            background: #6366f1;
+            color: #fff;
+        }
+      `}</style>
+    </div>
   );
 }
 
