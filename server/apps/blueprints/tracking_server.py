@@ -54,9 +54,16 @@ def smooth_box(new_box, face_id, alpha=0.2):
 def preprocess_image(image_data, detect_multiple=True):
     """Decodes, crops, and resizes faces for the LiteRT model."""
     try:
-        # Decode base64 image from SocketIO
-        header, encoded = image_data.split(",", 1)
-        nparr = np.frombuffer(base64.b64decode(encoded), np.uint8)
+        # Check if the data is binary or Base64 string
+        if isinstance(image_data, bytes):
+            nparr = np.frombuffer(image_data, np.uint8)
+        elif isinstance(image_data, str) and "," in image_data:
+            # Decode base64 image from SocketIO (legacy/fallback)
+            header, encoded = image_data.split(",", 1)
+            nparr = np.frombuffer(base64.b64decode(encoded), np.uint8)
+        else:
+            return None, None
+
         img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
 
         if img is None:

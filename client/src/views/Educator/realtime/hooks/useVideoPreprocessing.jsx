@@ -3,15 +3,15 @@ import { useRef, useEffect, useCallback, useState, useMemo } from "react";
 // Configuration with validation
 const createConfig = () => {
   const config = {
-    SCALE_FACTOR: 0.5,
-    BASE_CAPTURE_INTERVAL: 100, // 10 FPS
+    SCALE_FACTOR: 0.7,
+    BASE_CAPTURE_INTERVAL: 800, // 1.25 FPS for a balance of stability and responsiveness
     MAX_CAPTURE_INTERVAL: 1000, // 1 FPS minimum
     MAX_CONSECUTIVE_FAILURES: 5,
-    FRAME_TIMEOUT: 2000, // 2 seconds
-    JPEG_QUALITY: 0.6,
-    MAX_PROCESSING_TIME_SAMPLES: 10,
+    FRAME_TIMEOUT: 5000, // 5 seconds for stability
+    JPEG_QUALITY: 0.8,
     DEBOUNCE_DELAY: 100,
     BACKOFF_MULTIPLIER: 1.5,
+    MAX_RECONNECT_ATTEMPTS: 5,
     MAX_RETRY_ATTEMPTS: 3,
     CANVAS_CLEANUP_INTERVAL: 30000, // 30 seconds
     LOG_LEVEL: process.env.NODE_ENV === 'development' ? 'debug' : 'warn'
@@ -315,51 +315,51 @@ export function useVideoProcessing(
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       ctx.drawImage(videoElement, 0, 0, canvas.width, canvas.height);
 
-      const imageData = canvas.toDataURL("image/jpeg", CONFIG.JPEG_QUALITY);
-
-      framePendingRef.current = true;
-      lastFrameSentTimeRef.current = currentTime;
-
-      // Set timeout for pending frame
-      pendingFrameTimeoutRef.current = setTimeout(() => {
-        if (framePendingRef.current) {
-          logger.warn("Frame acknowledgment timeout");
+      // Convert to Binary (Blob -> ArrayBuffer) for efficiency
+      canvas.toBlob(async (blob) => {
+        if (!blob) {
+          logger.error("Failed to create blob from canvas");
           framePendingRef.current = false;
-          recordError(new Error("Frame acknowledgment timeout"), 'captureFrame');
+          return;
         }
-      }, CONFIG.FRAME_TIMEOUT);
 
-      // Enhanced frame data with metadata
-      const frameData = {
-        frame: imageData,
-        dimensions: {
-          width: canvas.width,
-          height: canvas.height,
-          originalWidth: videoElement.videoWidth,
-          originalHeight: videoElement.videoHeight
-        },
-        detectMultiple: true,
-        isSharedScreen: !isCameraOn && !!screenRef.current,
-        timestamp: currentTime,
-        scaleFactor: CONFIG.SCALE_FACTOR,
-        quality: CONFIG.JPEG_QUALITY,
-        retryAttempt: retryAttemptsRef.current
-      };
+        const arrayBuffer = await blob.arrayBuffer();
+        
+        framePendingRef.current = true;
+        const sendTime = Date.now();
+        lastFrameSentTimeRef.current = sendTime;
 
-      // Enhanced socket emission with error handling
-      const emitPromise = new Promise((resolve, reject) => {
+        // Set timeout for pending frame
+        pendingFrameTimeoutRef.current = setTimeout(() => {
+          if (framePendingRef.current) {
+            logger.warn("Frame acknowledgment timeout");
+            framePendingRef.current = false;
+            recordError(new Error("Frame acknowledgment timeout"), 'captureFrame');
+            scheduleNextCapture(CONFIG.BASE_CAPTURE_INTERVAL); // Try again after timeout
+          }
+        }, CONFIG.FRAME_TIMEOUT);
+
+        const frameData = {
+          frame: arrayBuffer,
+          dimensions: {
+            width: canvas.width,
+            height: canvas.height,
+            originalWidth: videoElement.videoWidth,
+            originalHeight: videoElement.videoHeight
+          },
+          detectMultiple: true,
+          isSharedScreen: !isCameraOn && !!screenRef.current,
+          timestamp: sendTime,
+          scaleFactor: CONFIG.SCALE_FACTOR,
+          quality: CONFIG.JPEG_QUALITY,
+          retryAttempt: retryAttemptsRef.current
+        };
+
+        // Emit binary data
         socketRef.current.emit("video_frame", frameData, (ack) => {
-          resolve(ack);
-        });
-
-        // Handle socket errors
-        socketRef.current.once('error', (error) => {
-          reject(error);
-        });
-      });
-
-      emitPromise
-        .then((ack) => {
+          const receiveTime = Date.now();
+          const processingTime = receiveTime - sendTime;
+          
           if (pendingFrameTimeoutRef.current) {
             clearTimeout(pendingFrameTimeoutRef.current);
             pendingFrameTimeoutRef.current = null;
@@ -369,17 +369,19 @@ export function useVideoProcessing(
           consecutiveFailuresRef.current = 0;
           retryAttemptsRef.current = 0;
 
-          if (!ack?.success) {
+          if (ack?.success) {
+            logger.debug(`Frame processed in ${processingTime}ms`);
+          } else {
             recordError(new Error(ack?.error || "Frame not acknowledged"), 'socketResponse');
-            logger.warn("Frame not acknowledged by server:", ack?.error);
+            logger.warn("Server error:", ack?.error);
           }
-        })
-        .catch((error) => {
-          logger.error('Socket emission error:', error);
-          framePendingRef.current = false;
-          consecutiveFailuresRef.current++;
-          recordError(error, 'socketEmission');
+
+          // Schedule next capture
+          scheduleNextCapture(CONFIG.BASE_CAPTURE_INTERVAL);
         });
+      }, "image/jpeg", CONFIG.JPEG_QUALITY);
+
+      return true;
 
       return true;
 
@@ -426,6 +428,22 @@ export function useVideoProcessing(
     }
   }, [captureFrame, getBackoffInterval, CONFIG, logger]);
 
+  // Recursive scheduling to prevent overlapping requests
+  const scheduleNextCapture = useCallback((delay = CONFIG.BASE_CAPTURE_INTERVAL) => {
+    if (!isTracking) return;
+
+    if (captureIntervalRef.current) {
+      clearTimeout(captureIntervalRef.current);
+    }
+
+    captureIntervalRef.current = setTimeout(() => {
+      if (!captureFrame()) {
+        // If capture failed (e.g. video not ready), retry sooner
+        scheduleNextCapture(CONFIG.DEBOUNCE_DELAY);
+      }
+    }, delay);
+  }, [isTracking, captureFrame, CONFIG]);
+
   // Enhanced initialization with better video handling
   const initializeCapturing = useCallback((videoElement) => {
     const validation = validateVideoElement(videoElement);
@@ -448,12 +466,6 @@ export function useVideoProcessing(
         });
     }
 
-    // Clear any existing intervals
-    if (captureIntervalRef.current) {
-      clearInterval(captureIntervalRef.current);
-      captureIntervalRef.current = null;
-    }
-
     // Reset counters
     consecutiveFailuresRef.current = 0;
     retryAttemptsRef.current = 0;
@@ -467,7 +479,6 @@ export function useVideoProcessing(
         for (const entry of entries) {
           if (entry.target === videoElement) {
             logger.debug("Video element resized, updating canvas");
-            // Canvas will be updated on next frame capture
           }
         }
       });
@@ -475,14 +486,10 @@ export function useVideoProcessing(
 
     resizeObserverRef.current.observe(videoElement);
 
-    // Start regular capture
-    captureIntervalRef.current = setInterval(() => {
-      if (!captureFrame()) {
-        manageCaptureInterval();
-      }
-    }, CONFIG.BASE_CAPTURE_INTERVAL);
+    // Start the first capture
+    scheduleNextCapture(0);
 
-  }, [validateVideoElement, initializeCanvas, captureFrame, manageCaptureInterval, CONFIG, logger, recordError]);
+  }, [validateVideoElement, initializeCanvas, captureFrame, scheduleNextCapture, logger, recordError]);
 
   // Enhanced start function with better video readiness checking
   const startSendingVideo = useCallback(() => {

@@ -10,7 +10,8 @@ socketio = SocketIO(
       cors_allowed_origins=["http://localhost:5180", "http://127.0.0.1:5180"],
       allow_credentials=True,
       ping_interval=25,  
-      ping_timeout=60    
+      ping_timeout=60,
+      max_http_buffer_size=10 * 1024 * 1024 # 10MB buffer for binary data
   )
 SESSION_TIMEOUT = timedelta(hours=3)
 
