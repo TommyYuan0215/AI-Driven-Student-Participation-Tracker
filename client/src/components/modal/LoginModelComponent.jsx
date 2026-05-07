@@ -12,7 +12,7 @@ function ModelComponent(props) {
       centered
       onHide={onHide}
     >
-      <Modal.Body>
+      <Modal.Body className="notranslate">
         <div className="back-button" onClick={onHide}>
           <i className="bi bi-arrow-left"></i>
           <span>Back</span>

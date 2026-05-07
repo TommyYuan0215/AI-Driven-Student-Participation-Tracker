@@ -272,13 +272,13 @@ function StatisticsDashboard({
                     {trackingsessionListPagination.map((session, index) => (
                       <tr key={session.sessionID} className="border-bottom" style={{ borderColor: 'var(--bs-border-color-translucent)' }}>
                         <td className="ps-4 fw-medium text-muted">{indexOfFirstItem + index + 1}</td>
-                        <td className="fw-bold" style={{ color: 'var(--bs-emphasis-color)' }}>#{session.sessionID}</td>
+                        <td className="fw-bold notranslate" style={{ color: 'var(--bs-emphasis-color)' }}>#{session.sessionID}</td>
                         <td>
                           <div className="d-flex align-items-center">
                             <div className="bg-light rounded-circle p-2 me-2 d-flex align-items-center justify-content-center shadow-sm" style={{ width: '32px', height: '32px' }}>
                               <i className="bi bi-person text-primary small"></i>
                             </div>
-                            <span className="fw-medium">{session.userName}</span>
+                            <span className="fw-medium notranslate">{session.userName}</span>
                           </div>
                         </td>
                         <td className="small text-muted">{session.sessionStart}</td>

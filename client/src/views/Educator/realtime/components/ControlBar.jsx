@@ -34,7 +34,7 @@ function ControlBar({
                     style={{ width: "30px", height: "30px", objectFit: "cover" }}
                 />
                 <div className="ms-2 d-none d-lg-block">
-                    <div style={{ fontSize: '0.65rem', fontWeight: '700', color: '#fff', whiteSpace: 'nowrap' }}>{userData.userName}</div>
+                    <div className="notranslate" style={{ fontSize: '0.65rem', fontWeight: '700', color: '#fff', whiteSpace: 'nowrap' }}>{userData.userName}</div>
                     <div style={{ fontSize: '0.5rem', color: '#888', textTransform: 'uppercase' }}>Educator</div>
                 </div>
             </div>

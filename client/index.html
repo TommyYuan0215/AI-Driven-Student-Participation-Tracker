@@ -5,8 +5,17 @@
     <link rel="icon" type="image/svg+xml" href="/Header_Icon.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>FocusTrack – Empowering Engagement Through AI</title>
+    <style>
+      /* Hide the default Google Translate bar and elements */
+      .goog-te-banner-frame, .skiptranslate, #goog-gt-tt, .goog-te-balloon-frame {
+        display: none !important;
+      }
+      body { top: 0 !important; }
+      .goog-text-highlight { background: none !important; box-shadow: none !important; }
+    </style>
   </head>
   <body>
+    <div id="google_translate_element" style="display:none;"></div>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
   </body>

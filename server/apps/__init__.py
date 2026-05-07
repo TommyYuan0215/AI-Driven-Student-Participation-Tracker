@@ -21,6 +21,7 @@ def create_app():
     app.config['SESSION_TYPE'] = 'filesystem'
     app.config['PERMANENT_SESSION_LIFETIME'] = SESSION_TIMEOUT
     app.config['SESSION_REFRESH_EACH_REQUEST'] = False  # Prevent auto-refresh
+    app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max upload size
 
     # Allow all origins
     CORS(app, resources={r"/*": {"origins": ["http://localhost:5180", "http://127.0.0.1:5180"]}}, supports_credentials=True)

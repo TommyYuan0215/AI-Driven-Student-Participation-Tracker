@@ -13,7 +13,7 @@ function SmallModelComponent(props) {
       <Modal.Header closeButton>
         <Modal.Title>{title}</Modal.Title>
       </Modal.Header>
-      <Modal.Body>
+      <Modal.Body className="notranslate">
         {children} {/* Render the passed content dynamically */}
       </Modal.Body>
     </Modal>

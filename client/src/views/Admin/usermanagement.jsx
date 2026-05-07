@@ -273,9 +273,9 @@ function UserManagement() {
                   {registeredUsers.map((user, index) => (
                     <tr key={user.userID} className="border-bottom" style={{ borderColor: 'var(--bs-border-color-translucent)' }}>
                       <td className="ps-4 text-muted small">{indexOfFirstItem + index + 1}</td>
-                      <td className="fw-medium text-primary">#{user.userID}</td>
-                      <td className="fw-bold" style={{ color: 'var(--bs-emphasis-color)' }}>{user.userName}</td>
-                      <td className="text-muted">{user.userEmail}</td>
+                      <td className="fw-medium text-primary notranslate">#{user.userID}</td>
+                      <td className="fw-bold notranslate" style={{ color: 'var(--bs-emphasis-color)' }}>{user.userName}</td>
+                      <td className="text-muted notranslate">{user.userEmail}</td>
                       <td className="text-center">
                         <UserStatusBadge userStatus={user.userStatus} />
                       </td>

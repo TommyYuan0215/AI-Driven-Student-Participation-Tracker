@@ -139,7 +139,7 @@ function AccountSettings() {
                   <input type="file" id="avatar-input" className="d-none" onChange={previewImage} />
                 </div>
                 <div>
-                  <h5 className="fw-bold mb-1">{userData.userName}</h5>
+                  <h5 className="fw-bold mb-1 notranslate">{userData.userName}</h5>
                   <p className="text-muted small mb-3">Update your profile picture and personal details</p>
                   <Button type="button" variant="outline-danger" size="sm" className="rounded-pill px-3" onClick={handleResetPhoto} disabled={imagePreview === "/profile.jpg"}>
                     Reset Photo

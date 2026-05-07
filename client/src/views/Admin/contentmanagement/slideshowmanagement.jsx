@@ -287,6 +287,7 @@ function SlideshowManagement() {
                     <th className="py-3 text-muted fw-bold small text-uppercase cursor-pointer" onClick={() => handleSort("slideshowTitle")}>
                       Title {sortConfig.key === "slideshowTitle" ? (sortConfig.direction === "asc" ? "↑" : "↓") : "↕"}
                     </th>
+                    <th className="py-3 text-muted fw-bold small text-uppercase">Description</th>
                     <th className="py-3 text-muted fw-bold small text-uppercase text-center">Status</th>
                     <th className="py-3 text-muted fw-bold small text-uppercase text-end pe-4">Actions</th>
                   </tr>
@@ -295,7 +296,7 @@ function SlideshowManagement() {
                   {createdSlideshow.map((slideshow, index) => (
                     <tr key={slideshow.slideshowID} className="border-bottom" style={{ borderColor: 'var(--bs-border-color-translucent)' }}>
                       <td className="ps-4 text-muted small">{indexOfFirstItem + index + 1}</td>
-                      <td className="fw-medium text-primary">#{slideshow.slideshowID}</td>
+                      <td className="fw-medium text-primary notranslate">#{slideshow.slideshowID}</td>
                       <td>
                         <div className="rounded-3 overflow-hidden shadow-sm border" style={{ width: '80px', height: '45px' }}>
                           <img
@@ -306,8 +307,10 @@ function SlideshowManagement() {
                         </div>
                       </td>
                       <td>
-                        <div className="fw-bold" style={{ color: 'var(--bs-emphasis-color)' }}>{slideshow.slideshowTitle}</div>
-                        <div className="text-muted small text-truncate" style={{ maxWidth: '200px' }}>{slideshow.slideshowDescription}</div>
+                        <div className="fw-bold notranslate" style={{ color: 'var(--bs-emphasis-color)' }}>{slideshow.slideshowTitle}</div>
+                      </td>
+                      <td>
+                        <div className="text-muted small text-truncate notranslate" style={{ maxWidth: '250px' }}>{slideshow.slideshowDescription}</div>
                       </td>
                       <td className="text-center">
                         <ContentManagementStatusBadge contentStatus={slideshow.slideshowStatus} />

@@ -5,6 +5,7 @@ import Header from "./components/layout/HeaderLayout";
 import Footer from "./components/layout/FooterLayout";
 import Cookies from "js-cookie";
 import { ToastContainer } from "react-toastify";
+import useGoogleTranslate from "./hooks/useGoogleTranslate";
 
 import Home from "./views/home";
 
@@ -113,6 +114,8 @@ function AppWithSidebar() {
 }
 
 function App() {
+  useGoogleTranslate();
+
   useEffect(() => {
     const theme = Cookies.get("theme") || "light";
     document.querySelector("html").setAttribute("data-bs-theme", theme);

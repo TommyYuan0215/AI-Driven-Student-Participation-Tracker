@@ -11,20 +11,20 @@ function ProfileIcon({ userData, showName = true }) {
   return (
     <span className="d-inline-flex align-items-center">
       <div className="position-relative d-inline-block me-2">
-          <img
-            className="rounded-circle shadow-sm profile-avatar-img"
-            src={
-              userData.userPhoto
-                ? `data:image/jpeg;base64,${userData.userPhoto}`
-                : "/profile.jpg"
-            }
-            alt="profile-pic"
-          />
-          <span className="position-absolute bottom-0 end-0 bg-success border border-white rounded-circle profile-status-indicator"></span>
+        <img
+          className="rounded-circle shadow-sm profile-avatar-img"
+          src={
+            userData.userPhoto
+              ? `data:image/jpeg;base64,${userData.userPhoto}`
+              : "/profile.jpg"
+          }
+          alt="profile-pic"
+        />
+        <span className="position-absolute bottom-0 end-0 bg-success border border-white rounded-circle profile-status-indicator"></span>
       </div>
       {showName && userData.userName && (
-        <span className="fw-bold d-none d-sm-inline me-1 small text-emphasis">
-            {userData.userName}
+        <span className="fw-bold d-none d-sm-inline me-1 small text-emphasis notranslate">
+          {userData.userName}
         </span>
       )}
     </span>
@@ -35,7 +35,7 @@ function Header({ showSidebar, toggleSidebar, showSidebarToggle, modalType, setM
   const navigate = useNavigate();
   const { userData, isLoggedIn } = useSession(navigate);
   const { logout } = useSession(navigate);
-  
+
   const handleModalClose = () => setModalType(null);
   const openLoginModal = () => setModalType("login");
   const openSignUpModal = () => setModalType("signup");
@@ -47,22 +47,22 @@ function Header({ showSidebar, toggleSidebar, showSidebarToggle, modalType, setM
           <div className="d-flex align-items-center w-100">
             {/* Left: Brand & Toggle */}
             <div className="d-flex align-items-center">
-                {showSidebarToggle && typeof toggleSidebar === "function" && (
-                  <button
-                    onClick={toggleSidebar}
-                    className="sidebar-toggle-modern me-3 shadow-sm d-flex align-items-center justify-content-center"
-                  >
-                    <i className={`bi ${showSidebar ? "bi-x-lg" : "bi-list"}`}></i>
-                  </button>
-                )}
-                
-                <Navbar.Brand
-                  href={isLoggedIn ? userData.redirect : "/"}
-                  className="fw-black d-flex align-items-center gap-2 m-0 text-emphasis-ls-1"
+              {showSidebarToggle && typeof toggleSidebar === "function" && (
+                <button
+                  onClick={toggleSidebar}
+                  className="sidebar-toggle-modern me-3 shadow-sm d-flex align-items-center justify-content-center"
                 >
-                  <img src="/Header_Icon.png" alt="icon" className="header-logo-img" />
-                  <span className="fs-4 d-none d-sm-block">Focus<span className="text-primary">Track</span></span>
-                </Navbar.Brand>
+                  <i className={`bi ${showSidebar ? "bi-x-lg" : "bi-list"}`}></i>
+                </button>
+              )}
+
+              <Navbar.Brand
+                href={isLoggedIn ? userData.redirect : "/"}
+                className="fw-black d-flex align-items-center gap-2 m-0 text-emphasis-ls-1"
+              >
+                <img src="/Header_Icon.png" alt="icon" className="header-logo-img" />
+                <span className="fs-4 d-none d-sm-block">Focus<span className="text-primary">Track</span></span>
+              </Navbar.Brand>
             </div>
 
             {/* Right: Actions */}
@@ -77,20 +77,20 @@ function Header({ showSidebar, toggleSidebar, showSidebarToggle, modalType, setM
                   >
                     <div className="dropdown-header p-3 border-bottom mb-1 bg-tertiary">
                       <div className="d-flex align-items-center gap-2 mb-2">
-                        <img 
-                          src={userData.userPhoto ? `data:image/jpeg;base64,${userData.userPhoto}` : "/profile.jpg"} 
-                          className="rounded-circle border border-primary p-1 profile-avatar-img-large" 
-                          alt="avatar" 
+                        <img
+                          src={userData.userPhoto ? `data:image/jpeg;base64,${userData.userPhoto}` : "/profile.jpg"}
+                          className="rounded-circle border border-primary p-1 profile-avatar-img-large"
+                          alt="avatar"
                         />
                         <div className="overflow-hidden">
-                          <p className="fw-black mb-0 text-truncate text-emphasis small">{userData.userName}</p>
+                          <p className="fw-black mb-0 text-truncate text-emphasis small notranslate">{userData.userName}</p>
                           <p className="text-muted small mb-0 opacity-75">
                             {userData.userType === 0 ? 'Administrator' : 'Educator'}
                           </p>
                         </div>
                       </div>
                     </div>
-                    
+
                     <div className="p-2">
                       <NavDropdown.Item
                         onClick={() => navigate(userData.userType === 0 ? "/admin/settings/general" : "/educator/settings/general")}
@@ -114,7 +114,7 @@ function Header({ showSidebar, toggleSidebar, showSidebarToggle, modalType, setM
                     </div>
                   </NavDropdown>
                 ) : (
-                  <button 
+                  <button
                     onClick={openLoginModal}
                     className="btn-futuristic-login shadow-sm"
                   >

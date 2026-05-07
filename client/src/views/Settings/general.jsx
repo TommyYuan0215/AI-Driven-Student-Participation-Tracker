@@ -16,6 +16,7 @@ function GeneralSettings() {
 
   const [savedInterval, setSavedInterval] = useState(30);
   const [fontSize, setFontSize] = useState("medium");
+  const [language, setLanguage] = useState("en");
   const [lackingFocusThreshold, setLackingFocusThreshold] = useState(0);
   const [boredThreshold, setBoredThreshold] = useState(0);
   const [clearingSessions, setClearingSessions] = useState(false);
@@ -50,6 +51,12 @@ function GeneralSettings() {
     }
     const savedFontSize = Cookies.get("fontSize");
     if (savedFontSize) setFontSize(savedFontSize);
+
+    // Detect current language from Google Translate cookie
+    const langMatch = document.cookie.match(/googtrans=\/en\/([^;]+)/);
+    if (langMatch && langMatch[1]) {
+      setLanguage(langMatch[1]);
+    }
   }, []);
 
   const toggleTheme = () => {
@@ -88,6 +95,31 @@ function GeneralSettings() {
     const size = val === "small" ? "14px" : val === "large" ? "20px" : "16px";
     document.documentElement.style.fontSize = size;
     Cookies.set("fontSize", val, { expires: 365 });
+  };
+
+  const handleLanguageChange = (e) => {
+    const langCode = e.target.value;
+    setLanguage(langCode);
+
+    if (langCode === "en") {
+      // Clear the googtrans cookie to reset to English
+      document.cookie = "googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+      document.cookie = "googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=." + window.location.hostname;
+      window.location.reload();
+      return;
+    }
+
+    // Set the Google Translate cookie and trigger translation
+    document.cookie = `googtrans=/en/${langCode}; path=/;`;
+    document.cookie = `googtrans=/en/${langCode}; path=/; domain=.${window.location.hostname}`;
+
+    const selectEl = document.querySelector(".goog-te-combo");
+    if (selectEl) {
+      selectEl.value = langCode;
+      selectEl.dispatchEvent(new Event("change"));
+    } else {
+      window.location.reload();
+    }
   };
 
   const handlePurgeExecution = async () => {
@@ -160,6 +192,22 @@ function GeneralSettings() {
                       </Form.Select>
                     </div>
                     <div className="text-muted small">Affects all navigation and dashboard elements</div>
+                  </div>
+                </div>
+
+                <h6 className="settings-section-title mt-4">Language & Region</h6>
+
+                <div className="p-4 rounded-4 mb-4" style={{ background: 'var(--bs-tertiary-bg)', border: '1px solid var(--bs-border-color-translucent)' }}>
+                  <Form.Label className="fw-bold mb-3">Display Language</Form.Label>
+                  <div className="d-flex align-items-center gap-4">
+                    <div className="flex-fill">
+                      <Form.Select className="rounded-pill px-4" value={language} onChange={handleLanguageChange} id="language-select">
+                        <option value="en">🇬🇧&nbsp; English</option>
+                        <option value="zh-CN">🇨🇳&nbsp; 中文 (Chinese)</option>
+                        <option value="ms">🇲🇾&nbsp; Bahasa Melayu</option>
+                      </Form.Select>
+                    </div>
+                    <div className="text-muted small">Translates all interface text via Google Translate</div>
                   </div>
                 </div>
               </div>

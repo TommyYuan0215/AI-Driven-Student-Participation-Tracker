@@ -14,7 +14,7 @@ import useSession from "../../../hooks/useSession";
 function AnnouncementManagement() {
   const navigate = useNavigate();
   const location = useLocation();
-  const {userData, isLoggedIn} = useSession(navigate);
+  const { userData, isLoggedIn } = useSession(navigate);
 
   const {
     data: announcementList,
@@ -229,33 +229,33 @@ function AnnouncementManagement() {
         btnIcon="bi-megaphone"
       />
 
-      <div className="card border-0 rounded-4 overflow-hidden shadow-lg mt-4" style={{ 
+      <div className="card border-0 rounded-4 overflow-hidden shadow-lg mt-4" style={{
         background: 'var(--bs-body-bg)',
         border: '1px solid var(--bs-border-color-translucent)'
       }}>
         <div className="card-header bg-transparent border-0 py-4 px-4 d-flex align-items-center justify-content-between">
-            <div>
-                <h6 className="mb-0 fw-bold" style={{ color: 'var(--bs-emphasis-color)' }}>System Broadcasts</h6>
-                <p className="text-muted small mb-0">Publish and manage institution-wide updates</p>
-            </div>
-            <div className="d-flex align-items-center gap-3">
-              <span className="text-muted small fw-medium">Items:</span>
-              <select 
-                  className="form-select form-select-sm rounded-pill px-3" 
-                  value={itemsPerPage}
-                  onChange={(e) => {
-                    setItemsPerPage(Number(e.target.value));
-                    setCurrentPage(1);
-                  }}
-                  style={{ width: "80px", background: 'var(--bs-tertiary-bg)' }}
-              >
-                  <option value={10}>10</option>
-                  <option value={25}>25</option>
-                  <option value={50}>50</option>
-              </select>
-            </div>
+          <div>
+            <h6 className="mb-0 fw-bold" style={{ color: 'var(--bs-emphasis-color)' }}>System Broadcasts</h6>
+            <p className="text-muted small mb-0">Publish and manage institution-wide updates</p>
+          </div>
+          <div className="d-flex align-items-center gap-3">
+            <span className="text-muted small fw-medium">Items:</span>
+            <select
+              className="form-select form-select-sm rounded-pill px-3"
+              value={itemsPerPage}
+              onChange={(e) => {
+                setItemsPerPage(Number(e.target.value));
+                setCurrentPage(1);
+              }}
+              style={{ width: "80px", background: 'var(--bs-tertiary-bg)' }}
+            >
+              <option value={10}>10</option>
+              <option value={25}>25</option>
+              <option value={50}>50</option>
+            </select>
+          </div>
         </div>
-        
+
         <div className="card-body p-0">
           {loading ? (
             <div className="py-5"><LoadingSpinner text="Fetching broadcast history..." /></div>
@@ -271,7 +271,7 @@ function AnnouncementManagement() {
                     <th className="py-3 text-muted fw-bold small text-uppercase cursor-pointer" onClick={() => handleSort("announcementTitle")}>
                       Title {sortConfig.key === "announcementTitle" ? (sortConfig.direction === "asc" ? "↑" : "↓") : "↕"}
                     </th>
-                    <th className="py-3 text-muted fw-bold small text-uppercase">Description Snippet</th>
+                    <th className="py-3 text-muted fw-bold small text-uppercase">Description</th>
                     <th className="py-3 text-muted fw-bold small text-uppercase text-center">Status</th>
                     <th className="py-3 text-muted fw-bold small text-uppercase text-end pe-4">Actions</th>
                   </tr>
@@ -280,29 +280,29 @@ function AnnouncementManagement() {
                   {createdAnnouncement.map((announcement, index) => (
                     <tr key={announcement.announcementID} className="border-bottom" style={{ borderColor: 'var(--bs-border-color-translucent)' }}>
                       <td className="ps-4 text-muted small">{indexOfFirstItem + index + 1}</td>
-                      <td className="fw-medium text-primary">#{announcement.announcementID}</td>
-                      <td className="fw-bold" style={{ color: 'var(--bs-emphasis-color)' }}>{announcement.announcementTitle}</td>
-                      <td className="text-muted small text-truncate" style={{ maxWidth: '300px' }}>{announcement.announcementDescription}</td>
+                      <td className="fw-medium text-primary notranslate">#{announcement.announcementID}</td>
+                      <td className="fw-bold notranslate" style={{ color: 'var(--bs-emphasis-color)' }}>{announcement.announcementTitle}</td>
+                      <td className="text-muted small text-truncate notranslate" style={{ maxWidth: '300px' }}>{announcement.announcementDescription}</td>
                       <td className="text-center">
                         <ContentManagementStatusBadge contentStatus={announcement.announcementStatus} />
                       </td>
                       <td className="text-end pe-4">
                         <div className="d-flex justify-content-end gap-2">
-                          <button 
+                          <button
                             className={`btn btn-sm ${announcement.announcementStatus === 1 ? 'btn-outline-secondary' : 'btn-outline-success'} rounded-pill px-3 d-flex align-items-center gap-2`}
                             onClick={() => handleToggleStatus(announcement.announcementID, announcement.announcementStatus)}
                           >
                             <i className={`bi ${announcement.announcementStatus === 1 ? 'bi-archive' : 'bi-broadcast'}`}></i>
                             <span className="small fw-bold">{announcement.announcementStatus === 1 ? "Archive" : "Activate"}</span>
                           </button>
-                          <button 
+                          <button
                             className="btn btn-sm btn-light rounded-pill px-3 shadow-sm d-flex align-items-center gap-2"
                             onClick={() => handleOpenModalEdit(announcement)}
                           >
                             <i className="bi bi-pencil text-primary"></i>
                             <span className="small fw-bold">Edit</span>
                           </button>
-                          <button 
+                          <button
                             className="btn btn-sm btn-light rounded-pill px-3 shadow-sm d-flex align-items-center gap-2"
                             onClick={() => handleDeleteAnnouncement(announcement.announcementID)}
                           >
@@ -324,12 +324,12 @@ function AnnouncementManagement() {
             </div>
           )}
         </div>
-        
+
         <div className="card-footer bg-transparent border-0 py-4 px-4 d-flex align-items-center justify-content-between">
           <div className="text-muted small fw-medium">
             Page {currentPage} of {Math.ceil(announcementList.length / itemsPerPage)}
           </div>
-          
+
           <Pagination className="mb-0 custom-premium-pagination">
             <Pagination.Prev
               onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}

@@ -44,10 +44,10 @@ const ProfileCard = ({ userData }) => {
 
         {/* User Info */}
         <div className="mt-3 mb-4">
-          <h4 className="fw-bold mb-1" style={{ color: 'var(--bs-emphasis-color)', letterSpacing: '-0.5px' }}>
+          <h4 className="fw-bold mb-1 notranslate" style={{ color: 'var(--bs-emphasis-color)', letterSpacing: '-0.5px' }}>
             {userData.userName}
           </h4>
-          <p className="small mb-3" style={{ color: 'var(--bs-secondary-color)' }}>{userData.userEmail}</p>
+          <p className="small mb-3 notranslate" style={{ color: 'var(--bs-secondary-color)' }}>{userData.userEmail}</p>
 
           <div className="d-inline-block px-3 py-1 rounded-pill" style={{
             backgroundColor: 'rgba(99, 102, 241, 0.15)',

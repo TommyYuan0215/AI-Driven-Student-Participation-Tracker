@@ -1714,3 +1714,118 @@ input:checked+.premium-slider:before {
   transform: translateY(-5px);
   border-color: var(--bs-primary-border-subtle);
 }
+
+/* ==========================================================================
+   Section 32: Language Switcher Component
+   ========================================================================== */
+.lang-switcher-container {
+  position: relative;
+  z-index: 1100;
+}
+
+.lang-switcher-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0.4rem 0.85rem;
+  border-radius: 12px;
+  border: 1px solid var(--bs-border-color-translucent);
+  background: var(--bs-tertiary-bg);
+  color: var(--bs-emphasis-color);
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  white-space: nowrap;
+}
+
+.lang-switcher-btn:hover {
+  background: var(--bs-secondary-bg);
+  border-color: rgba(99, 102, 241, 0.3);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.lang-flag {
+  font-size: 1.15rem;
+  line-height: 1;
+}
+
+.lang-label {
+  font-size: 0.8rem;
+  letter-spacing: 0.3px;
+}
+
+.lang-chevron {
+  font-size: 0.65rem;
+  opacity: 0.5;
+  transition: transform 0.2s ease;
+}
+
+.lang-dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  min-width: 200px;
+  background: var(--bs-body-bg);
+  border: 1px solid var(--bs-border-color-translucent);
+  border-radius: 16px;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.15);
+  padding: 0.5rem;
+  animation: langSlideDown 0.25s ease-out;
+  z-index: 9999;
+}
+
+.lang-dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 0.65rem 0.85rem;
+  border: none;
+  border-radius: 12px;
+  background: transparent;
+  color: var(--bs-emphasis-color);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.lang-dropdown-item:hover {
+  background: var(--bs-tertiary-bg);
+  transform: translateX(4px);
+}
+
+.lang-dropdown-item.active {
+  background: rgba(99, 102, 241, 0.1);
+  color: #6366f1;
+}
+
+.lang-item-label {
+  flex: 1;
+  text-align: left;
+}
+
+@keyframes langSlideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 575.98px) {
+  .lang-switcher-btn {
+    padding: 0.35rem 0.6rem;
+    border-radius: 10px;
+  }
+
+  .lang-dropdown {
+    right: -10px;
+    min-width: 180px;
+  }
+}
