@@ -7,6 +7,7 @@
 ![OpenCV](https://img.shields.io/badge/OpenCV-4.10.0-5C3EE8?logo=opencv&logoColor=white)
 ![Socket.IO](https://img.shields.io/badge/Socket.IO-5.11.4-010101?logo=socketdotio&logoColor=white)
 ![React](https://img.shields.io/badge/React-18+-61DAFB?logo=react&logoColor=black)
+![TypeScript](https://img.shields.io/badge/TypeScript-5.0+-3178C6?logo=typescript&logoColor=white)
 ![MySQL](https://img.shields.io/badge/MySQL-8.0-4479A1?logo=mysql&logoColor=white)
 
 ## Table of Contents
@@ -143,7 +144,8 @@ This enables educators to identify disengagement early and dynamically modify te
 
 ### Frontend
 
-- **React 18+** - UI framework
+- **TypeScript** - Core programming language (TSX/TS) for strict compile-time type safety
+- **React 18+** - UI library
 - **Vite** - Build tool
 - **React Router** - Navigation
 - **React Bootstrap** - UI components
@@ -220,6 +222,26 @@ This command will:
 
 ```bash
 docker-compose down
+```
+
+---
+
+## TypeScript & Development Tooling 🛠️
+
+To maintain frontend code quality and type safety, the client project is fully written in **TypeScript**.
+
+### Type Checking
+To compile and verify type correctness on the client code:
+```bash
+cd client
+npx tsc --noEmit
+```
+
+### Code Linting
+To run static analysis and verify React hook dependencies and rules:
+```bash
+cd client
+npm run lint
 ```
 
 ---
@@ -412,12 +434,12 @@ AI-Driven-Student-Participation-Tracker/
 │   │   │   ├── generateTrendReport# Report generation
 │   │   │   └── navigation         # Navigation helpers
 │   │   ├── views/                 # Page components
-│   │   │   ├── home.jsx           # Home page
+│   │   │   ├── home.tsx           # Home page
 │   │   │   ├── Admin/             # Admin pages
 │   │   │   ├── Educator/          # Educator pages
 │   │   │   └── Settings/          # Settings pages
-│   │   ├── App.jsx                # Root component
-│   │   └── main.jsx               # Entry point
+│   │   ├── App.tsx                # Root component
+│   │   └── main.tsx               # Entry point
 │   ├── package.json               # Dependencies
 │   ├── vite.config.js             # Vite configuration
 │   └── Dockerfile                 # Docker configuration
