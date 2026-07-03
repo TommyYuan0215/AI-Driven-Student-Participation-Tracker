@@ -1,0 +1,29 @@
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Virtual environment
+.venv/
+venv/
+env/
+
+# Flask session files (server-side sessions, not needed in image)
+flask_session/
+
+# Log files
+*.log
+tracking_server.log
+
+# Environment secrets
+.env
+.env.*
+
+# Docker files
+dockerfile
+.dockerignore
+
+# Git
+.git/
+.gitignore

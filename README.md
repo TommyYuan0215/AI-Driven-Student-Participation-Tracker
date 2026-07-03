@@ -1,7 +1,7 @@
 # FocusTrack - An AI-Driven Student Participation Tracker
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
-![Python](https://img.shields.io/badge/Python-3.8+-3776AB?logo=python&logoColor=white)
+![Python](https://img.shields.io/badge/Python-3.11+-3776AB?logo=python&logoColor=white)
 ![Flask](https://img.shields.io/badge/Flask-3.1.0-000000?logo=flask&logoColor=white)
 ![LiteRT](https://img.shields.io/badge/LiteRT-2.21.0-blue?logo=tensorflow&logoColor=white)
 ![OpenCV](https://img.shields.io/badge/OpenCV-4.10.0-5C3EE8?logo=opencv&logoColor=white)
@@ -18,9 +18,12 @@
 - [Technology Stack](#technology-stack)
 - [Prerequisites](#prerequisites)
 - [Installation & Setup](#installation--setup)
+  - [Method 1 — Development Mode](#method-1--development-mode-hot-reload)
+  - [Method 2 — Production Mode](#method-2--production-mode-recommended-for-hosting)
 - [Usage Guide](#usage-guide)
 - [API Documentation](#api-documentation)
 - [Project Structure](#project-structure)
+- [Troubleshooting](#troubleshooting)
 - [Contributing](#contributing)
 
 ---
@@ -191,7 +194,15 @@ git --version
 
 ## Installation & Setup
 
-### Quick Start with Docker (Recommended)
+FocusTrack supports two run modes via Docker Compose. Choose the one that fits your use case.
+
+---
+
+### Method 1 — Development Mode (Hot-Reload)
+
+Use this when **actively developing or debugging** locally. The Vite dev server runs inside Docker with hot-reload enabled via polling.
+
+> ⚠️ **Do NOT use this mode on a public web server.** It exposes source maps, enables debug logging, and is not optimised.
 
 #### Step 1: Clone the Repository
 
@@ -200,29 +211,187 @@ git clone https://github.com/TommyYuan0215/FocusTrack.git
 cd FocusTrack
 ```
 
-#### Step 2: Build and Run with Docker Compose
+#### Step 2: Set Up Environment Variables
 
 ```bash
-docker-compose up --build
+cp .env.example .env
+# Edit .env if needed — defaults work for local development
 ```
 
-This command will:
+#### Step 3: Switch to the Dev Dockerfiles
 
-- Build the Flask backend container
-- Build the React frontend container
-- Start both services
-- Initialize the database
+The development Dockerfiles are stored in a separate branch or can be enabled by temporarily editing:
 
-#### Step 3: Access the Application
+**`client/dockerfile`** — replace with:
+```dockerfile
+FROM node:22-alpine
+WORKDIR /app
+COPY package*.json ./
+RUN npm install
+COPY . .
+ENV NODE_ENV=development
+ENV CHOKIDAR_USEPOLLING=true
+EXPOSE 5180
+CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0"]
+```
 
-- **Frontend:** http://localhost:5180
-- **Backend API:** http://localhost:5555
+**`docker-compose.yml`** — add bind mounts and polling:
+```yaml
+  frontend:
+    volumes:
+      - ./client:/app
+      - /app/node_modules
+    environment:
+      - CHOKIDAR_USEPOLLING=true
 
-#### Step 4: Stop the Application
+  backend:
+    volumes:
+      - ./server:/app
+    environment:
+      - GUNICORN_CMD_ARGS=--workers=1 --threads=2 --timeout=120 --reload
+```
+
+#### Step 4: Build and Start
 
 ```bash
-docker-compose down
+docker compose up --build
 ```
+
+#### Step 5: Access the Application
+
+| Service       | URL                        |
+|---------------|----------------------------|
+| Frontend      | http://localhost:5180      |
+| Backend API   | http://localhost:5555      |
+| MySQL         | localhost:3320 (exposed)   |
+
+#### Step 6: Stop
+
+```bash
+docker compose down
+```
+
+---
+
+### Method 2 — Production Mode (Recommended for Hosting)
+
+Use this when **deploying to a web server**. The React app is compiled into optimised static files served by **Nginx**, Gunicorn runs without hot-reload, and the MySQL port is not exposed externally.
+
+#### Step 1: Clone the Repository (on your server)
+
+```bash
+git clone https://github.com/TommyYuan0215/FocusTrack.git
+cd FocusTrack
+```
+
+#### Step 2: Configure Environment Variables
+
+```bash
+cp .env.example .env
+nano .env   # or use your preferred editor
+```
+
+Set the following values in `.env` before continuing:
+
+```env
+# Generate a secure secret key:
+# python -c "import secrets; print(secrets.token_hex(32))"
+SECRET_KEY=<your-generated-secret-key>
+
+DATABASE_PASSWORD=<strong-password>
+MYSQL_ROOT_PASSWORD=<same-strong-password>
+
+FLASK_ENV=production
+```
+
+> ⚠️ **Never deploy with the default `root` password.** Change it before running.
+
+#### Step 3: Build All Images
+
+```bash
+# Build fresh — do not skip --no-cache on first production deploy
+docker compose build --no-cache
+```
+
+This will:
+- **Backend** — Install Python deps, bake source code into the image
+- **Frontend** — Run `npm run build` (Vite), then serve the output via Nginx (no Node in final image)
+
+#### Step 4: Start in Detached Mode
+
+```bash
+docker compose up -d
+```
+
+#### Step 5: Verify All Containers Are Running
+
+```bash
+docker compose ps
+```
+
+Expected output:
+```
+NAME                 STATUS          PORTS
+backend_container    Up (healthy)    0.0.0.0:5555->5555/tcp
+frontend_container   Up              0.0.0.0:5180->80/tcp
+mysql_container      Up (healthy)    3306/tcp
+```
+
+> Note: MySQL shows `3306/tcp` with **no** external port mapping — this is correct and intentional for security.
+
+#### Step 6: Access the Application
+
+| Service       | URL                                          |
+|---------------|----------------------------------------------|
+| Frontend      | http://\<your-server-ip\>:5180              |
+| Backend API   | http://\<your-server-ip\>:5555 (direct)     |
+| MySQL         | Not exposed externally ✅                    |
+
+> 💡 **For HTTPS:** Place Nginx, Caddy, or Traefik in front of port `5180` on your host to handle SSL termination. No changes to Docker config are needed.
+
+#### Step 7: View Logs
+
+```bash
+# All services
+docker compose logs -f
+
+# Individual services
+docker compose logs -f backend
+docker compose logs -f frontend
+```
+
+#### Step 8: Stop and Remove Containers
+
+```bash
+# Stop containers (keeps data volume)
+docker compose down
+
+# Stop and delete all data including database volume
+docker compose down -v
+```
+
+#### Step 9: Update / Redeploy
+
+```bash
+git pull
+docker compose build --no-cache
+docker compose up -d
+```
+
+---
+
+### Production vs Development — Quick Comparison
+
+| Feature | Development | Production |
+|---------|------------|------------|
+| Frontend server | Vite dev server (hot-reload) | Nginx (static build) |
+| Source code in container | Bind-mounted from host | Baked into image at build |
+| Gunicorn `--reload` | ✅ Enabled | ❌ Disabled |
+| `FLASK_ENV` | `development` | `production` |
+| MySQL port exposed | ✅ `3320:3306` | ❌ Internal only |
+| Debug mode | ✅ On | ❌ Off |
+| Build time | Fast (no build step) | Slower (compiles React) |
+| Performance | ❌ Not optimised | ✅ Minified + gzip |
 
 ---
 
@@ -442,7 +611,9 @@ AI-Driven-Student-Participation-Tracker/
 │   │   └── main.tsx               # Entry point
 │   ├── package.json               # Dependencies
 │   ├── vite.config.js             # Vite configuration
-│   └── Dockerfile                 # Docker configuration
+│   ├── nginx.conf                 # Production Nginx config
+│   ├── dockerfile                 # Multi-stage Docker image (build → Nginx)
+│   └── .dockerignore              # Excludes node_modules/dist from build context
 │
 ├── server/                         # Flask Backend
 │   ├── apps/
@@ -464,10 +635,12 @@ AI-Driven-Student-Participation-Tracker/
 │   │       └── timezone_helper.py# Timezone utilities
 │   ├── server.py                 # Flask app entry point
 │   ├── requirements.txt          # Python dependencies
-│   ├── Dockerfile               # Docker configuration
-│   └── flask_session/           # Session storage
+│   ├── dockerfile                # Production Docker image (Gunicorn)
+│   └── .dockerignore             # Excludes cache/logs from image
 │
-├── docker-compose.yml           # Docker composition
+├── docker-compose.yml           # Docker Compose (production config)
+├── .env                         # Local secrets (git-ignored)
+├── .env.example                 # Template — copy to .env
 └── README.md                    # This file
 ```
 
@@ -489,43 +662,88 @@ AI-Driven-Student-Participation-Tracker/
 ### Port Already in Use
 
 ```bash
-# If port 5173 (frontend) is in use, modify docker-compose.yml:
+# If port 5180 (frontend) is in use, change the external port in docker-compose.yml:
 # ports:
-#   - "5174:5173"  # Change external port
+#   - "8080:80"   # Change left side to any free port
 
-# If port 5000 (backend) is in use, modify docker-compose.yml:
+# If port 5555 (backend) is in use:
 # ports:
-#   - "5001:5000"  # Change external port
+#   - "5556:5555"  # Change left side to any free port
 ```
 
 ### Docker Build Fails
 
 ```bash
-# Clear Docker cache
-docker system prune -a
+# Clear Docker build cache and rebuild from scratch
+docker compose build --no-cache
 
-# Rebuild from scratch
-docker-compose up --build --force-recreate
+# Nuclear option — removes all unused images and cache
+docker system prune -a
+docker compose up --build --force-recreate
+```
+
+### Frontend Shows Blank Page After Production Build
+
+- The React app is a SPA — make sure the Nginx `try_files` rule is in place (it is in `client/nginx.conf`)
+- Check Nginx logs: `docker compose logs frontend`
+- Verify the build succeeded: `docker compose build frontend` and look for errors
+
+### Backend API Not Responding
+
+```bash
+# Check if container is running and healthy
+docker compose ps
+
+# Tail backend logs
+docker compose logs -f backend
+
+# Test directly inside the container
+docker exec -it backend_container curl http://localhost:5555/credential
+```
+
+### MySQL Container Not Starting / Backend Can't Connect
+
+```bash
+# Check MySQL logs
+docker compose logs mysql
+
+# If you changed MYSQL_ROOT_PASSWORD after the volume was created,
+# drop the existing volume and let it recreate:
+docker compose down -v
+docker compose up -d
 ```
 
 ### Camera/Microphone Permissions
 
 - Ensure browser has permission to access camera/microphone
 - Check Settings → Privacy & Security → Camera/Microphone
+- If using HTTP (not HTTPS), some browsers block camera access — use HTTPS or localhost only
 - Refresh the browser page
 
-### WebSocket Connection Issues
+### WebSocket / Socket.IO Connection Issues
 
-- Check that Socket.io is enabled on backend
-- Verify firewall allows WebSocket connections
-- Check browser console for connection errors
+- Check that `socket.io/` proxy is configured in `client/nginx.conf` (it is by default)
+- Verify firewall allows WebSocket upgrade on port 5180
+- Check browser console for `WebSocket connection failed` errors
+- Ensure the backend is running: `docker compose logs backend`
 
-### Cannot Access Application
+### Cannot Access Application From External IP
 
-- Verify Docker containers are running: `docker-compose ps`
-- Check logs: `docker-compose logs -f`
-- Ensure ports 5173 and 5000 are available
-- Try rebuilding: `docker-compose up --build`
+```bash
+# Verify containers are running
+docker compose ps
+
+# Check all logs
+docker compose logs -f
+
+# Ensure server firewall allows port 5180
+# Ubuntu/Debian:
+ufw allow 5180/tcp
+
+# CentOS/RHEL:
+firewall-cmd --add-port=5180/tcp --permanent
+firewall-cmd --reload
+```
 
 ---
 
@@ -547,4 +765,4 @@ Contributions are welcome! Please follow these steps:
 
 ---
 
-**Last Updated:** November 17, 2025
+**Last Updated:** July 3, 2026

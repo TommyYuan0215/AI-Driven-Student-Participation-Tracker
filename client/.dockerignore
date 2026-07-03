@@ -1,0 +1,31 @@
+# Node dependencies (re-installed during build)
+node_modules/
+
+# Build output
+dist/
+dist-ssr/
+
+# Vite cache
+.vite/
+
+# Environment secrets
+.env
+.env.*
+*.local
+
+# Log files
+*.log
+npm-debug.log*
+
+# Docker files
+dockerfile
+nginx.conf
+.dockerignore
+
+# Git
+.git/
+.gitignore
+
+# Editor
+.vscode/
+.idea/
