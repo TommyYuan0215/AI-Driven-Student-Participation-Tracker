@@ -17,7 +17,6 @@ client/node_modules/
 client/dist/
 client/dist-ssr/
 client/*.local
-client/*package-lock.json
 client/.vite/
 
 # Ignore server dependencies & builds
@@ -34,8 +33,9 @@ __pycache__/
 *.so
 .Python
 
-# Ignore Docker volumes
+# Ignore Docker volumes and overrides
 mysql_data/
+docker-compose.override.yml
 
 # Editor directories and system files
 .vscode/

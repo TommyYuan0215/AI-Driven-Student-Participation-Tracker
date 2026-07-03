@@ -1,0 +1,37 @@
+# =============================================================================
+# FocusTrack Docker Compose Local Development Override
+# =============================================================================
+# This file overrides the base docker-compose.yml for local development.
+# It enables hot-reloading (via bind mounts) and exposes the database port.
+# 
+# To use: Rename this file to 'docker-compose.override.yml'
+# Command: docker compose up --build
+# =============================================================================
+
+services:
+  backend:
+    # Bind-mount backend code for Python hot-reloading
+    volumes:
+      - ./server:/app
+    # Pass --reload flag to Gunicorn for automatic restart on file save
+    environment:
+      - GUNICORN_CMD_ARGS=--workers=1 --threads=2 --timeout=120 --reload
+      - FLASK_ENV=development
+
+  frontend:
+    build:
+      context: ./client
+      target: development # Targets the Vite development server stage
+    # Bind-mount frontend code for React hot-reloading
+    volumes:
+      - ./client:/app
+      - /app/node_modules # Do not overwrite container's node_modules with local path
+    ports:
+      - "5180:5180"       # Map external 5180 to Vite's internal dev port 5180
+    environment:
+      - CHOKIDAR_USEPOLLING=true
+
+  mysql:
+    # Expose MySQL port to host for local database GUI access (e.g., DBeaver, TablePlus)
+    ports:
+      - "3320:3306"

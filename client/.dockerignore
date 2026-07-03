@@ -19,7 +19,6 @@ npm-debug.log*
 
 # Docker files
 dockerfile
-nginx.conf
 .dockerignore
 
 # Git
