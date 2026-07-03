@@ -1,7 +1,7 @@
 # FocusTrack - An AI-Driven Student Participation Tracker
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
-![Python](https://img.shields.io/badge/Python-3.11+-3776AB?logo=python&logoColor=white)
+![Python](https://img.shields.io/badge/Python-3.10+-3776AB?logo=python&logoColor=white)
 ![Flask](https://img.shields.io/badge/Flask-3.1.0-000000?logo=flask&logoColor=white)
 ![LiteRT](https://img.shields.io/badge/LiteRT-2.21.0-blue?logo=tensorflow&logoColor=white)
 ![OpenCV](https://img.shields.io/badge/OpenCV-4.10.0-5C3EE8?logo=opencv&logoColor=white)
