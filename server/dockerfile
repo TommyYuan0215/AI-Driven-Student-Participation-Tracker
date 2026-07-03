@@ -1,14 +1,41 @@
-# Use Python base image
-FROM python:3.11-slim
+# =============================================================================
+# Stage 1: Build — compile C-extensions and install Python dependencies
+# =============================================================================
+FROM python:3.10-slim AS builder
 
-# Set the working directory
 WORKDIR /app
 
-# Install system dependencies for OpenCV
+# Install system dependencies needed to compile C-extensions (like insightface)
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    libgl1-mesa-glx \
+    build-essential \
+    python3-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create a virtual environment to copy compiled modules easily
+RUN python -m venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
+
+# Copy and install Python dependencies
+COPY requirements.txt .
+RUN pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir -r requirements.txt
+
+# =============================================================================
+# Stage 2: Production — serve the application with a clean, compiler-free image
+# =============================================================================
+FROM python:3.10-slim AS production
+
+WORKDIR /app
+
+# Install only runtime system dependencies for OpenCV
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libgl1 \
     libglib2.0-0 \
     && rm -rf /var/lib/apt/lists/*
+
+# Copy the compiled virtual environment from the builder stage
+COPY --from=builder /opt/venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
 
 # Force CPU-only inference (no GPU required on web server)
 ENV CUDA_VISIBLE_DEVICES=-1
@@ -20,23 +47,11 @@ ENV FLASK_APP=server.py
 ENV FLASK_RUN_HOST=0.0.0.0
 ENV FLASK_ENV=production
 
-# Copy only requirements first (to leverage Docker layer caching)
-COPY requirements.txt .
-
-# Install Python dependencies
-RUN pip install --no-cache-dir -r requirements.txt
-
-# Copy application code (source is baked into the image — no bind mounts in prod)
+# Copy application source code
 COPY . .
 
 # Expose the Flask/Gunicorn port
 EXPOSE 5555
 
-# Production Gunicorn command:
-#   -k eventlet      → async worker class required for Socket.IO
-#   -w 1             → single worker (eventlet is single-threaded async)
-#   --threads 4      → thread pool within the worker
-#   --timeout 120    → kill requests that hang more than 2 minutes
-#   --log-level warning → suppress info/debug noise in production logs
-# NOTE: --reload is intentionally REMOVED (dev-only flag)
+# Run the Flask app with optimized Gunicorn settings
 CMD ["gunicorn", "-k", "eventlet", "-w", "1", "--threads", "4", "-b", "0.0.0.0:5555", "--timeout", "120", "--log-level", "warning", "server:app"]

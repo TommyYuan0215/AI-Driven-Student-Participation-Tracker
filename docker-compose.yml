@@ -24,7 +24,7 @@ services:
     build: ./client
     container_name: frontend_container
     ports:
-      - "5180:80"   # Nginx serves on 80 internally; mapped to 5180 externally
+      - "5180:5180"   # Nginx serves on 5180 internally; mapped to 5180 externally
     depends_on:
       - backend
     restart: always

@@ -1,7 +1,7 @@
 # FocusTrack - An AI-Driven Student Participation Tracker
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
-![Python](https://img.shields.io/badge/Python-3.11+-3776AB?logo=python&logoColor=white)
+![Python](https://img.shields.io/badge/Python-3.10+-3776AB?logo=python&logoColor=white)
 ![Flask](https://img.shields.io/badge/Flask-3.1.0-000000?logo=flask&logoColor=white)
 ![LiteRT](https://img.shields.io/badge/LiteRT-2.21.0-blue?logo=tensorflow&logoColor=white)
 ![OpenCV](https://img.shields.io/badge/OpenCV-4.10.0-5C3EE8?logo=opencv&logoColor=white)
@@ -218,37 +218,12 @@ cp .env.example .env
 # Edit .env if needed — defaults work for local development
 ```
 
-#### Step 3: Switch to the Dev Dockerfiles
+#### Step 3: Enable Development Override Config
 
-The development Dockerfiles are stored in a separate branch or can be enabled by temporarily editing:
+Copy the development override template to activate local hot-reloads, source directories mapping, and dev ports:
 
-**`client/dockerfile`** — replace with:
-```dockerfile
-FROM node:22-alpine
-WORKDIR /app
-COPY package*.json ./
-RUN npm install
-COPY . .
-ENV NODE_ENV=development
-ENV CHOKIDAR_USEPOLLING=true
-EXPOSE 5180
-CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0"]
-```
-
-**`docker-compose.yml`** — add bind mounts and polling:
-```yaml
-  frontend:
-    volumes:
-      - ./client:/app
-      - /app/node_modules
-    environment:
-      - CHOKIDAR_USEPOLLING=true
-
-  backend:
-    volumes:
-      - ./server:/app
-    environment:
-      - GUNICORN_CMD_ARGS=--workers=1 --threads=2 --timeout=120 --reload
+```bash
+cp docker-compose.override.yml.example docker-compose.override.yml
 ```
 
 #### Step 4: Build and Start
