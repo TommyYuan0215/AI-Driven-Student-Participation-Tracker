@@ -1,52 +1,29 @@
 import os
+from dotenv import load_dotenv
 
-# MySQL remote connection configuration
-REMOTE_DB_NAME = 'defaultdb'
-db_config_remote_init = {
-    'host': 'aispt-tanjunlin0215-aispt.h.aivencloud.com',
-    'port': 12100,
-    'user': 'avnadmin',
-    'password': 'AVNS_C9D2eUJ0PchDTyo53ND',
-    'ssl_ca': 'services/ca.pem'
-}
+# Load environment variables from .env file
+load_dotenv()
 
-db_config_remote = {
-    'host': 'aispt-tanjunlin0215-aispt.h.aivencloud.com',
-    'port': 12100,
-    'user': 'avnadmin',
-    'password': 'AVNS_C9D2eUJ0PchDTyo53ND',
-    'database': REMOTE_DB_NAME,
-    'ssl_ca': 'services/ca.pem'
-}
+# Use os.getenv to check the .env file first, then use the second string as a fallback
+LOCAL_DB_NAME = os.getenv('DATABASE_NAME', 'AISPT')
+DATABASE_HOST = os.getenv('DATABASE_HOST', 'mysql')
+DATABASE_USER = os.getenv('DATABASE_USER', 'root')
+DATABASE_PASSWORD = os.getenv('DATABASE_PASSWORD', 'root')
 
-# MySQL local connection configuration
-LOCAL_DB_NAME = 'AISPT'
 db_config_local_init = {
-    'host': 'mysql',
+    'host': DATABASE_HOST,
     'port': 3306,
-    'user': 'root',
-    'password': 'root'
+    'user': DATABASE_USER,
+    'password': DATABASE_PASSWORD
 }
 
 db_config_local = {
-    'host': 'mysql',
-    'port': 3306,
-    'user': 'root',
-    'password': 'root',
+    **db_config_local_init, 
     'database': LOCAL_DB_NAME
 }
 
-# Get the database configuration based on the environment
 def get_db_config():
-    mode = os.environ.get('DB_MODE', 'local')
-    if mode == 'remote':
-        return db_config_remote
-    else:
-        return db_config_local
+    return db_config_local
 
 def get_db_config_init():
-    mode = os.environ.get('DB_MODE', 'local')
-    if mode == 'remote':
-        return db_config_remote_init
-    else:
-        return db_config_local_init
+    return db_config_local_init

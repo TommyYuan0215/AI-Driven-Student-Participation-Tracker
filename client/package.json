@@ -1,5 +1,5 @@
 {
-  "name": "ai-driven-student-participation-tracker-v2",
+  "name": "focus-track-client",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -10,18 +10,17 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@mediapipe/camera_utils": "^0.3.1675466862",
-    "@mediapipe/face_detection": "^0.4.1646425229",
     "bootstrap": "^5.3.3",
     "bootstrap-icons": "^1.11.3",
+    "html-to-image": "^1.11.13",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0",
-    "uuid": "^8.3.2"
+    "react-dom": "^19.0.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.21.0",
     "@fortawesome/free-solid-svg-icons": "^6.7.2",
     "@fortawesome/react-fontawesome": "^0.2.2",
+    "@types/node": "^26.1.0",
     "@types/react": "^19.0.10",
     "@types/react-dom": "^19.0.4",
     "@vitejs/plugin-react": "^4.3.4",
@@ -30,8 +29,8 @@
     "eslint": "^9.21.0",
     "eslint-plugin-react-hooks": "^5.1.0",
     "eslint-plugin-react-refresh": "^0.4.19",
-    "html2canvas": "^1.4.1",
     "globals": "^15.15.0",
+    "html2canvas": "^1.4.1",
     "js-cookie": "^3.0.5",
     "react-bootstrap": "^2.10.7",
     "react-dom": "^19.0.0",
@@ -39,6 +38,8 @@
     "react-toastify": "^11.0.5",
     "recharts": "2.15.1",
     "socket.io-client": "^4.8.1",
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.62.1",
     "vite": "^6.2.0",
     "vite-plugin-mkcert": "^1.17.8"
   }

@@ -1,0 +1,54 @@
+{
+  "hero": {
+    "badge": "AI-POWERED EDUCATION",
+    "titlePrefix": "Focus",
+    "titleSuffix": "Track",
+    "subtitle": "Unleash the power of real-time emotional intelligence. Monitor, analyze, and elevate student engagement with our neural tracking platform.",
+    "primaryBtn": "Get Started",
+    "secondaryBtn": "Watch Demo"
+  },
+  "metrics": [
+    {
+      "value": "1M+",
+      "label": "TRACKING HOURS"
+    },
+    {
+      "value": "500+",
+      "label": "INSTITUTIONS"
+    },
+    {
+      "value": "95%",
+      "label": "ENGAGEMENT BOOST"
+    }
+  ],
+  "features": {
+    "sectionBadge": "The Ecosystem",
+    "sectionTitle": "Advanced Intelligence.",
+    "cards": [
+      {
+        "title": "Real-time Tracking",
+        "description": "Monitor student participation in real-time with our advanced AI neural engine.",
+        "icon": "bi bi-eye-fill",
+        "gradient": "linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)"
+      },
+      {
+        "title": "Data Analytics",
+        "description": "Comprehensive emotional insights and predictive focus mapping.",
+        "icon": "bi bi-graph-up-arrow",
+        "gradient": "linear-gradient(135deg, #a855f7 0%, #9333ea 100%)"
+      },
+      {
+        "title": "Smart Reports",
+        "description": "Automated, immersive reporting system with 3D data visualization.",
+        "icon": "bi bi-file-earmark-bar-graph",
+        "gradient": "linear-gradient(135deg, #ec4899 0%, #db2777 100%)"
+      },
+      {
+        "title": "AI Integration",
+        "description": "Seamless neural synchronization with modern educational platforms.",
+        "icon": "bi bi-cpu-fill",
+        "gradient": "linear-gradient(135deg, #10b981 0%, #059669 100%)"
+      }
+    ]
+  }
+}

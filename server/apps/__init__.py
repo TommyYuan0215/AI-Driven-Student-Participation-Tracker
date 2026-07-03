@@ -7,10 +7,11 @@ from datetime import datetime, timedelta
 
 # Create a Global SocketIO to passing the values to other blueprints
 socketio = SocketIO(
-      cors_allowed_origins=["http://localhost:5180"],
+      cors_allowed_origins=["http://localhost:5180", "http://127.0.0.1:5180"],
       allow_credentials=True,
-      ping_interval=20,  
-      ping_timeout=40    
+      ping_interval=25,  
+      ping_timeout=60,
+      max_http_buffer_size=10 * 1024 * 1024 # 10MB buffer for binary data
   )
 SESSION_TIMEOUT = timedelta(hours=3)
 
@@ -20,9 +21,10 @@ def create_app():
     app.config['SESSION_TYPE'] = 'filesystem'
     app.config['PERMANENT_SESSION_LIFETIME'] = SESSION_TIMEOUT
     app.config['SESSION_REFRESH_EACH_REQUEST'] = False  # Prevent auto-refresh
+    app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max upload size
 
     # Allow all origins
-    CORS(app, resources={r"/*": {"origins": ["http://localhost:5180"]}}, supports_credentials=True)
+    CORS(app, resources={r"/*": {"origins": ["http://localhost:5180", "http://127.0.0.1:5180"]}}, supports_credentials=True)
 
     # Initialize extensions
     socketio.init_app(app)

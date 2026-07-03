@@ -19,7 +19,14 @@ def get_user_session():
                 session.clear()
                 return jsonify({"logged_in": False, "message": "Session expired"}), 401
 
-        user_photo = session.get('user_photo')
+        connection = get_db_connection()
+        cursor = connection.cursor(dictionary=True)
+        cursor.execute("SELECT userPhoto FROM USER_ACCOUNT WHERE userID = %s", (session['user_id'],))
+        user = cursor.fetchone()
+        user_photo = user['userPhoto'] if user else None
+        cursor.close()
+        connection.close()
+
         user_photo_base64 = base64.b64encode(user_photo).decode('utf-8') if user_photo else None
 
         return jsonify({
@@ -29,6 +36,7 @@ def get_user_session():
             'userName': session['user_name'],
             'userEmail': session['user_email'],
             'userPhoto': user_photo_base64,
+            'createAt': session.get('create_at'),
             'redirect': session['redirect']
         })
     else:
@@ -67,14 +75,26 @@ def login():
             session['user_type'] = user['userType']
             session['user_email'] = user['userEmail']
             session['user_name'] = user['userName']
-            session['user_photo'] = user['userPhoto']
+            # Removed session['user_photo'] to avoid session cookie overflow
+            session['create_at'] = str(user['createAt']) if user.get('createAt') else None
             
             if user['userType'] == 0:
                 session['redirect'] = "/admin/"
             else:
                 session['redirect'] = "/educator/"
             
-            return jsonify({"status": "success", "message": "Login successful", "userName": user['userName'], "redirect": session['redirect']})
+            user_photo_base64 = base64.b64encode(user['userPhoto']).decode('utf-8') if user.get('userPhoto') else None
+            
+            return jsonify({
+                "status": "success", 
+                "message": "Login successful", 
+                "userID": user['userID'],
+                "userName": user['userName'],
+                "userEmail": user['userEmail'],
+                "userType": user['userType'],
+                "userPhoto": user_photo_base64,
+                "redirect": session['redirect']
+            })
         else:
             return jsonify({"status": "error", "message": "This account is not authorized yet, please contact the administrators for assistance."}), 401
     else:

@@ -295,9 +295,6 @@ def update_account():
         # ✅ Update session values
         session['user_name'] = user_name
         session['user_email'] = user_email
-        if profile_photo_data:
-            session['user_photo'] = profile_photo_data
-
         session.modified = True  # ✅ Ensure Flask updates the session
 
         # Fetch latest user data for response
@@ -329,7 +326,7 @@ def update_account():
         connection.close()
 
         
-@settings_route.route('reset_account_photo', methods=['POST'])
+@settings_route.route('/reset_account_photo', methods=['POST'])
 def reset_account_photo():
     data = request.form
     user_id = data.get('id')
@@ -355,9 +352,7 @@ def reset_account_photo():
             
         connection.commit()
         
-        # Clear photo from session
-        if 'user_photo' in session:
-            session.pop('user_photo')
+        # Profile photo is fetched from DB in get_user_session, so no need to clear it from session here.
         
         # Fetch updated user data
         cursor.execute(

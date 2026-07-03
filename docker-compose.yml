@@ -1,27 +1,15 @@
-version: '3.8'
-
 services:
   backend:
     build: ./server
     container_name: backend_container
     ports:
       - "5555:5555"
-    volumes:
-      - ./server:/app
+    # No bind mounts — code is baked into the image at build time
     depends_on:
       mysql:
         condition: service_healthy
-    environment:
-      - DATABASE_HOST=mysql
-      - DATABASE_USER=root
-      - DATABASE_PASSWORD=root
-      - DATABASE_NAME=aispt
-      - FLASK_ENV=development
-      - DB_MODE=local
-      - CUDA_VISIBLE_DEVICES=-1
-      - TF_FORCE_GPU_ALLOW_GROWTH=false
-      - TF_CPP_MIN_LOG_LEVEL=2
-      - GUNICORN_CMD_ARGS=--workers=1 --threads=2 --timeout=120 --reload
+    env_file:
+      - .env
     restart: always
     deploy:
       resources:
@@ -36,14 +24,9 @@ services:
     build: ./client
     container_name: frontend_container
     ports:
-      - "5180:5180"
-    volumes:
-      - ./client:/app
-      - /app/node_modules
+      - "5180:80"   # Nginx serves on 80 internally; mapped to 5180 externally
     depends_on:
       - backend
-    environment:
-      - CHOKIDAR_USEPOLLING=true
     restart: always
     networks:
       - mynetwork
@@ -53,11 +36,9 @@ services:
     container_name: mysql_container
     restart: always
     command: --default-authentication-plugin=mysql_native_password
-    environment:
-      MYSQL_ROOT_PASSWORD: root
-      MYSQL_DATABASE: AISPT
-    ports:
-      - "3320:3306"
+    env_file:
+      - .env                # MYSQL_ROOT_PASSWORD and MYSQL_DATABASE loaded from .env
+    # Port 3306 is NOT exposed to the host — only accessible within mynetwork
     volumes:
       - mysql_data:/var/lib/mysql
     networks:
@@ -66,7 +47,8 @@ services:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
       interval: 10s
       timeout: 5s
-      retries: 3
+      retries: 5
+      start_period: 30s
 
 volumes:
   mysql_data:
