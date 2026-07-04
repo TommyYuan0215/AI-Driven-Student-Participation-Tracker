@@ -13,7 +13,12 @@ const SOCKET_CONFIG = {
   timeout: 20000,
   pingTimeout: 60000,
   pingInterval: 25000,
-  transports: ['websocket', 'polling'],
+  // polling first: establishes the EIO session via HTTP before upgrading to WebSocket.
+  // WebSocket-first fails through Nginx reverse proxies because the handshake
+  // (GET /socket.io/?EIO=4&transport=polling) hasn't completed yet.
+  transports: ['polling', 'websocket'],
+  upgrade: true,      // allow upgrade from polling → websocket after session is established
+  path: '/socket.io', // explicit path so it works through the Nginx proxy
   autoConnect: true,
 };
 
