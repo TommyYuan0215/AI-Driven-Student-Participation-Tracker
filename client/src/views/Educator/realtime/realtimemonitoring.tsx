@@ -90,16 +90,29 @@ function RealTimeMonitoring() {
   };
 
   const handleCameraToggle = async () => {
-    if (isCameraOn && isTracking) handleTracking();
-    if (!isCameraOn && isShareScreen) await handleStopScreenShare();
+    if (isCameraOn) {
+      // Turning camera OFF
+      if (isTracking) handleTracking();
+    } else {
+      // Turning camera ON: stop screen share first if active
+      if (isShareScreen) await handleStopScreenShare();
+    }
     await handleCamera();
   };
 
   const handleShareScreenToggle = async () => {
-    if (isShareScreen && isTracking) handleTracking();
-    if (!isShareScreen && isCameraOn) await handleCameraToggle();
-    await handleStopScreenShare();
-    await handleShareScreen();
+    if (isShareScreen) {
+      // Turning screen share OFF
+      if (isTracking) handleTracking();
+      await handleStopScreenShare();
+    } else {
+      // Turning screen share ON: stop camera first if active
+      if (isCameraOn) {
+        if (isTracking) handleTracking();
+        await handleCamera(); // handleCamera toggles it off since isCameraOn is true
+      }
+      await handleShareScreen();
+    }
   };
 
   return (
