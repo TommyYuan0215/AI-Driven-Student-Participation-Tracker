@@ -108,12 +108,23 @@ This enables educators to identify disengagement early and dynamically modify te
 │  │   Educator   │    Admin     │   Settings   │         │
 │  │   Dashboard  │   Dashboard  │   Portal     │         │
 │  └──────────────┴──────────────┴──────────────┘         │
-│         │              │              │                 │
-│         │ WebSocket/   │ REST API     │                 │
-│         │ REST API     │              │                 │
-└─────────┼──────────────┼──────────────┼─────────────────┘
-          │              │              │
-          └──────────────┼──────────────┘
+└─────────────────────────────────────────────────────────┘
+                         │
+                  HTTPS :443 / HTTP :80
+                         │
+        ┌────────────────▼────────────────┐
+        │   Nginx Reverse Proxy           │
+        │  - TLS termination (HTTPS)      │
+        │  - HTTP → HTTPS redirect        │
+        │  - Forwards to frontend :5180   │
+        └────────────────┬─────────────────┘
+                         │ (internal Docker network)
+        ┌────────────────▼────────────────┐
+        │   Frontend (React + Nginx)      │
+        │  - Serves compiled React SPA    │
+        │  - Proxies /api/ → backend      │
+        │  - Proxies /socket.io/ → backend│
+        └────────────────┬─────────────────┘
                          │
         ┌────────────────▼────────────────┐
         │   Backend (Flask + Python)      │
@@ -133,7 +144,7 @@ This enables educators to identify disengagement early and dynamically modify te
         └────────────────┬─────────────────┘
                          │
         ┌────────────────▼────────────────┐
-        │    Database (MySQL/SQLite)      │
+        │    Database (MySQL 8.0)         │
         │  - User Data                    │
         │  - Session Records              │
         │  - Participation Metrics        │
@@ -171,6 +182,7 @@ This enables educators to identify disengagement early and dynamically modify te
 
 - **Docker** - Containerization
 - **Docker Compose** - Multi-container orchestration
+- **Nginx** - HTTPS reverse proxy (TLS termination) + static file serving
 
 ---
 
@@ -307,35 +319,64 @@ docker compose ps
 Expected output:
 ```
 NAME                 STATUS          PORTS
+nginx_proxy          Up              0.0.0.0:80->80/tcp, 0.0.0.0:443->443/tcp
 backend_container    Up (healthy)    0.0.0.0:5555->5555/tcp
-frontend_container   Up              0.0.0.0:5180->80/tcp
+frontend_container   Up              0.0.0.0:5180->5180/tcp
 mysql_container      Up (healthy)    3306/tcp
 ```
 
 > Note: MySQL shows `3306/tcp` with **no** external port mapping — this is correct and intentional for security.
 
-#### Step 6: Access the Application
+#### Step 6: Set Up HTTPS (Required for Camera & Screen Share)
 
-| Service       | URL                                          |
-|---------------|----------------------------------------------|
-| Frontend      | http://\<your-server-ip\>:5180              |
-| Backend API   | http://\<your-server-ip\>:5555 (direct)     |
-| MySQL         | Not exposed externally ✅                    |
+Camera and screen sharing **require HTTPS** — browsers block these APIs on plain HTTP. FocusTrack includes a built-in Nginx reverse proxy that handles TLS termination.
 
-> 💡 **For HTTPS:** Place Nginx, Caddy, or Traefik in front of port `5180` on your host to handle SSL termination. No changes to Docker config are needed.
+**Generate a certificate for your domain:**
 
-#### Step 7: View Logs
+For public domains (e.g. using Let's Encrypt):
+```bash
+certbot certonly --standalone -d yourdomain.com
+cp /etc/letsencrypt/live/yourdomain.com/fullchain.pem nginx/certs/cert.pem
+cp /etc/letsencrypt/live/yourdomain.com/privkey.pem   nginx/certs/key.pem
+```
+
+For internal/homelab domains (e.g. `apps.homelab1367.internal`) using [mkcert](https://github.com/FiloSottile/mkcert):
+```bash
+# Install mkcert and trust the local CA
+mkcert -install
+
+# Generate cert for your internal domain
+mkcert apps.homelab1367.internal
+
+# Move into the certs folder
+mv apps.homelab1367.internal.pem     nginx/certs/cert.pem
+mv apps.homelab1367.internal-key.pem nginx/certs/key.pem
+```
+
+> ⚠️ The `nginx/certs/` folder is **git-ignored**. Never commit certificate or key files.
+
+#### Step 7: Access the Application
+
+| Service       | URL                                              |
+|---------------|--------------------------------------------------|
+| Frontend      | https://\<your-domain-or-ip\>                   |
+| HTTP redirect | http://\<your-domain-or-ip\> → auto redirects   |
+| Backend API   | Internal only (routed via frontend proxy)        |
+| MySQL         | Not exposed externally ✅                        |
+
+#### Step 8: View Logs
 
 ```bash
 # All services
 docker compose logs -f
 
 # Individual services
+docker compose logs -f nginx
 docker compose logs -f backend
 docker compose logs -f frontend
 ```
 
-#### Step 8: Stop and Remove Containers
+#### Step 9: Stop and Remove Containers
 
 ```bash
 # Stop containers (keeps data volume)
@@ -345,7 +386,7 @@ docker compose down
 docker compose down -v
 ```
 
-#### Step 9: Update / Redeploy
+#### Step 10: Update / Redeploy
 
 ```bash
 git pull
@@ -360,6 +401,8 @@ docker compose up -d
 | Feature | Development | Production |
 |---------|------------|------------|
 | Frontend server | Vite dev server (hot-reload) | Nginx (static build) |
+| HTTPS / TLS | ❌ Not included | ✅ Nginx reverse proxy |
+| Camera & Screen Share | ✅ Works (localhost) | ✅ Works (requires HTTPS cert) |
 | Source code in container | Bind-mounted from host | Baked into image at build |
 | Gunicorn `--reload` | ✅ Enabled | ❌ Disabled |
 | `FLASK_ENV` | `development` | `production` |
@@ -557,7 +600,7 @@ Authorization: Bearer {token}
 ## Project Structure
 
 ```
-AI-Driven-Student-Participation-Tracker/
+FocusTrack/
 ├── client/                          # React Frontend
 │   ├── src/
 │   │   ├── components/             # Reusable UI components
@@ -586,7 +629,7 @@ AI-Driven-Student-Participation-Tracker/
 │   │   └── main.tsx               # Entry point
 │   ├── package.json               # Dependencies
 │   ├── vite.config.js             # Vite configuration
-│   ├── nginx.conf                 # Production Nginx config
+│   ├── nginx.conf                 # Frontend Nginx config (SPA + API proxy)
 │   ├── dockerfile                 # Multi-stage Docker image (build → Nginx)
 │   └── .dockerignore              # Excludes node_modules/dist from build context
 │
@@ -613,10 +656,18 @@ AI-Driven-Student-Participation-Tracker/
 │   ├── dockerfile                # Production Docker image (Gunicorn)
 │   └── .dockerignore             # Excludes cache/logs from image
 │
-├── docker-compose.yml           # Docker Compose (production config)
-├── .env                         # Local secrets (git-ignored)
-├── .env.example                 # Template — copy to .env
-└── README.md                    # This file
+├── nginx/                          # HTTPS Reverse Proxy
+│   ├── nginx.conf                 # Nginx config (TLS termination, HTTP→HTTPS)
+│   └── certs/                     # TLS certificate storage (git-ignored)
+│       ├── README.md              # Instructions for placing certs here
+│       ├── cert.pem               # Your certificate (NOT committed)
+│       └── key.pem                # Your private key (NOT committed)
+│
+├── docker-compose.yml             # Docker Compose (production config)
+├── docker-compose.override.yml    # Local dev overrides (git-ignored)
+├── .env                           # Local secrets (git-ignored)
+├── .env.example                   # Template — copy to .env
+└── README.md                      # This file
 ```
 
 ---
@@ -690,10 +741,12 @@ docker compose up -d
 
 ### Camera/Microphone Permissions
 
-- Ensure browser has permission to access camera/microphone
+- Ensure the browser has permission to access camera/microphone
 - Check Settings → Privacy & Security → Camera/Microphone
-- If using HTTP (not HTTPS), some browsers block camera access — use HTTPS or localhost only
-- Refresh the browser page
+- **Camera and screen sharing require HTTPS in production.** `navigator.mediaDevices` is `undefined` on plain HTTP pages — this is a browser security restriction
+- In production, generate a TLS certificate and place it in `nginx/certs/` (see [Step 6](#step-6-set-up-https-required-for-camera--screen-share))
+- On `localhost` during development, this works without HTTPS
+- Refresh the browser page after granting permissions
 
 ### WebSocket / Socket.IO Connection Issues
 
@@ -711,13 +764,29 @@ docker compose ps
 # Check all logs
 docker compose logs -f
 
-# Ensure server firewall allows port 5180
+# Ensure server firewall allows ports 80 and 443
 # Ubuntu/Debian:
-ufw allow 5180/tcp
+ufw allow 80/tcp
+ufw allow 443/tcp
 
 # CentOS/RHEL:
-firewall-cmd --add-port=5180/tcp --permanent
+firewall-cmd --add-port=80/tcp --permanent
+firewall-cmd --add-port=443/tcp --permanent
 firewall-cmd --reload
+```
+
+### Nginx Proxy Not Starting (Certificate Error)
+
+```bash
+# Check nginx logs
+docker compose logs nginx
+
+# Verify cert files exist in the right location
+ls nginx/certs/
+# Should show: cert.pem  key.pem  README.md
+
+# If cert.pem / key.pem are missing, generate them:
+# See Step 6 in the Production setup above
 ```
 
 ---
@@ -740,4 +809,4 @@ Contributions are welcome! Please follow these steps:
 
 ---
 
-**Last Updated:** July 3, 2026
+**Last Updated:** July 5, 2026
