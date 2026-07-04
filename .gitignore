@@ -47,10 +47,3 @@ docker-compose.override.yml
 *.njsproj
 *.sln
 *.sw?
-
-# TLS Certificates — never commit actual cert/key files
-nginx/certs/*.pem
-nginx/certs/*.crt
-nginx/certs/*.key
-nginx/certs/*.p12
-nginx/certs/*.pfx
