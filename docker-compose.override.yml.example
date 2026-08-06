@@ -31,7 +31,4 @@ services:
     environment:
       - CHOKIDAR_USEPOLLING=true
 
-  mysql:
-    # Expose MySQL port to host for local database GUI access (e.g., DBeaver, TablePlus)
-    ports:
-      - "3320:3306"
+
