@@ -78,27 +78,52 @@ const useSession = (navigate?: (path: string) => void) => {
         updateLastActivity();
         if (navigate) navigate(response.data.redirect);
         toast.success(response.data.message);
-        return true;
+        return { success: true };
+      } else if (response.data.status === "otp_required") {
+        toast.info(response.data.message);
+        return { otpRequired: true, message: response.data.message };
       } else {
         toast.error(response.data.message);
-        return false;
+        return { success: false, error: response.data.message };
       }
     } catch (error) {
+      let errMsg = "Something went wrong";
       if (error.response) {
-        // Handle different response status codes
-        if (error.response.status === 401) {
-          toast.error(error.response.data.message); // Show the message from the backend
-        } else {
-          toast.error(
-            `Error: ${error.response.data.message || "Something went wrong"}`
-          );
-        }
+        errMsg = error.response.data.message || errMsg;
+        toast.error(errMsg);
       } else if (error.request) {
-        toast.error("No response from server. Please check your connection.");
+        errMsg = "No response from server. Please check your connection.";
+        toast.error(errMsg);
       } else {
-        toast.error(`Error during login: ${error.message}`);
+        errMsg = `Error during login: ${error.message}`;
+        toast.error(errMsg);
       }
-      return false;
+      return { success: false, error: errMsg };
+    }
+  };
+
+  const verifyOtp = async (otpCode: string) => {
+    try {
+      const response = await axios.post("/credential/verify_otp", {
+        otpCode,
+      });
+
+      if (response.data.status === "success") {
+        setUserData(response.data);
+        setIsLoggedIn(true);
+        sessionStorage.setItem("userData", JSON.stringify(response.data));
+        updateLastActivity();
+        if (navigate) navigate(response.data.redirect);
+        toast.success(response.data.message);
+        return { success: true };
+      } else {
+        toast.error(response.data.message);
+        return { success: false, error: response.data.message };
+      }
+    } catch (error) {
+      const errMsg = error.response?.data?.message || "Invalid or expired OTP.";
+      toast.error(errMsg);
+      return { success: false, error: errMsg };
     }
   };
 
@@ -176,6 +201,7 @@ const useSession = (navigate?: (path: string) => void) => {
     logout,
     refetch,
     updateLastActivity,
+    verifyOtp,
   };
 };
 

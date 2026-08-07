@@ -21,6 +21,8 @@ function UserManagement() {
   } = useLoadingState("/usermanagement/get_user_data", []);
   const [modalShowAuthorized, setModalShowAuthorized] = useState(false);
   const [selectedUserEmail, setSelectedUserEmail] = useState("");
+  const [createdUserInfo, setCreatedUserInfo] = useState<{ userName: string; userEmail: string; password: string } | null>(null);
+  const [showCreatedModal, setShowCreatedModal] = useState<boolean>(false);
 
   // To handle sort function
   const [sortConfig, setSortConfig] = useState({ key: null, direction: "asc" });
@@ -63,6 +65,7 @@ function UserManagement() {
     userId: "",
     userName: "",
     userEmail: "",
+    userPassword: "",
   });
 
   // Handle modal for authorized button
@@ -79,6 +82,7 @@ function UserManagement() {
       userId: "",
       userName: "",
       userEmail: "",
+      userPassword: "",
     });
     setModalShowAdd(true);
   };
@@ -103,6 +107,7 @@ function UserManagement() {
       userId: "",
       userName: "",
       userEmail: "",
+      userPassword: "",
     });
     toast.info("Form has been reset to original values");
   };
@@ -137,7 +142,46 @@ function UserManagement() {
   // Add new user form submission
   const handleAddUser = async (e) => {
     e.preventDefault();
-    // Implementation for adding user could go here
+    const { userName, userEmail } = formData;
+
+    const emailPattern = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+
+    if (!userName || !userEmail || !emailPattern.test(userEmail)) {
+      toast.error("Please provide a valid name and email.");
+      return;
+    }
+
+    const formDataToSend = new FormData();
+    formDataToSend.append("userName", userName);
+    formDataToSend.append("userEmail", userEmail);
+
+    try {
+      const response = await axios.post(
+        "/usermanagement/add_user",
+        formDataToSend,
+        {
+          headers: { "Content-Type": "multipart/form-data" },
+        }
+      );
+
+      if (response.data.success) {
+        setFormData({ userId: "", userName: "", userEmail: "", userPassword: "" });
+        toast.success(response.data.message || "User registered successfully!");
+        setCreatedUserInfo({
+          userName: userName,
+          userEmail: userEmail,
+          password: response.data.password,
+        });
+        setShowCreatedModal(true);
+        handleCloseModalAdd();
+        await refetch();
+      } else {
+        toast.error(response.data.message || "Failed to register user. Please try again.");
+      }
+    } catch (error) {
+      console.error("Add user error:", error);
+      toast.error(error.response?.data?.message || "Failed to register user");
+    }
   };
 
   // Edit exist user form submission
@@ -412,6 +456,61 @@ function UserManagement() {
           />
         </div>
       </LargeModelComponent>
+
+      {/* Generated Password Modal */}
+      <SmallModelComponent
+        show={showCreatedModal}
+        onHide={() => setShowCreatedModal(false)}
+        title="Account Credentials Generated"
+      >
+        <div className="p-2">
+          <div className="text-center mb-4">
+            <div className="icon-box rounded-circle bg-success-subtle text-success mx-auto d-flex align-items-center justify-content-center mb-3" style={{ width: '60px', height: '60px' }}>
+              <i className="bi bi-person-check-fill fs-2"></i>
+            </div>
+            <h5 className="fw-bold mb-1">User Registered!</h5>
+            <p className="text-muted small">An auto-generated secure password has been created for this account.</p>
+          </div>
+
+          <div className="p-3 rounded-4 mb-4" style={{ background: 'var(--bs-tertiary-bg)', border: '1px solid var(--bs-border-color-translucent)' }}>
+            <div className="mb-3">
+              <label className="small text-muted fw-bold text-uppercase mb-1" style={{ letterSpacing: '0.5px' }}>Display Name</label>
+              <div className="fw-bold text-emphasis notranslate">{createdUserInfo?.userName}</div>
+            </div>
+            <div className="mb-3">
+              <label className="small text-muted fw-bold text-uppercase mb-1" style={{ letterSpacing: '0.5px' }}>Email Address</label>
+              <div className="fw-bold text-emphasis notranslate">{createdUserInfo?.userEmail}</div>
+            </div>
+            <div>
+              <label className="small text-muted fw-bold text-uppercase mb-1" style={{ letterSpacing: '0.5px' }}>Temporary Password</label>
+              <div className="d-flex align-items-center justify-content-between p-3 rounded-3 mt-1 bg-body border border-dashed">
+                <code className="fs-5 text-danger fw-bold notranslate">{createdUserInfo?.password}</code>
+                <button
+                  className="btn btn-sm btn-light border rounded-pill px-3 py-2 shadow-sm d-flex align-items-center gap-2"
+                  onClick={() => {
+                    if (createdUserInfo?.password) {
+                      navigator.clipboard.writeText(createdUserInfo.password);
+                      toast.success("Password copied to clipboard!");
+                    }
+                  }}
+                >
+                  <i className="bi bi-clipboard"></i>
+                  <span className="small fw-bold">Copy</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div className="d-grid gap-2">
+            <Button
+              className="rounded-pill py-3 fw-bold shadow-sm"
+              onClick={() => setShowCreatedModal(false)}
+            >
+              Done
+            </Button>
+          </div>
+        </div>
+      </SmallModelComponent>
 
     </div>
   );

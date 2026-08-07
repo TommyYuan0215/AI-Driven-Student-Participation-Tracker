@@ -11,6 +11,7 @@ export interface UserFormData {
   userId?: string | number;
   userName: string;
   userEmail: string;
+  userPassword?: string;
 }
 
 export interface Announcement {

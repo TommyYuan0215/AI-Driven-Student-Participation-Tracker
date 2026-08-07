@@ -68,6 +68,7 @@ def create_table_if_not_exists():
             userPassword VARCHAR(255),
             userPhoto LONGBLOB,
             userStatus INT(2) DEFAULT 0,
+            user2FA INT(2) DEFAULT 1,
             createAt DATETIME DEFAULT CURRENT_TIMESTAMP,
             PRIMARY KEY (userID),
             UNIQUE (userEmail)
@@ -77,8 +78,15 @@ def create_table_if_not_exists():
             cursor.execute(create_user_account_table)
             connection.commit()
             
+            # Alter table to add user2FA if it doesn't exist on older database migrations
+            cursor.execute("SHOW COLUMNS FROM USER_ACCOUNT LIKE 'user2FA'")
+            column_exists = cursor.fetchone()
+            if not column_exists:
+                cursor.execute("ALTER TABLE USER_ACCOUNT ADD COLUMN user2FA INT(2) DEFAULT 1")
+                connection.commit()
+            
         except mysql.connector.Error as err:
-            print(f"Error creating USER_ACCOUNT table: {err}")
+            print(f"Error creating/altering USER_ACCOUNT table: {err}")
             
         # Create Trigger for User Account Table
         create_user_account_trigger = f'''
@@ -306,6 +314,40 @@ def create_table_if_not_exists():
         except mysql.connector.Error as err:
             print(f"Error creating TRACKING_SESSION_DETAILS table: {err}")
             
+    def create_user_otp():
+        # SQL query to create the USER_OTP table if it doesn't exist
+        create_user_otp_table = '''
+        CREATE TABLE IF NOT EXISTS USER_OTP (
+            userID VARCHAR(12) NOT NULL,
+            otpCode VARCHAR(6) NOT NULL,
+            expiresAt DATETIME NOT NULL,
+            PRIMARY KEY (userID),
+            FOREIGN KEY (userID) REFERENCES USER_ACCOUNT(userID) ON DELETE CASCADE ON UPDATE CASCADE
+        )
+        '''
+        try:
+            cursor.execute(create_user_otp_table)
+            connection.commit()
+        except mysql.connector.Error as err:
+            print(f"Error creating USER_OTP table: {err}")
+
+    def create_user_password_reset():
+        # SQL query to create the USER_PASSWORD_RESET table if it doesn't exist
+        create_user_password_reset_table = '''
+        CREATE TABLE IF NOT EXISTS USER_PASSWORD_RESET (
+            userEmail VARCHAR(100) NOT NULL,
+            token VARCHAR(255) NOT NULL,
+            expiresAt DATETIME NOT NULL,
+            PRIMARY KEY (token),
+            FOREIGN KEY (userEmail) REFERENCES USER_ACCOUNT(userEmail) ON DELETE CASCADE ON UPDATE CASCADE
+        )
+        '''
+        try:
+            cursor.execute(create_user_password_reset_table)
+            connection.commit()
+        except mysql.connector.Error as err:
+            print(f"Error creating USER_PASSWORD_RESET table: {err}")
+            
     
     # Calling function for creating sub module table.      
     create_user_account()
@@ -314,6 +356,8 @@ def create_table_if_not_exists():
     create_educator()
     create_tracking_session()
     create_tracking_session_details()
+    create_user_otp()
+    create_user_password_reset()
 
     cursor.close()
     connection.close()
