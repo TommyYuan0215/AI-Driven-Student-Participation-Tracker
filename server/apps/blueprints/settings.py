@@ -458,3 +458,87 @@ def update_emotion_thresholds():
     finally:
         cursor.close()
         connection.close()
+
+@settings_route.route('/update_2fa_settings', methods=['POST'])
+def update_2fa_settings():
+    data = request.get_json()
+    user_id = session.get('user_id')
+    two_factor_status = data.get('twoFactorStatus') # 1 for enabled, 0 for disabled
+    
+    if not user_id or two_factor_status is None or two_factor_status not in [0, 1]:
+        return jsonify({"success": False, "message": "Invalid request parameters"}), 400
+        
+    connection = get_db_connection()
+    cursor = connection.cursor(dictionary=True)
+    
+    try:
+        cursor.execute(
+            "UPDATE USER_ACCOUNT SET user2FA = %s WHERE userID = %s",
+            (two_factor_status, user_id)
+        )
+        connection.commit()
+        
+        return jsonify({
+            "success": True,
+            "message": "Two-factor authentication settings updated successfully",
+            "twoFactorStatus": two_factor_status
+        })
+    except Exception as e:
+        connection.rollback()
+        return jsonify({"success": False, "message": f"Error updating settings: {str(e)}"}), 500
+    finally:
+        cursor.close()
+        connection.close()
+
+@settings_route.route('/get_system_status', methods=['GET'])
+def get_system_status():
+    user_id = session.get('user_id')
+    if not user_id:
+        return jsonify({"success": False, "message": "User not logged in"}), 400
+        
+    # 1. Check Neural Engine (LiteRT model)
+    model_loaded = False
+    try:
+        from apps.blueprints.tracking_server import interpreter
+        model_loaded = interpreter is not None
+    except Exception:
+        pass
+        
+    # 2. Check Database Status
+    db_status = "Offline"
+    try:
+        connection = get_db_connection()
+        if connection.is_connected():
+            db_status = "Online"
+        connection.close()
+    except Exception:
+        pass
+
+    # 3. Check Face Analysis Engine (RetinaFace/InsightFace)
+    face_engine = "Offline"
+    try:
+        from apps.blueprints.tracking_server import face_app
+        if face_app is not None:
+            face_engine = "Loaded"
+    except Exception:
+        pass
+
+    # 4. Check SMTP Mailer configuration
+    smtp_status = "Unconfigured"
+    try:
+        import os
+        smtp_server = os.getenv('SMTP_SERVER')
+        smtp_email = os.getenv('SMTP_EMAIL')
+        smtp_password = os.getenv('SMTP_PASSWORD')
+        if smtp_server and smtp_email and smtp_password:
+            smtp_status = "Configured"
+    except Exception:
+        pass
+        
+    return jsonify({
+        "success": True,
+        "neuralEngine": "Loaded" if model_loaded else "Offline",
+        "database": db_status,
+        "faceEngine": face_engine,
+        "smtp": smtp_status
+    })

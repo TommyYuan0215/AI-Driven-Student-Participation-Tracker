@@ -14,7 +14,7 @@ const ProfileCard = ({ userData }) => {
       <div
         style={{
           height: "100px",
-          background: "linear-gradient(135deg, #6366f1 0%, #a855f7 100%)",
+          background: "linear-gradient(135deg, #7c3aed 0%, #a855f7 100%)",
         }}
       ></div>
 
@@ -50,8 +50,8 @@ const ProfileCard = ({ userData }) => {
           <p className="small mb-3 notranslate" style={{ color: 'var(--bs-secondary-color)' }}>{userData.userEmail}</p>
 
           <div className="d-inline-block px-3 py-1 rounded-pill" style={{
-            backgroundColor: 'rgba(99, 102, 241, 0.15)',
-            color: '#6366f1',
+            backgroundColor: 'rgba(124, 58, 237, 0.15)',
+            color: '#7c3aed',
             fontSize: '0.75rem',
             fontWeight: '700',
             textTransform: 'uppercase',

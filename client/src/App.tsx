@@ -8,6 +8,7 @@ import { ToastContainer } from "react-toastify";
 import useGoogleTranslate from "./hooks/useGoogleTranslate";
 
 import Home from "./views/home";
+import ResetPassword from "./views/ResetPassword";
 
 import AdminPage from "./views/Admin/AdminPage";
 import AdminDashboard from "./views/Admin/dashboard";
@@ -32,6 +33,7 @@ function AppRoutes({ showSidebar, toggleSidebar, setModalType }) {
     <Routes>
       {/* Public Route */}
       <Route path="/" element={<Home setModalType={setModalType} />} />
+      <Route path="/reset-password" element={<ResetPassword />} />
 
       {/* Admin Protected Routes */}
       <Route path="/admin/*" element={<AdminPage showSidebar={showSidebar} toggleSidebar={toggleSidebar} />}>

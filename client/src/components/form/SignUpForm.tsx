@@ -209,17 +209,17 @@ function SignUpForm({ switchToLogin }) {
       <style>{`
         .fw-black { font-weight: 900; }
         .btn-modern-primary {
-            background: #6366f1;
+            background: #7c3aed;
             color: #fff;
             border: none;
             border-radius: 12px;
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            box-shadow: 0 10px 20px -5px rgba(99, 102, 241, 0.4);
+            box-shadow: 0 10px 20px -5px rgba(124, 58, 237, 0.4);
         }
         .btn-modern-primary:hover {
-            background: #4f46e5;
+            background: #6d28d9;
             transform: translateY(-2px);
-            box-shadow: 0 15px 30px -10px rgba(99, 102, 241, 0.5);
+            box-shadow: 0 15px 30px -10px rgba(124, 58, 237, 0.5);
         }
         .modern-form .form-control:focus {
             background: var(--bs-tertiary-bg);

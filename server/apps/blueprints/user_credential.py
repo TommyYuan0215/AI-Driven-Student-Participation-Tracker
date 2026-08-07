@@ -21,9 +21,10 @@ def get_user_session():
 
         connection = get_db_connection()
         cursor = connection.cursor(dictionary=True)
-        cursor.execute("SELECT userPhoto FROM USER_ACCOUNT WHERE userID = %s", (session['user_id'],))
+        cursor.execute("SELECT userPhoto, user2FA FROM USER_ACCOUNT WHERE userID = %s", (session['user_id'],))
         user = cursor.fetchone()
         user_photo = user['userPhoto'] if user else None
+        user_2fa = user['user2FA'] if user else 1
         cursor.close()
         connection.close()
 
@@ -36,6 +37,7 @@ def get_user_session():
             'userName': session['user_name'],
             'userEmail': session['user_email'],
             'userPhoto': user_photo_base64,
+            'user2FA': user_2fa,
             'createAt': session.get('create_at'),
             'redirect': session['redirect']
         })
@@ -69,36 +71,146 @@ def login():
 
     if user and check_password_hash(user['userPassword'], password):   
         if user['userStatus'] == 1:
-            # Set session variables
-            session['logged_in'] = True
-            session['user_id'] = user['userID']  # Use userID as a unique identifier
-            session['user_type'] = user['userType']
-            session['user_email'] = user['userEmail']
-            session['user_name'] = user['userName']
-            # Removed session['user_photo'] to avoid session cookie overflow
-            session['create_at'] = str(user['createAt']) if user.get('createAt') else None
-            
-            if user['userType'] == 0:
+            if user['userType'] == 0 or user.get('user2FA', 1) == 0:
+                # Admin account or 2FA disabled: bypass OTP and log in immediately
+                session['logged_in'] = True
+                session['user_id'] = user['userID']
+                session['user_type'] = user['userType']
+                session['user_email'] = user['userEmail']
+                session['user_name'] = user['userName']
+                session['create_at'] = str(user['createAt']) if user.get('createAt') else None
+                
                 session['redirect'] = "/admin/"
-            else:
-                session['redirect'] = "/educator/"
+                
+                user_photo_base64 = base64.b64encode(user['userPhoto']).decode('utf-8') if user.get('userPhoto') else None
+                
+                cursor.close()
+                connection.close()
+                
+                return jsonify({
+                    "status": "success", 
+                    "message": "Login successful", 
+                    "userID": user['userID'],
+                    "userName": user['userName'],
+                    "userEmail": user['userEmail'],
+                    "userType": user['userType'],
+                    "userPhoto": user_photo_base64,
+                    "redirect": session['redirect']
+                })
+
+            # Educator account: require OTP verification
+            # Generate 6-digit numeric OTP
+            import secrets
+            otp_code = "".join(secrets.choice("0123456789") for _ in range(6))
             
-            user_photo_base64 = base64.b64encode(user['userPhoto']).decode('utf-8') if user.get('userPhoto') else None
+            # Save OTP to database
+            from datetime import timedelta
+            expires_at = datetime.utcnow() + timedelta(minutes=5)
+            
+            cursor.execute("DELETE FROM USER_OTP WHERE userID = %s", (user['userID'],))
+            connection.commit()
+            
+            cursor.execute(
+                "INSERT INTO USER_OTP (userID, otpCode, expiresAt) VALUES (%s, %s, %s)",
+                (user['userID'], otp_code, expires_at)
+            )
+            connection.commit()
+            
+            # Log the OTP code to server console for local testing and debugging convenience
+            print(f"[SECURITY] Generated OTP code for user {user['userEmail']}: {otp_code}", flush=True)
+            
+            # Store temporary OTP pending state in session
+            session['otp_pending_user_id'] = user['userID']
+            
+            # Send Email
+            from apps.services.email_helper import send_otp_email
+            email_sent = send_otp_email(user['userEmail'], user['userName'], otp_code)
+            
+            email_message = "Verification code sent to your email." if email_sent else "Verification code generated (fallback: check server logs)."
+            
+            cursor.close()
+            connection.close()
             
             return jsonify({
-                "status": "success", 
-                "message": "Login successful", 
-                "userID": user['userID'],
-                "userName": user['userName'],
-                "userEmail": user['userEmail'],
-                "userType": user['userType'],
-                "userPhoto": user_photo_base64,
-                "redirect": session['redirect']
+                "status": "otp_required",
+                "message": email_message
             })
         else:
+            cursor.close()
+            connection.close()
             return jsonify({"status": "error", "message": "This account is not authorized yet, please contact the administrators for assistance."}), 401
     else:
+        cursor.close()
+        connection.close()
         return jsonify({"status": "error", "message": "Invalid credentials, Please make sure this account is in system"}), 401
+
+@userCredential_route.route('/verify_otp', methods=['POST'])
+def verify_otp():
+    data = request.get_json()
+    otp_code = data.get('otpCode')
+    
+    if not otp_code:
+        return jsonify({"status": "error", "message": "Verification code is required."}), 400
+        
+    user_id = session.get('otp_pending_user_id')
+    if not user_id:
+        return jsonify({"status": "error", "message": "Session expired or invalid login attempt."}), 401
+        
+    connection = get_db_connection()
+    cursor = connection.cursor(dictionary=True)
+    
+    cursor.execute(
+        "SELECT * FROM USER_OTP WHERE userID = %s AND otpCode = %s AND expiresAt > %s",
+        (user_id, otp_code, datetime.utcnow())
+    )
+    otp_record = cursor.fetchone()
+    
+    if not otp_record:
+        cursor.close()
+        connection.close()
+        return jsonify({"status": "error", "message": "Invalid or expired verification code."}), 401
+        
+    # Valid OTP! Clean it up from database
+    cursor.execute("DELETE FROM USER_OTP WHERE userID = %s", (user_id,))
+    connection.commit()
+    
+    # Get the user info to finalize login
+    cursor.execute("SELECT * FROM USER_ACCOUNT WHERE userID = %s", (user_id,))
+    user = cursor.fetchone()
+    cursor.close()
+    connection.close()
+    
+    if not user:
+        return jsonify({"status": "error", "message": "User not found."}), 404
+        
+    # Promote session from OTP pending to fully logged in
+    session['logged_in'] = True
+    session['user_id'] = user['userID']
+    session['user_type'] = user['userType']
+    session['user_email'] = user['userEmail']
+    session['user_name'] = user['userName']
+    session['create_at'] = str(user['createAt']) if user.get('createAt') else None
+    
+    if user['userType'] == 0:
+        session['redirect'] = "/admin/"
+    else:
+        session['redirect'] = "/educator/"
+        
+    # Clear OTP pending variables
+    session.pop('otp_pending_user_id', None)
+    
+    user_photo_base64 = base64.b64encode(user['userPhoto']).decode('utf-8') if user.get('userPhoto') else None
+    
+    return jsonify({
+        "status": "success", 
+        "message": "Login successful", 
+        "userID": user['userID'],
+        "userName": user['userName'],
+        "userEmail": user['userEmail'],
+        "userType": user['userType'],
+        "userPhoto": user_photo_base64,
+        "redirect": session['redirect']
+    })
     
 @userCredential_route.route('/signup', methods=['POST'])
 def signup():
@@ -182,3 +294,104 @@ def logout():
     # Clear all session data
     session.clear()
     return jsonify({"status": "success", "message": "Logged out successfully", "redirect": "/"})
+
+@userCredential_route.route('/forgot_password', methods=['POST'])
+def forgot_password():
+    data = request.get_json()
+    email = data.get('email')
+    
+    if not email:
+        return jsonify({"status": "error", "message": "Email is required."}), 400
+        
+    connection = get_db_connection()
+    cursor = connection.cursor(dictionary=True)
+    
+    cursor.execute("SELECT * FROM USER_ACCOUNT WHERE userEmail = %s", (email,))
+    user = cursor.fetchone()
+    
+    if not user:
+        # For security reasons, don't reveal if the user exists or not, but return success
+        cursor.close()
+        connection.close()
+        return jsonify({"status": "success", "message": "If the email is registered in our system, you will receive a reset link shortly."})
+        
+    # Generate secure reset token
+    import secrets
+    reset_token = secrets.token_urlsafe(32)
+    
+    # Store token in USER_PASSWORD_RESET with 15 minutes expiration
+    from datetime import datetime, timedelta
+    expires_at = datetime.utcnow() + timedelta(minutes=15)
+    
+    cursor.execute("DELETE FROM USER_PASSWORD_RESET WHERE userEmail = %s", (email,))
+    connection.commit()
+    
+    cursor.execute(
+        "INSERT INTO USER_PASSWORD_RESET (userEmail, token, expiresAt) VALUES (%s, %s, %s)",
+        (email, reset_token, expires_at)
+    )
+    connection.commit()
+    
+    # Log the reset token to server console for testing convenience
+    print(f"[SECURITY] Generated Reset Token for user {email}: {reset_token}", flush=True)
+    
+    # Send reset link email
+    from apps.services.email_helper import send_reset_email
+    email_sent = send_reset_email(email, user['userName'], reset_token)
+    
+    email_message = "If the email is registered in our system, you will receive a reset link shortly."
+    if not email_sent:
+        email_message = "Reset token generated (fallback: check server logs for reset link)."
+        
+    cursor.close()
+    connection.close()
+    
+    return jsonify({"status": "success", "message": email_message})
+
+@userCredential_route.route('/reset_password', methods=['POST'])
+def reset_password():
+    data = request.get_json()
+    token = data.get('token')
+    new_password = data.get('password')
+    
+    if not token or not new_password:
+        return jsonify({"status": "error", "message": "Token and password are required."}), 400
+        
+    connection = get_db_connection()
+    cursor = connection.cursor(dictionary=True)
+    
+    cursor.execute(
+        "SELECT * FROM USER_PASSWORD_RESET WHERE token = %s AND expiresAt > %s",
+        (token, datetime.utcnow())
+    )
+    reset_record = cursor.fetchone()
+    
+    if not reset_record:
+        cursor.close()
+        connection.close()
+        return jsonify({"status": "error", "message": "Invalid or expired password reset link."}), 400
+        
+    email = reset_record['userEmail']
+    hashed_password = generate_password_hash(new_password)
+    
+    try:
+        # Update user password
+        cursor.execute(
+            "UPDATE USER_ACCOUNT SET userPassword = %s WHERE userEmail = %s",
+            (hashed_password, email)
+        )
+        connection.commit()
+        
+        # Clean up token
+        cursor.execute("DELETE FROM USER_PASSWORD_RESET WHERE token = %s", (token,))
+        connection.commit()
+        
+        return jsonify({"status": "success", "message": "Your password has been reset successfully. You can now log in."})
+        
+    except Exception as e:
+        connection.rollback()
+        return jsonify({"status": "error", "message": f"Database error: {e}"}), 500
+        
+    finally:
+        cursor.close()
+        connection.close()
